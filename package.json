@@ -1,9 +1,0 @@
-{
-  "devDependencies": {
-    "nodemon": "^3.1.10"
-  },
-  "dependencies": {
-    "lucide-react": "^0.525.0",
-    "styled-components": "^6.1.19"
-  }
-}
