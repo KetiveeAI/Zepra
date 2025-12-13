@@ -1,0 +1,5 @@
+if(EXISTS "/home/swana/Documents/zeprabrowser/build/source/zepraScript/tests/zepra-integration-tests[1]_tests.cmake")
+  include("/home/swana/Documents/zeprabrowser/build/source/zepraScript/tests/zepra-integration-tests[1]_tests.cmake")
+else()
+  add_test(zepra-integration-tests_NOT_BUILT zepra-integration-tests_NOT_BUILT)
+endif()

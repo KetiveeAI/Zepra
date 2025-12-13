@@ -1,0 +1,2 @@
+/usr/bin/ar qc ../../lib/libzepra-integration.a "CMakeFiles/zepra-integration.dir/src/dom_bridge.cpp.o" "CMakeFiles/zepra-integration.dir/src/browser_context.cpp.o"
+/usr/bin/ranlib ../../lib/libzepra-integration.a

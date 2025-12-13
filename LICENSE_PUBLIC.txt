@@ -1,0 +1,40 @@
+KETIVEE APP DEVELOPER LICENSE v1.0
+Issued by: Ketivee Team (https://ketivee.org)
+Effective: 2025
+
+This license governs the terms under which developers can create and distribute applications on the Ketivee OS platform and App Store.
+
+1. APP OWNERSHIP
+   Developers retain full ownership of their apps.
+   You are free to charge for or release your apps for free.
+
+2. PUBLISHING TO KETIVEE APP STORE
+   To publish apps to the Ketivee App Store:
+   - You must register with the Ketivee Team as an official developer.
+   - You must subscribe to a storage plan to cover hosting and bandwidth costs.
+   - You agree not to upload malicious, illegal, or infringing content.
+
+3. MONETIZATION
+   Ketivee does not take any share of your app revenue.
+   Developers may freely monetize their apps (ads, one-time payments, subscriptions, etc.).
+
+4. MISUSE & VIOLATION
+   The following actions are prohibited:
+   - Publishing apps that harm the Ketivee ecosystem or violate OS security.
+   - Distributing pirated, harmful, or copied content.
+   - Circumventing the official publishing or approval process.
+
+5. CROSS-PLATFORM SUPPORT
+   You may release your apps on other platforms as well.
+   You may open-source your apps or license them however you choose.
+
+6. WARRANTY & LIABILITY
+   Ketivee provides no guarantee that any app will remain published indefinitely.
+   Hosting fees do not guarantee promotion or visibility.
+
+This license ensures that developers can build freely on Ketivee while maintaining platform trust and consistency.
+
+Signed,  
+Swanaya Gupta  
+Ketivee Founder & Lead Developer  
+https://ketivee.org

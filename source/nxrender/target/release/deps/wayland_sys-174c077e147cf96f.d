@@ -1,0 +1,11 @@
+/home/swana/Documents/zeprabrowser/source/nxrender/target/release/deps/wayland_sys-174c077e147cf96f.d: /home/swana/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/wayland-sys-0.31.7/src/lib.rs /home/swana/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/wayland-sys-0.31.7/src/common.rs /home/swana/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/wayland-sys-0.31.7/src/client.rs /home/swana/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/wayland-sys-0.31.7/src/server.rs /home/swana/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/wayland-sys-0.31.7/src/egl.rs
+
+/home/swana/Documents/zeprabrowser/source/nxrender/target/release/deps/libwayland_sys-174c077e147cf96f.rlib: /home/swana/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/wayland-sys-0.31.7/src/lib.rs /home/swana/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/wayland-sys-0.31.7/src/common.rs /home/swana/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/wayland-sys-0.31.7/src/client.rs /home/swana/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/wayland-sys-0.31.7/src/server.rs /home/swana/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/wayland-sys-0.31.7/src/egl.rs
+
+/home/swana/Documents/zeprabrowser/source/nxrender/target/release/deps/libwayland_sys-174c077e147cf96f.rmeta: /home/swana/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/wayland-sys-0.31.7/src/lib.rs /home/swana/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/wayland-sys-0.31.7/src/common.rs /home/swana/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/wayland-sys-0.31.7/src/client.rs /home/swana/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/wayland-sys-0.31.7/src/server.rs /home/swana/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/wayland-sys-0.31.7/src/egl.rs
+
+/home/swana/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/wayland-sys-0.31.7/src/lib.rs:
+/home/swana/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/wayland-sys-0.31.7/src/common.rs:
+/home/swana/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/wayland-sys-0.31.7/src/client.rs:
+/home/swana/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/wayland-sys-0.31.7/src/server.rs:
+/home/swana/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/wayland-sys-0.31.7/src/egl.rs:

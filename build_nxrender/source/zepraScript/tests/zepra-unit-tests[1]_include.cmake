@@ -1,0 +1,5 @@
+if(EXISTS "/home/swana/Documents/zeprabrowser/build_nxrender/source/zepraScript/tests/zepra-unit-tests[1]_tests.cmake")
+  include("/home/swana/Documents/zeprabrowser/build_nxrender/source/zepraScript/tests/zepra-unit-tests[1]_tests.cmake")
+else()
+  add_test(zepra-unit-tests_NOT_BUILT zepra-unit-tests_NOT_BUILT)
+endif()

@@ -1,0 +1,12 @@
+[package]
+name = "nxrender-widgets"
+description = "Widget library for NXRender"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+nxgfx = { path = "../nxgfx" }
+nxrender-core = { path = "../nxrender-core" }
+nxrender-layout = { path = "../nxrender-layout" }
+log.workspace = true

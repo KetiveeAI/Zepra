@@ -1,0 +1,93 @@
+# Ketivee OS System Configuration (.ncf)
+# Low-level boot and system settings
+# Tree structure connecting all system branches
+
+[system]
+# Core system settings
+name = "Ketivee OS"
+version = "1.0.0"
+architecture = "x86_64"
+kernel = "ketivee_kernel"
+bootloader = "ketivee_boot"
+
+[hardware]
+# Hardware detection and configuration
+cpu_detection = "auto"
+memory_detection = "auto"
+gpu_detection = "auto"
+storage_detection = "auto"
+network_detection = "auto"
+
+[boot]
+# Boot configuration
+timeout = "5"
+default_entry = "ketivee_os"
+fallback_entry = "safe_mode"
+kernel_params = "quiet splash"
+initrd = "initrd.img"
+
+[network]
+# Network configuration
+dhcp_enabled = "true"
+dns_servers = "8.8.8.8,8.8.4.4"
+hostname = "ketivee-system"
+domain = "local"
+
+[security]
+# Security settings
+secure_boot = "true"
+encryption = "aes256"
+firewall = "enabled"
+sandbox_level = "strict"
+
+[services]
+# System services
+sshd = "disabled"
+httpd = "disabled"
+database = "disabled"
+app_store = "enabled"
+video_platform = "enabled"
+cloud_platform = "enabled"
+
+[storage]
+# Storage configuration
+root_fs = "ext4"
+swap_size = "4GB"
+temp_dir = "/tmp"
+cache_dir = "/var/cache"
+log_dir = "/var/log"
+
+[performance]
+# Performance settings
+cpu_governor = "performance"
+memory_compression = "enabled"
+swap_usage = "10%"
+cache_size = "2GB"
+
+[development]
+# Development tools
+compiler = "gcc"
+debugger = "gdb"
+ide = "ketivee_studio"
+sdk_path = "/opt/ketivee_sdk"
+
+[app_store]
+# App store configuration
+repository_url = "https://store.ketivee.org"
+update_frequency = "daily"
+auto_update = "false"
+verification = "strict"
+
+[video_platform]
+# Video platform settings
+streaming_quality = "auto"
+cdn_enabled = "true"
+transcoding = "enabled"
+storage_limit = "100GB"
+
+[cloud_platform]
+# Cloud platform settings
+sync_enabled = "true"
+encryption = "enabled"
+backup_frequency = "daily"
+storage_quota = "50GB" 

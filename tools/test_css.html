@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>CSS Inheritance Test</title>
+<style>
+  body { 
+    color: blue; 
+    font-size: 20px; 
+    font-family: sans-serif; 
+    margin: 20px;
+  }
+  div { 
+    border: 1px solid black; 
+    padding: 10px; 
+    margin: 10px 0;
+  }
+  .override { 
+    color: red; 
+  }
+  .explicit-inherit { 
+    color: inherit; 
+    font-weight: bold;
+  }
+  .orange-box {
+    color: orange;
+    border-color: orange;
+  }
+</style>
+</head>
+<body>
+  <h1>Heading (Blue, Bold, Big)</h1>
+  
+  <div>
+    This is a div. Text should be blue (inherited from body).
+    
+    <p>Paragraph inside div. Should be blue.</p>
+    
+    <p class="override">Red paragraph (class override).</p>
+    
+    <p style="color: green">Green inline style.</p>
+    
+    <div class="orange-box">
+       Orange div.
+       <p>Orange paragraph (inherited from parent div).</p>
+       <span class="explicit-inherit">Explicit inherit (should be orange).</span>
+    </div>
+  </div>
+  
+  <p style="font-size: 2em">Double size text (2em relative to parent).</p>
+</body>
+</html>

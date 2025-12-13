@@ -1,0 +1,2 @@
+/usr/bin/ar qc libstorage.a CMakeFiles/storage.dir/src/local_storage.cpp.o CMakeFiles/storage.dir/src/session_storage.cpp.o CMakeFiles/storage.dir/src/permission_manager.cpp.o CMakeFiles/storage.dir/src/quota_manager.cpp.o CMakeFiles/storage.dir/src/cache_storage.cpp.o CMakeFiles/storage.dir/src/site_settings.cpp.o CMakeFiles/storage.dir/src/privacy_settings_ui.cpp.o
+/usr/bin/ranlib libstorage.a

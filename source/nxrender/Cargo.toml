@@ -1,0 +1,49 @@
+[workspace]
+resolver = "2"
+members = [
+    "nxgfx",
+    "nxrender-core",
+    "nxrender-widgets",
+    "nxrender-layout",
+    "nxrender-theme",
+    "nxrender-input",
+    "nxrender-animation",
+    "nxrender-test",
+    "nxrender-ffi",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["ZepraBrowser Team"]
+license = "MIT"
+repository = "https://github.com/zeprabrowser/nxrender"
+
+[workspace.dependencies]
+# Graphics
+glow = "0.13"                     # OpenGL wrapper
+glutin = "0.31"                   # OpenGL context creation
+glutin-winit = "0.4"              # glutin + winit integration
+winit = "0.29"                    # Window creation
+raw-window-handle = "0.6"         # Window handle types (matches winit)
+
+# Text rendering
+freetype-rs = "0.35"              # Font loading
+harfbuzz_rs = "2.0"               # Text shaping
+
+# Image loading
+image = "0.24"                    # PNG, JPEG, WebP
+resvg = "0.37"                    # SVG rendering
+
+# Math
+glam = "0.25"                     # Vector math
+lyon = "1.0"                      # Path tessellation
+
+# Utilities
+thiserror = "1.0"
+log = "0.4"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1

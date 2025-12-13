@@ -1,0 +1,14 @@
+[package]
+name = "nxrender-ffi"
+version = "0.1.0"
+edition = "2021"
+description = "C FFI bindings for NXRENDER"
+
+[lib]
+crate-type = ["cdylib", "staticlib"]
+
+[dependencies]
+nxgfx = { path = "../nxgfx" }
+nxrender-theme = { path = "../nxrender-theme" }
+nxrender-core = { path = "../nxrender-core" }
+nxrender-input = { path = "../nxrender-input" }

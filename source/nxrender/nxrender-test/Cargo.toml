@@ -1,0 +1,17 @@
+[package]
+name = "nxrender-test"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "graphics_test"
+path = "src/main.rs"
+
+[dependencies]
+nxgfx = { path = "../nxgfx" }
+nxrender-core = { path = "../nxrender-core" }
+nxrender-widgets = { path = "../nxrender-widgets" }
+nxrender-layout = { path = "../nxrender-layout" }
+nxrender-theme = { path = "../nxrender-theme" }
+nxrender-input = { path = "../nxrender-input" }
+nxrender-animation = { path = "../nxrender-animation" }

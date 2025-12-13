@@ -1,0 +1,15 @@
+{
+	"InstallScripts" : 
+	[
+		"/home/swana/Documents/zeprabrowser/build_nxrender/cmake_install.cmake",
+		"/home/swana/Documents/zeprabrowser/build_nxrender/source/zepraScript/cmake_install.cmake",
+		"/home/swana/Documents/zeprabrowser/build_nxrender/source/zepraScript/src/cmake_install.cmake",
+		"/home/swana/Documents/zeprabrowser/build_nxrender/source/zepraScript/tools/cmake_install.cmake",
+		"/home/swana/Documents/zeprabrowser/build_nxrender/source/zepraScript/tests/cmake_install.cmake",
+		"/home/swana/Documents/zeprabrowser/build_nxrender/source/webCore/cmake_install.cmake",
+		"/home/swana/Documents/zeprabrowser/build_nxrender/source/networking/cmake_install.cmake",
+		"/home/swana/Documents/zeprabrowser/build_nxrender/source/zepraEngine/cmake_install.cmake",
+		"/home/swana/Documents/zeprabrowser/build_nxrender/source/integration/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

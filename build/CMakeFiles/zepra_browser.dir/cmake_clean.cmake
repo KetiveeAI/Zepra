@@ -1,0 +1,40 @@
+file(REMOVE_RECURSE
+  "CMakeFiles/zepra_browser.dir/link.d"
+  "CMakeFiles/zepra_browser.dir/src/auth/zepra_auth.cpp.o"
+  "CMakeFiles/zepra_browser.dir/src/auth/zepra_auth.cpp.o.d"
+  "CMakeFiles/zepra_browser.dir/src/config/config_manager.cpp.o"
+  "CMakeFiles/zepra_browser.dir/src/config/config_manager.cpp.o.d"
+  "CMakeFiles/zepra_browser.dir/src/engine/audio_stub.cpp.o"
+  "CMakeFiles/zepra_browser.dir/src/engine/audio_stub.cpp.o.d"
+  "CMakeFiles/zepra_browser.dir/src/engine/avmedia_stub.cpp.o"
+  "CMakeFiles/zepra_browser.dir/src/engine/avmedia_stub.cpp.o.d"
+  "CMakeFiles/zepra_browser.dir/src/engine/dev_tools.cpp.o"
+  "CMakeFiles/zepra_browser.dir/src/engine/dev_tools.cpp.o.d"
+  "CMakeFiles/zepra_browser.dir/src/engine/html_parser_stub.cpp.o"
+  "CMakeFiles/zepra_browser.dir/src/engine/html_parser_stub.cpp.o.d"
+  "CMakeFiles/zepra_browser.dir/src/engine/webkit_engine_stub.cpp.o"
+  "CMakeFiles/zepra_browser.dir/src/engine/webkit_engine_stub.cpp.o.d"
+  "CMakeFiles/zepra_browser.dir/src/main.cpp.o"
+  "CMakeFiles/zepra_browser.dir/src/main.cpp.o.d"
+  "CMakeFiles/zepra_browser.dir/src/sandbox/sandbox_manager.cpp.o"
+  "CMakeFiles/zepra_browser.dir/src/sandbox/sandbox_manager.cpp.o.d"
+  "CMakeFiles/zepra_browser.dir/src/search/ketivee_search.cpp.o"
+  "CMakeFiles/zepra_browser.dir/src/search/ketivee_search.cpp.o.d"
+  "CMakeFiles/zepra_browser.dir/src/ui/auth_ui.cpp.o"
+  "CMakeFiles/zepra_browser.dir/src/ui/auth_ui.cpp.o.d"
+  "CMakeFiles/zepra_browser.dir/src/ui/dev_tools_ui.cpp.o"
+  "CMakeFiles/zepra_browser.dir/src/ui/dev_tools_ui.cpp.o.d"
+  "CMakeFiles/zepra_browser.dir/src/ui/settings_ui.cpp.o"
+  "CMakeFiles/zepra_browser.dir/src/ui/settings_ui.cpp.o.d"
+  "CMakeFiles/zepra_browser.dir/src/ui/tab_manager.cpp.o"
+  "CMakeFiles/zepra_browser.dir/src/ui/tab_manager.cpp.o.d"
+  "CMakeFiles/zepra_browser.dir/src/ui/window.cpp.o"
+  "CMakeFiles/zepra_browser.dir/src/ui/window.cpp.o.d"
+  "bin/zepra_browser"
+  "bin/zepra_browser.pdb"
+)
+
+# Per-language clean rules from dependency scanning.
+foreach(lang CXX)
+  include(CMakeFiles/zepra_browser.dir/cmake_clean_${lang}.cmake OPTIONAL)
+endforeach()

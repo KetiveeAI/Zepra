@@ -1,0 +1,1 @@
+/usr/bin/c++ -O3 -DNDEBUG -Wl,--dependency-file=CMakeFiles/zepra-repl.dir/link.d "CMakeFiles/zepra-repl.dir/zepra-repl.cpp.o" -o ../../../bin/zepra-repl  ../../../lib/libzepra-core.a /usr/lib/x86_64-linux-gnu/libcurl.so /usr/lib/x86_64-linux-gnu/libcurl.so -ldl

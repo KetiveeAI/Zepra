@@ -1,0 +1,3 @@
+/home/swana/Documents/zeprabrowser/source/webCore/build/CMakeFiles/webcore.dir
+/home/swana/Documents/zeprabrowser/source/webCore/build/CMakeFiles/edit_cache.dir
+/home/swana/Documents/zeprabrowser/source/webCore/build/CMakeFiles/rebuild_cache.dir

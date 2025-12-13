@@ -1,0 +1,10 @@
+[package]
+name = "nxrender-input"
+description = "Input handling for NXRender"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+nxgfx = { path = "../nxgfx" }
+log.workspace = true

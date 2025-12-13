@@ -1,0 +1,2 @@
+/usr/bin/ar qc libplatform.a CMakeFiles/platform.dir/src/event_loop.cpp.o CMakeFiles/platform.dir/src/clipboard.cpp.o CMakeFiles/platform.dir/src/linux/window_system_linux.cpp.o
+/usr/bin/ranlib libplatform.a

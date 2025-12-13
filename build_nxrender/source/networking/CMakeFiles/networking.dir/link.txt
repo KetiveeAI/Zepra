@@ -1,0 +1,2 @@
+/usr/bin/ar qc ../../lib/libnetworking.a CMakeFiles/networking.dir/src/ssl_context.cpp.o CMakeFiles/networking.dir/src/cookie_manager.cpp.o CMakeFiles/networking.dir/src/http_client.cpp.o CMakeFiles/networking.dir/src/http_request.cpp.o CMakeFiles/networking.dir/src/http_response.cpp.o CMakeFiles/networking.dir/src/http_cache.cpp.o CMakeFiles/networking.dir/src/dns_resolver.cpp.o CMakeFiles/networking.dir/src/websocket_client.cpp.o CMakeFiles/networking.dir/src/resource_loader.cpp.o
+/usr/bin/ranlib ../../lib/libnetworking.a

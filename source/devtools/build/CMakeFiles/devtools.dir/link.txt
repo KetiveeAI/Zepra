@@ -1,0 +1,2 @@
+/usr/bin/ar qc libdevtools.a CMakeFiles/devtools.dir/src/devtools_window.cpp.o
+/usr/bin/ranlib libdevtools.a

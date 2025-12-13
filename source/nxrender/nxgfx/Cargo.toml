@@ -1,0 +1,32 @@
+[package]
+name = "nxgfx"
+description = "Low-level graphics backend for NXRender"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+glow.workspace = true
+glutin.workspace = true
+winit.workspace = true
+glam.workspace = true
+lyon.workspace = true
+thiserror.workspace = true
+log.workspace = true
+
+# Text rendering
+rusttype = "0.9"
+unicode-normalization = "0.1"
+
+# Image loading
+image.workspace = true
+
+[features]
+default = ["opengl"]
+opengl = []
+vulkan = []
+software = []
+
+[dev-dependencies]
+glutin-winit = { workspace = true }
+raw-window-handle = { workspace = true }

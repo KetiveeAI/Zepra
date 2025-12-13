@@ -1,0 +1,10 @@
+^F:\KETIVEE_ORG_PROJECT\ZEPRA\CMAKEFILES\15C89BDDD307D2172BF308E746EAB461\GENERATE.STAMP.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SF:/ketivee_org_project/zepra -BF:/ketivee_org_project/zepra --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file F:/ketivee_org_project/zepra/Zepra.sln
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

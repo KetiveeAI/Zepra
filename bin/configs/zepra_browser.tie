@@ -1,0 +1,120 @@
+{
+  // Zepra Browser Application Configuration (.tie)
+  // Rich JSON-based configuration with installation automation
+  
+  "app_info": {
+    "name": "Zepra Browser",
+    "version": "1.0.0",
+    "developer": "Ketivee Team",
+    "description": "Advanced cross-platform browser with custom search engine",
+    "category": "Internet",
+    "license": "MIT",
+    "homepage": "https://zepra.ketivee.com"
+  },
+  
+  "dependencies": {
+    "system": [
+      "libcurl",
+      "sdl2",
+      "webkit2gtk",
+      "openssl"
+    ],
+    "development": [
+      "cmake",
+      "gcc",
+      "nlohmann-json"
+    ]
+  },
+  
+  "installation": {
+    "type": "source",
+    "build_system": "cmake",
+    "install_prefix": "/usr/local",
+    "create_desktop_entry": true,
+    "create_menu_entry": true,
+    "register_mime_types": true
+  },
+  
+  "permissions": {
+    "file_system": {
+      "read": ["/home/*", "/tmp/*"],
+      "write": ["/home/*/Downloads", "/tmp/*"],
+      "execute": []
+    },
+    "network": {
+      "allowed_hosts": ["*"],
+      "blocked_hosts": [],
+      "ports": ["80", "443", "8080"]
+    },
+    "system": {
+      "allow_system_calls": false,
+      "allow_registry": false,
+      "allow_ui": true
+    }
+  },
+  
+  "sandbox": {
+    "level": "trusted",
+    "memory_limit": "512MB",
+    "disk_limit": "1GB",
+    "cpu_limit": "300s",
+    "network_connections": 10,
+    "file_handles": 100,
+    "threads": 20,
+    "processes": 5
+  },
+  
+  "features": {
+    "search_engine": {
+      "enabled": true,
+      "backend_url": "http://localhost:6329",
+      "suggestions": true,
+      "autocomplete": true
+    },
+    "developer_tools": {
+      "enabled": true,
+      "console": true,
+      "inspector": true,
+      "network_monitor": true,
+      "performance_profiler": true
+    },
+    "webkit_engine": {
+      "enabled": true,
+      "javascript": true,
+      "webgl": true,
+      "webrtc": true,
+      "plugins": false
+    }
+  },
+  
+  "ui": {
+    "theme": "dark",
+    "language": "en_US",
+    "font_size": 14,
+    "window_size": "1024x768",
+    "tabs": {
+      "max_count": 50,
+      "preload": true,
+      "thumbnail": true
+    }
+  },
+  
+  "security": {
+    "https_only": false,
+    "block_popups": true,
+    "block_ads": true,
+    "safe_browsing": true,
+    "content_filtering": true,
+    "privacy_mode": false
+  },
+  
+  "performance": {
+    "cache_size": "100MB",
+    "memory_optimization": true,
+    "gpu_acceleration": true,
+    "background_tabs": true,
+    "prefetch": true
+  },
+  
+  "install_recipe": "mkdir /opt/zepra\ncopy zepra_browser /opt/zepra/\ncopy zepra.ketivee.com /opt/zepra/\ninstall libcurl-dev\ninstall sdl2-dev\ninstall webkit2gtk-dev\ninstall openssl-dev\ncreate_desktop_entry /opt/zepra/zepra_browser\nregister_mime_types\nupdate_desktop_database"
+} 

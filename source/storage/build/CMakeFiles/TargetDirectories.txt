@@ -1,0 +1,3 @@
+/home/swana/Documents/zeprabrowser/source/storage/build/CMakeFiles/storage.dir
+/home/swana/Documents/zeprabrowser/source/storage/build/CMakeFiles/edit_cache.dir
+/home/swana/Documents/zeprabrowser/source/storage/build/CMakeFiles/rebuild_cache.dir

@@ -1,0 +1,10 @@
+^F:\KETIVEE_ORG_PROJECT\ZEPRA\CMAKELISTS.TXT
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SF:/ketivee_org_project/zepra -BF:/ketivee_org_project/zepra --check-stamp-file F:/ketivee_org_project/zepra/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

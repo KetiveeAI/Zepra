@@ -1,0 +1,14 @@
+[package]
+name = "nxrender-core"
+description = "Core compositor and renderer for NXRender"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+nxgfx = { path = "../nxgfx" }
+nxrender-input = { path = "../nxrender-input" }
+nxrender-animation = { path = "../nxrender-animation" }
+nxrender-theme = { path = "../nxrender-theme" }
+log.workspace = true
+thiserror.workspace = true

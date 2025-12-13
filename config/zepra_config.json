@@ -1,0 +1,27 @@
+{
+  "auth": {
+    "serverUrl": "https://auth.ketivee.com",
+    "timeout": 30000,
+    "enable2FA": true
+  },
+  "downloads": {
+    "defaultDirectory": "./downloads",
+    "maxConcurrent": 3,
+    "enableResume": true
+  },
+  "security": {
+    "enableSandbox": true,
+    "blockPopups": true,
+    "enableContentFilter": true
+  },
+  "ui": {
+    "theme": "dark",
+    "fontSize": 14,
+    "enableAnimations": true
+  },
+  "developer": {
+    "enableDevTools": true,
+    "enableConsole": true,
+    "enableInspector": true
+  }
+} 

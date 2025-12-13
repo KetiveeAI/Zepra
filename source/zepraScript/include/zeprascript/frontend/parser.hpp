@@ -1,0 +1,149 @@
+#pragma once
+
+/**
+ * @file parser.hpp
+ * @brief JavaScript recursive descent parser
+ */
+
+#include "lexer.hpp"
+#include "ast.hpp"
+#include <memory>
+#include <vector>
+#include <string>
+#include <functional>
+
+namespace Zepra::Frontend {
+
+/**
+ * @brief JavaScript parser
+ * 
+ * Parses JavaScript source code into an AST using
+ * recursive descent parsing.
+ */
+class Parser {
+public:
+    /**
+     * @brief Create a parser for the given source
+     */
+    explicit Parser(const SourceCode* source);
+    
+    /**
+     * @brief Parse a complete program
+     */
+    std::unique_ptr<Program> parseProgram();
+    
+    /**
+     * @brief Parse a single expression
+     */
+    ExprPtr parseExpression();
+    
+    /**
+     * @brief Get all parse errors
+     */
+    const std::vector<std::string>& errors() const { return errors_; }
+    
+    /**
+     * @brief Check if any errors occurred
+     */
+    bool hasErrors() const { return !errors_.empty(); }
+    
+private:
+    // Token handling
+    Token& current();
+    const Token& peek();
+    Token advance();
+    bool check(TokenType type);
+    bool match(TokenType type);
+    bool match(std::initializer_list<TokenType> types);
+    Token consume(TokenType type, const std::string& message);
+    bool isAtEnd();
+    
+    // Synchronization for error recovery
+    void synchronize();
+    
+    // Error handling
+    void error(const std::string& message);
+    void error(const Token& token, const std::string& message);
+    
+    // Statement parsing
+    StmtPtr parseStatement();
+    StmtPtr parseDeclaration();
+    StmtPtr parseVariableDeclaration();
+    StmtPtr parseFunctionDeclaration();
+    StmtPtr parseClassDeclaration();
+    StmtPtr parseBlockStatement();
+    StmtPtr parseIfStatement();
+    StmtPtr parseWhileStatement();
+    StmtPtr parseDoWhileStatement();
+    StmtPtr parseForStatement();
+    StmtPtr parseSwitchStatement();
+    StmtPtr parseTryStatement();
+    StmtPtr parseThrowStatement();
+    StmtPtr parseReturnStatement();
+    StmtPtr parseBreakStatement();
+    StmtPtr parseContinueStatement();
+    StmtPtr parseExpressionStatement();
+    StmtPtr parseImportDeclaration();
+    StmtPtr parseExportDeclaration();
+    
+    // Expression parsing (precedence climbing)
+    ExprPtr parseAssignmentExpression();
+    ExprPtr parseConditionalExpression();
+    ExprPtr parseLogicalOrExpression();
+    ExprPtr parseLogicalAndExpression();
+    ExprPtr parseBitwiseOrExpression();
+    ExprPtr parseBitwiseXorExpression();
+    ExprPtr parseBitwiseAndExpression();
+    ExprPtr parseEqualityExpression();
+    ExprPtr parseRelationalExpression();
+    ExprPtr parseShiftExpression();
+    ExprPtr parseAdditiveExpression();
+    ExprPtr parseMultiplicativeExpression();
+    ExprPtr parseExponentiationExpression();
+    ExprPtr parseUnaryExpression();
+    ExprPtr parseUpdateExpression();
+    ExprPtr parseLeftHandSideExpression();
+    ExprPtr parseCallExpression(ExprPtr callee);
+    ExprPtr parseMemberExpression();
+    ExprPtr parseNewExpression();
+    ExprPtr parsePrimaryExpression();
+    
+    // Literal/specific parsing
+    ExprPtr parseArrayLiteral();
+    ExprPtr parseObjectLiteral();
+    ExprPtr parseFunctionExpression();
+    ExprPtr parseArrowFunction();
+    ExprPtr parseClassExpression();
+    
+    // Helpers
+    std::vector<FunctionParam> parseParameters();
+    std::vector<ExprPtr> parseArguments();
+    
+    Lexer lexer_;
+    Token currentToken_;
+    Token previousToken_;
+    std::vector<std::string> errors_;
+    
+    // Parser state
+    bool inLoop_ = false;
+    bool inSwitch_ = false;
+    bool inFunction_ = false;
+};
+
+/**
+ * @brief Parse JavaScript source code
+ * @param source The source code
+ * @return Program AST or nullptr if parsing failed
+ */
+std::unique_ptr<Program> parse(const SourceCode* source);
+
+/**
+ * @brief Parse JavaScript source code from string
+ * @param code The JavaScript code
+ * @param filename Optional filename for error messages
+ * @return Program AST or nullptr if parsing failed
+ */
+std::unique_ptr<Program> parse(std::string_view code, 
+                               std::string_view filename = "<eval>");
+
+} // namespace Zepra::Frontend

@@ -1,0 +1,8 @@
+/home/swana/Documents/zeprabrowser/src/browser_core/build/CMakeFiles/browser-core-static.dir
+/home/swana/Documents/zeprabrowser/src/browser_core/build/CMakeFiles/browser-core-shared.dir
+/home/swana/Documents/zeprabrowser/src/browser_core/build/CMakeFiles/edit_cache.dir
+/home/swana/Documents/zeprabrowser/src/browser_core/build/CMakeFiles/rebuild_cache.dir
+/home/swana/Documents/zeprabrowser/src/browser_core/build/CMakeFiles/list_install_components.dir
+/home/swana/Documents/zeprabrowser/src/browser_core/build/CMakeFiles/install.dir
+/home/swana/Documents/zeprabrowser/src/browser_core/build/CMakeFiles/install/local.dir
+/home/swana/Documents/zeprabrowser/src/browser_core/build/CMakeFiles/install/strip.dir
