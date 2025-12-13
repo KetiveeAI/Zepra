@@ -1,33 +1,52 @@
-# Zepra Browser - Strict Mode Security Policy
+# Zepra Browser — Strict Mode Security Policy
+
+Zepra operates in **Strict Mode by default**, prioritizing:
+- User privacy
+- Predictable behavior
+- Performance stability
+- Reduced attack surface
+
+Strict Mode is designed to prevent abuse while preserving core web functionality.
+
+---
 
 ## 🛡️ Strict Web Rules
 
-Zepra operates in **Strict Mode** by default to protect users from:
-- Cookie stealing and tracking
-- Excessive ads and popups
-- User experience exploitation
+Strict Mode protects users from:
+- Cross-site tracking
+- Cookie theft
+- Malicious redirects
+- Spam prompts and overlays
+- UX manipulation
 
 ---
 
 ## 🚫 Content Policy
 
-### Blocked Content
-| Content Type | Action | Reason |
-|--------------|--------|--------|
-| **Third-party cookies** | BLOCK | Tracking prevention |
-| **Popup windows** | REQUIRE gesture | Anti-spam |
-| **Auto-playing video** | MUTE by default | UX protection |
-| **Notification prompts** | LIMIT 1/session | Anti-spam |
-| **Download prompts** | REQUIRE gesture | Security |
-| **Redirect chains** | LIMIT 3 max | Anti-phishing |
+### Blocked or Restricted Content
 
-### Ad Policy
-| Behavior | Action |
-|----------|--------|
+| Content Type | Action | Reason |
+|-------------|--------|--------|
+| Third-party cookies | **BLOCK** | Tracking prevention |
+| Popup windows | **Require user gesture** | Anti-spam |
+| Auto-playing media | **Muted by default** | UX protection |
+| Audio playback | **Requires user gesture** | Abuse prevention |
+| Notification prompts | **1 per session** | Anti-spam |
+| Downloads | **Require user gesture** | Malware prevention |
+| Redirect chains | **Max 3 hops** | Anti-phishing |
+
+---
+
+## 📢 Ad Behavior Policy
+
+Zepra enforces **behavior-based ad rules**, not ad blocking.
+
+| Ad Behavior | Action |
+|------------|--------|
 | Overlay ads (cover content) | BLOCK |
-| Interstitial ads (before content) | BLOCK |
-| Auto-expand ads | BLOCK |
-| Ads with fake close buttons | BLOCK |
+| Interstitial ads (pre-content) | BLOCK |
+| Auto-expanding ads | BLOCK |
+| Fake close buttons | BLOCK |
 | Inline static ads | ALLOW |
 | Sidebar ads | ALLOW |
 
@@ -35,67 +54,49 @@ Zepra operates in **Strict Mode** by default to protect users from:
 
 ## 🔒 Cookie Policy
 
-```
 Default: First-party only
 Third-party: BLOCKED
-SameSite: Strict by default
+SameSite: Strict (default)
 HttpOnly: Enforced for sensitive cookies
-```
+Partitioning: Per top-level origin
+
+yaml
+Copy code
 
 ### Cookie Theft Prevention
-- No `document.cookie` access for cross-origin frames
-- Cookie partitioning per top-level origin
-- Automatic expiry for tracking cookies
+- No `document.cookie` access in cross-origin contexts
+- Cookie access restricted to same-site frames
+- Automatic expiry heuristics for tracking behavior
 
 ---
 
 ## 📜 JavaScript Restrictions
 
-### Blocked APIs (Strict Mode)
+### Blocked or Restricted APIs (Strict Mode)
+
 ```javascript
-// These throw SecurityError in Strict Mode
-document.cookie        // Read-only in cross-origin
-window.open()          // Requires user gesture
-Notification.requestPermission()  // Limited calls
-navigator.geolocation  // Coarse only
-```
+document.cookie                 // Blocked in cross-origin
+window.open()                   // Requires user gesture
+Notification.requestPermission() // Limited calls
+navigator.geolocation           // Coarse accuracy only
+Rate-Limited APIs
+API	Limit
+alert()	3 per page
+confirm()	3 per page
+prompt()	1 per page
+window.open()	1 per gesture
 
-### Rate-Limited APIs
-| API | Limit |
-|-----|-------|
-| `alert()` | 3 per page |
-| `confirm()` | 3 per page |
-| `prompt()` | 1 per page |
-| `window.open()` | 1 per gesture |
-
----
-
-## 🎯 Implementation
-
-### ContentPolicy class
-```cpp
+⚙️ Implementation Model
+ContentPolicy Interface
+cpp
+Copy code
 class ContentPolicy {
 public:
     enum class Mode { Strict, Compatible };
-    
+
     bool allowThirdPartyCookies() const;
     bool allowPopups() const;
-    bool allowAutoplay() const;
+    bool allowAutoplayMuted() const;
+    bool allowAudioPlayback() const;
     int maxRedirects() const;
 };
-```
-
-### Per-Site Overrides
-Users can grant specific sites additional permissions:
-- Allow cookies
-- Allow popups
-- Allow notifications
-
----
-
-## ✅ User Benefits
-
-1. **Privacy**: No cross-site tracking
-2. **Performance**: Faster page loads (blocked ads)
-3. **Security**: No cookie theft
-4. **UX**: No annoying popups/overlays
