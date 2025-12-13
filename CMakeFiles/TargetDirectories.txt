@@ -1,7 +1,0 @@
-F:/ketivee_org_project/zepra/CMakeFiles/zepra.dir
-F:/ketivee_org_project/zepra/CMakeFiles/zepra_test.dir
-F:/ketivee_org_project/zepra/CMakeFiles/config_test.dir
-F:/ketivee_org_project/zepra/CMakeFiles/RUN_TESTS.dir
-F:/ketivee_org_project/zepra/CMakeFiles/INSTALL.dir
-F:/ketivee_org_project/zepra/CMakeFiles/ALL_BUILD.dir
-F:/ketivee_org_project/zepra/CMakeFiles/ZERO_CHECK.dir
