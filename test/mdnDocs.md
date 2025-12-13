@@ -1,0 +1,1239 @@
+Web APIs
+When writing code for the Web, there are a large number of Web APIs available. Below is a list of all the APIs and interfaces (object types) that you may be able to use while developing your Web app or site.
+
+Web APIs are typically used with JavaScript, although this doesn't always have to be the case.
+
+In this article
+Specifications
+Interfaces
+SmartBear
+Turn The Promise of AI Into Real Results
+Innovate your SDLC with SmartBear AI to transform your software development and testing processes.
+Learn more
+Ad
+Don't want to see ads?
+Specifications
+This is a list of all the APIs that are available.
+
+A
+Attribution Reporting APIExperimental
+Audio Output Devices APIExperimental
+B
+Background Fetch APIExperimental
+Background Synchronization API
+Background Tasks API
+Badging API
+Barcode Detection APIExperimental
+Battery Status API
+Beacon API
+Web Bluetooth APIExperimental
+Broadcast Channel API
+C
+CSS Custom Highlight API
+CSS Font Loading API
+CSS Painting APIExperimental
+CSS Properties and Values API
+CSS Typed Object Model API
+CSS Object Model (CSSOM)
+CSSOM view API
+Canvas API
+Channel Messaging API
+Clipboard API
+Compression Streams API
+Compute Pressure APIExperimental
+Console API
+Contact Picker APIExperimental
+Content Index APIExperimental
+Cookie Store API
+Credential Management API
+D
+Document Object Model (DOM)
+Device Memory API
+Device orientation events
+Device Posture APIExperimental
+Document Picture-in-Picture APIExperimental
+E
+EditContext APIExperimental
+Encoding API
+Encrypted Media Extensions API
+EyeDropper APIExperimental
+F
+Federated Credential Management (FedCM) APIExperimental
+Fenced Frame APIExperimental
+Fetch API
+File API
+File System API
+File and Directory Entries API
+Force Touch eventsNon-standard
+Fullscreen API
+G
+Gamepad API
+Geolocation API
+Geometry interfaces
+H
+The HTML DOM API
+HTML Drag and Drop API
+HTML Sanitizer APIExperimental
+History API
+Houdini APIs
+I
+Idle Detection APIExperimental
+MediaStream Image Capture API
+IndexedDB API
+Ink APIExperimental
+InputDeviceCapabilities APIExperimental
+Insertable Streams for MediaStreamTrack APIExperimental
+Intersection Observer API
+Invoker Commands API
+J
+JS Self-Profiling APIExperimental
+K
+Keyboard APIExperimental
+L
+Launch Handler APIExperimental
+Local Font Access APIExperimental
+M
+Media Capabilities API
+Media Capture and Streams API (Media Stream)
+Media Session API
+Media Source API
+MediaStream Recording API
+N
+Navigation API
+Network Information API
+P
+Page Visibility API
+Payment Handler APIExperimental
+Payment Request API
+Performance APIs
+Web Periodic Background Synchronization APIExperimental
+Permissions API
+Picture-in-Picture API
+Pointer events
+Pointer Lock API
+Popover API
+Presentation APIExperimental
+Prioritized Task Scheduling API
+Push API
+R
+Remote Playback API
+Reporting API
+Resize Observer API
+S
+SVG API
+Screen Capture API
+Screen Orientation API
+Screen Wake Lock API
+Selection API
+Sensor APIs
+Server-sent events
+Service Worker API
+Shared Storage APIExperimental
+Speculation Rules APIExperimental
+Storage API
+Storage Access API
+Streams API
+Summarizer APIExperimental
+T
+Topics APIExperimentalNon-standard
+Touch events
+Translator and Language Detector APIsExperimental
+Trusted Types API
+U
+UI Events
+URL API
+URL Fragment Text Directives
+URL Pattern API
+User-Agent Client Hints APIExperimental
+V
+Vibration API
+View Transition API
+Viewport Segments APIExperimental
+VirtualKeyboard APIExperimental
+W
+Web Animations API
+Web Audio API
+Web Authentication API
+Web Components
+Web Crypto API
+Web Locks API
+Web MIDI API
+Web NFC APIExperimental
+Notifications API
+Web Serial APIExperimental
+Web Share API
+Web Speech API
+Web Storage API
+Web Workers API
+WebCodecs API
+WebGL: 2D and 3D graphics for the web
+WebGPU API
+WebHID APIExperimental
+WebOTP APIExperimental
+WebRTC API
+The WebSocket API (WebSockets)
+WebTransport API
+WebUSB APIExperimental
+WebVR APINon-standardDeprecated
+WebVTT API
+WebXR Device APIExperimental
+Window Controls Overlay APIExperimental
+Window Management APIExperimental
+X
+XMLHttpRequest API
+f
+fetchLater() APIExperimental
+Interfaces
+This is a list of all the interfaces (that is, types of objects) that are available.
+
+A
+AbortController
+AbortSignal
+AbsoluteOrientationSensor
+AbstractRange
+AccelerometerExperimental
+AesCbcParams
+AesCtrParams
+AesDerivedKeyParams
+AesGcmParams
+AesKeyGenParams
+AmbientLightSensorExperimental
+AnalyserNode
+ANGLE_instanced_arrays
+Animation
+AnimationEffect
+AnimationEvent
+AnimationPlaybackEvent
+AnimationTimeline
+Attr
+AudioBuffer
+AudioBufferSourceNode
+AudioContext
+AudioData
+AudioDecoder
+AudioDestinationNode
+AudioEncoder
+AudioListener
+AudioNode
+AudioParam
+AudioParamDescriptor
+AudioParamMap
+AudioProcessingEventDeprecated
+AudioScheduledSourceNode
+AudioSinkInfoExperimental
+AudioTrack
+AudioTrackList
+AudioWorklet
+AudioWorkletGlobalScope
+AudioWorkletNode
+AudioWorkletProcessor
+AuthenticatorAssertionResponse
+AuthenticatorAttestationResponse
+AuthenticatorResponse
+B
+BackgroundFetchEventExperimental
+BackgroundFetchManagerExperimental
+BackgroundFetchRecordExperimental
+BackgroundFetchRegistrationExperimental
+BackgroundFetchUpdateUIEventExperimental
+BarcodeDetectorExperimental
+BarProp
+BaseAudioContext
+BatteryManager
+BeforeInstallPromptEventExperimentalNon-standard
+BeforeUnloadEvent
+BiquadFilterNode
+Blob
+BlobEvent
+BluetoothExperimental
+BluetoothCharacteristicPropertiesExperimental
+BluetoothDeviceExperimental
+BluetoothRemoteGATTCharacteristicExperimental
+BluetoothRemoteGATTDescriptorExperimental
+BluetoothRemoteGATTServerExperimental
+BluetoothRemoteGATTServiceExperimental
+BluetoothUUID
+BroadcastChannel
+BrowserCaptureMediaStreamTrackExperimental
+ByteLengthQueuingStrategy
+C
+Cache
+CacheStorage
+CanMakePaymentEventExperimental
+CanvasCaptureMediaStreamTrack
+CanvasGradient
+CanvasPattern
+CanvasRenderingContext2D
+CaptureControllerExperimental
+CaretPosition
+CDATASection
+ChannelMergerNode
+ChannelSplitterNode
+ChapterInformationExperimental
+CharacterBoundsUpdateEventExperimental
+CharacterData
+Client
+Clients
+Clipboard
+ClipboardEvent
+ClipboardItem
+CloseEvent
+CloseWatcherExperimental
+CommandEvent
+Comment
+CompositionEvent
+CompressionStream
+c
+console
+C
+ConstantSourceNode
+ContactAddressExperimental
+ContactsManagerExperimental
+ContentIndexExperimental
+ContentIndexEventExperimental
+ContentVisibilityAutoStateChangeEvent
+ConvolverNode
+CookieChangeEvent
+CookieStore
+CookieStoreManager
+CountQueuingStrategy
+CreateMonitorExperimental
+Credential
+CredentialsContainer
+CropTargetExperimental
+Crypto
+CryptoKey
+CryptoKeyPair
+CSPViolationReportBody
+CSS
+CSSAnimation
+CSSConditionRule
+CSSContainerRule
+CSSCounterStyleRule
+CSSFontFaceRule
+CSSFontFeatureValuesRule
+CSSFontPaletteValuesRule
+CSSFunctionDeclarationsExperimental
+CSSFunctionDescriptorsExperimental
+CSSFunctionRuleExperimental
+CSSGroupingRule
+CSSImageValue
+CSSImportRule
+CSSKeyframeRule
+CSSKeyframesRule
+CSSKeywordValue
+CSSLayerBlockRule
+CSSLayerStatementRule
+CSSMathInvert
+CSSMathMax
+CSSMathMin
+CSSMathNegate
+CSSMathProduct
+CSSMathSum
+CSSMathValue
+CSSMatrixComponent
+CSSMediaRule
+CSSNamespaceRule
+CSSNestedDeclarations
+CSSNumericArray
+CSSNumericValue
+CSSPageDescriptors
+CSSPageRule
+CSSPerspective
+CSSPositionTryDescriptors
+CSSPositionTryRule
+CSSPositionValueNon-standardDeprecated
+CSSPrimitiveValueDeprecated
+CSSPropertyRule
+CSSPseudoElementExperimental
+CSSRotate
+CSSRule
+CSSRuleList
+CSSScale
+CSSScopeRule
+CSSSkew
+CSSSkewX
+CSSSkewY
+CSSStartingStyleRule
+CSSStyleDeclaration
+CSSStyleProperties
+CSSStyleRule
+CSSStyleSheet
+CSSStyleValue
+CSSSupportsRule
+CSSTransformComponent
+CSSTransformValue
+CSSTransition
+CSSTranslate
+CSSUnitValue
+CSSUnparsedValue
+CSSValueDeprecated
+CSSValueListDeprecated
+CSSVariableReferenceValue
+CSSViewTransitionRule
+CustomElementRegistry
+CustomEvent
+CustomStateSet
+D
+DataTransfer
+DataTransferItem
+DataTransferItemList
+DecompressionStream
+DedicatedWorkerGlobalScope
+DeferredRequestInitExperimental
+DelayNode
+DelegatedInkTrailPresenterExperimental
+DeprecationReportBodyExperimental
+DeviceMotionEvent
+DeviceMotionEventAcceleration
+DeviceMotionEventRotationRate
+DeviceOrientationEvent
+DevicePostureExperimental
+DirectoryEntrySyncNon-standardDeprecated
+DirectoryReaderSyncNon-standardDeprecated
+Document
+DocumentFragment
+DocumentPictureInPictureExperimental
+DocumentPictureInPictureEventExperimental
+DocumentTimeline
+DocumentType
+DOMErrorDeprecated
+DOMException
+DOMHighResTimeStamp
+DOMImplementation
+DOMMatrix
+DOMMatrixReadOnly
+DOMParser
+DOMPoint
+DOMPointReadOnly
+DOMQuad
+DOMRect
+DOMRectList
+DOMRectReadOnly
+DOMStringList
+DOMStringMap
+DOMTokenList
+DragEvent
+DynamicsCompressorNode
+E
+EcdhKeyDeriveParams
+EcdsaParams
+EcKeyGenParams
+EcKeyImportParams
+EditContextExperimental
+Element
+ElementInternals
+EncodedAudioChunk
+EncodedVideoChunk
+ErrorEvent
+Event
+EventCounts
+EventSource
+EventTarget
+ExtendableCookieChangeEvent
+ExtendableEvent
+ExtendableMessageEvent
+EyeDropperExperimental
+F
+FeaturePolicyExperimental
+FederatedCredentialExperimental
+FederatedCredentialInit
+FenceExperimental
+FencedFrameConfigExperimental
+FetchEvent
+FetchLaterResultExperimental
+File
+FileEntrySyncNon-standardDeprecated
+FileList
+FileReader
+FileReaderSync
+FileSystem
+FileSystemChangeRecord
+FileSystemDirectoryEntry
+FileSystemDirectoryHandle
+FileSystemDirectoryReader
+FileSystemEntry
+FileSystemFileEntry
+FileSystemFileHandle
+FileSystemHandle
+FileSystemObserverExperimentalNon-standard
+FileSystemSyncNon-standardDeprecated
+FileSystemSyncAccessHandle
+FileSystemWritableFileStream
+FocusEvent
+FontDataExperimental
+FontFace
+FontFaceSet
+FontFaceSetLoadEvent
+FormData
+FormDataEvent
+FragmentDirective
+G
+GainNode
+Gamepad
+GamepadButton
+GamepadEvent
+GamepadHapticActuator
+GamepadPoseExperimental
+Geolocation
+GeolocationCoordinates
+GeolocationPosition
+GeolocationPositionError
+GestureEventNon-standard
+GPU
+GPUAdapter
+GPUAdapterInfo
+GPUBindGroup
+GPUBindGroupLayout
+GPUBuffer
+GPUCanvasContext
+GPUCommandBuffer
+GPUCommandEncoder
+GPUCompilationInfo
+GPUCompilationMessage
+GPUComputePassEncoder
+GPUComputePipeline
+GPUDevice
+GPUDeviceLostInfo
+GPUError
+GPUExternalTexture
+GPUInternalError
+GPUOutOfMemoryError
+GPUPipelineError
+GPUPipelineLayout
+GPUQuerySet
+GPUQueue
+GPURenderBundle
+GPURenderBundleEncoder
+GPURenderPassEncoder
+GPURenderPipeline
+GPUSampler
+GPUShaderModule
+GPUSupportedFeatures
+GPUSupportedLimits
+GPUTexture
+GPUTextureView
+GPUUncapturedErrorEvent
+GPUValidationError
+GravitySensor
+Gyroscope
+H
+HashChangeEvent
+Headers
+HIDExperimental
+HIDConnectionEventExperimental
+HIDDeviceExperimental
+HIDInputReportEventExperimental
+Highlight
+HighlightRegistry
+History
+HkdfParams
+HmacImportParams
+HmacKeyGenParams
+HMDVRDeviceNon-standardDeprecated
+HTMLAllCollection
+HTMLAnchorElement
+HTMLAreaElement
+HTMLAudioElement
+HTMLBaseElement
+HTMLBodyElement
+HTMLBRElement
+HTMLButtonElement
+HTMLCanvasElement
+HTMLCollection
+HTMLDataElement
+HTMLDataListElement
+HTMLDetailsElement
+HTMLDialogElement
+HTMLDivElement
+HTMLDListElement
+HTMLDocument
+HTMLElement
+HTMLEmbedElement
+HTMLFencedFrameElementExperimental
+HTMLFieldSetElement
+HTMLFontElementDeprecated
+HTMLFormControlsCollection
+HTMLFormElement
+HTMLFrameSetElementDeprecated
+HTMLHeadElement
+HTMLHeadingElement
+HTMLHRElement
+HTMLHtmlElement
+HTMLIFrameElement
+HTMLImageElement
+HTMLInputElement
+HTMLLabelElement
+HTMLLegendElement
+HTMLLIElement
+HTMLLinkElement
+HTMLMapElement
+HTMLMarqueeElementDeprecated
+HTMLMediaElement
+HTMLMenuElement
+HTMLMetaElement
+HTMLMeterElement
+HTMLModElement
+HTMLObjectElement
+HTMLOListElement
+HTMLOptGroupElement
+HTMLOptionElement
+HTMLOptionsCollection
+HTMLOutputElement
+HTMLParagraphElement
+HTMLParamElementDeprecated
+HTMLPictureElement
+HTMLPreElement
+HTMLProgressElement
+HTMLQuoteElement
+HTMLScriptElement
+HTMLSelectedContentElementExperimental
+HTMLSelectElement
+HTMLSlotElement
+HTMLSourceElement
+HTMLSpanElement
+HTMLStyleElement
+HTMLTableCaptionElement
+HTMLTableCellElement
+HTMLTableColElement
+HTMLTableElement
+HTMLTableRowElement
+HTMLTableSectionElement
+HTMLTemplateElement
+HTMLTextAreaElement
+HTMLTimeElement
+HTMLTitleElement
+HTMLTrackElement
+HTMLUListElement
+HTMLUnknownElement
+HTMLVideoElement
+I
+IDBCursor
+IDBCursorWithValue
+IDBDatabase
+IDBFactory
+IDBIndex
+IDBKeyRange
+IDBObjectStore
+IDBOpenDBRequest
+IDBRequest
+IDBTransaction
+IDBVersionChangeEvent
+IdentityCredentialExperimental
+IdentityCredentialErrorExperimental
+IdentityCredentialRequestOptionsExperimental
+IdentityProviderExperimental
+IdleDeadline
+IdleDetectorExperimental
+IIRFilterNode
+ImageBitmap
+ImageBitmapRenderingContext
+ImageCapture
+ImageData
+ImageDecoder
+ImageTrack
+ImageTrackList
+InkExperimental
+InputDeviceCapabilitiesExperimental
+InputDeviceInfo
+InputEvent
+InstallEvent
+IntegrityViolationReportBody
+InterestEventExperimentalNon-standard
+IntersectionObserver
+IntersectionObserverEntry
+InterventionReportBodyExperimental
+K
+KeyboardExperimental
+KeyboardEvent
+KeyboardLayoutMapExperimental
+KeyframeEffect
+L
+LanguageDetectorExperimental
+LargestContentfulPaint
+LaunchParamsExperimental
+LaunchQueueExperimental
+LayoutShiftExperimental
+LayoutShiftAttributionExperimental
+LinearAccelerationSensor
+Location
+Lock
+LockManager
+M
+MagnetometerExperimental
+MathMLElement
+MediaCapabilities
+MediaDeviceInfo
+MediaDevices
+MediaElementAudioSourceNode
+MediaEncryptedEvent
+MediaError
+MediaKeyMessageEvent
+MediaKeys
+MediaKeySession
+MediaKeyStatusMap
+MediaKeySystemAccess
+MediaList
+MediaMetadata
+MediaQueryList
+MediaQueryListEvent
+MediaRecorder
+MediaRecorderErrorEventNon-standardDeprecated
+MediaSession
+MediaSource
+MediaSourceHandle
+MediaStream
+MediaStreamAudioDestinationNode
+MediaStreamAudioSourceNode
+MediaStreamEventNon-standardDeprecated
+MediaStreamTrack
+MediaStreamTrackAudioSourceNode
+MediaStreamTrackEvent
+MediaStreamTrackGeneratorExperimentalNon-standard
+MediaStreamTrackProcessor
+MediaTrackConstraints
+MediaTrackSettings
+MediaTrackSupportedConstraints
+MerchantValidationEventDeprecated
+MessageChannel
+MessageEvent
+MessagePort
+MetadataExperimentalNon-standard
+MIDIAccess
+MIDIConnectionEvent
+MIDIInput
+MIDIInputMap
+MIDIMessageEvent
+MIDIOutput
+MIDIOutputMap
+MIDIPort
+MimeTypeDeprecated
+MimeTypeArrayDeprecated
+MouseEvent
+MouseScrollEventNon-standardDeprecated
+MutationEventNon-standardDeprecated
+MutationObserver
+MutationRecord
+N
+NamedNodeMap
+NavigateEvent
+Navigation
+NavigationActivation
+NavigationCurrentEntryChangeEvent
+NavigationDestination
+NavigationHistoryEntry
+NavigationPrecommitController
+NavigationPreloadManager
+NavigationTransition
+Navigator
+NavigatorLogin
+NavigatorUADataExperimental
+NDEFMessageExperimental
+NDEFReaderExperimental
+NDEFReadingEventExperimental
+NDEFRecordExperimental
+NetworkInformation
+Node
+NodeIterator
+NodeList
+Notification
+NotificationEvent
+NotRestoredReasonDetailsExperimental
+NotRestoredReasonsExperimental
+O
+OES_draw_buffers_indexed
+OfflineAudioCompletionEvent
+OfflineAudioContext
+OffscreenCanvas
+OffscreenCanvasRenderingContext2D
+OrientationSensor
+OscillatorNode
+OTPCredentialExperimental
+OverconstrainedError
+P
+PageRevealEvent
+PageSwapEvent
+PageTransitionEvent
+PaintRenderingContext2D
+PaintSize
+PaintWorkletGlobalScopeExperimental
+PannerNode
+PasswordCredentialExperimental
+PasswordCredentialInit
+Path2D
+PaymentAddressNon-standardDeprecated
+PaymentManagerExperimental
+PaymentMethodChangeEvent
+PaymentRequest
+PaymentRequestEventExperimental
+PaymentRequestUpdateEvent
+PaymentResponse
+Pbkdf2Params
+Performance
+PerformanceElementTimingExperimental
+PerformanceEntry
+PerformanceEventTiming
+PerformanceLongAnimationFrameTimingExperimental
+PerformanceLongTaskTimingExperimental
+PerformanceMark
+PerformanceMeasure
+PerformanceNavigationDeprecated
+PerformanceNavigationTiming
+PerformanceObserver
+PerformanceObserverEntryList
+PerformancePaintTiming
+PerformanceResourceTiming
+PerformanceScriptTimingExperimental
+PerformanceServerTiming
+PerformanceTimingDeprecated
+PeriodicSyncEventExperimental
+PeriodicSyncManagerExperimental
+PeriodicWave
+Permissions
+PermissionStatus
+PictureInPictureEvent
+PictureInPictureWindow
+PluginDeprecated
+PluginArrayDeprecated
+PointNon-standardDeprecated
+PointerEvent
+PopStateEvent
+PositionSensorVRDeviceNon-standardDeprecated
+PresentationExperimental
+PresentationAvailabilityExperimental
+PresentationConnectionExperimental
+PresentationConnectionAvailableEventExperimental
+PresentationConnectionCloseEventExperimental
+PresentationConnectionListExperimental
+PresentationReceiverExperimental
+PresentationRequestExperimental
+PressureObserverExperimental
+PressureRecordExperimental
+ProcessingInstruction
+ProfilerExperimental
+ProgressEvent
+PromiseRejectionEvent
+PublicKeyCredential
+PublicKeyCredentialCreationOptions
+PublicKeyCredentialRequestOptions
+PushEvent
+PushManager
+PushMessageData
+PushSubscription
+PushSubscriptionOptions
+Q
+QuotaExceededErrorExperimental
+R
+RadioNodeList
+Range
+ReadableByteStreamController
+ReadableStream
+ReadableStreamBYOBReader
+ReadableStreamBYOBRequest
+ReadableStreamDefaultController
+ReadableStreamDefaultReader
+RelativeOrientationSensor
+RemotePlayback
+Report
+ReportBody
+ReportingObserver
+Request
+RequestInit
+ResizeObserver
+ResizeObserverEntry
+ResizeObserverSize
+Response
+RestrictionTargetExperimental
+RsaHashedImportParams
+RsaHashedKeyGenParams
+RsaOaepParams
+RsaPssParams
+RTCAudioSourceStats
+RTCCertificate
+RTCCertificateStats
+RTCCodecStats
+RTCDataChannel
+RTCDataChannelEvent
+RTCDataChannelStats
+RTCDtlsTransport
+RTCDTMFSender
+RTCDTMFToneChangeEvent
+RTCEncodedAudioFrame
+RTCEncodedVideoFrame
+RTCError
+RTCErrorEvent
+RTCIceCandidate
+RTCIceCandidatePair
+RTCIceCandidatePairStats
+RTCIceCandidateStats
+RTCIceParameters
+RTCIceTransport
+RTCIdentityAssertionExperimental
+RTCInboundRtpStreamStats
+RTCOutboundRtpStreamStats
+RTCPeerConnection
+RTCPeerConnectionIceErrorEvent
+RTCPeerConnectionIceEvent
+RTCPeerConnectionStats
+RTCRemoteInboundRtpStreamStats
+RTCRemoteOutboundRtpStreamStats
+RTCRtpReceiver
+RTCRtpScriptTransform
+RTCRtpScriptTransformer
+RTCRtpSender
+RTCRtpTransceiver
+RTCSctpTransport
+RTCSessionDescription
+RTCStatsReport
+RTCTrackEvent
+RTCTransformEvent
+RTCTransportStats
+RTCVideoSourceStats
+S
+SanitizerExperimental
+SanitizerConfigExperimental
+Scheduler
+SchedulingExperimental
+Screen
+ScreenDetailedExperimental
+ScreenDetailsExperimental
+ScreenOrientation
+ScriptProcessorNodeDeprecated
+ScrollTimeline
+SecurePaymentConfirmationRequest
+SecurityPolicyViolationEvent
+Selection
+Sensor
+SensorErrorEvent
+SerialExperimental
+SerialPortExperimental
+ServiceWorker
+ServiceWorkerContainer
+ServiceWorkerGlobalScope
+ServiceWorkerRegistration
+ShadowRoot
+SharedStorageExperimental
+SharedStorageOperationExperimental
+SharedStorageRunOperationExperimental
+SharedStorageSelectURLOperationExperimental
+SharedStorageWorkletExperimental
+SharedStorageWorkletGlobalScopeExperimental
+SharedWorker
+SharedWorkerGlobalScope
+SnapEventExperimental
+SourceBuffer
+SourceBufferList
+SpeechGrammarDeprecated
+SpeechGrammarListDeprecated
+SpeechRecognition
+SpeechRecognitionAlternative
+SpeechRecognitionErrorEvent
+SpeechRecognitionEvent
+SpeechRecognitionPhraseExperimental
+SpeechRecognitionResult
+SpeechRecognitionResultList
+SpeechSynthesis
+SpeechSynthesisErrorEvent
+SpeechSynthesisEvent
+SpeechSynthesisUtterance
+SpeechSynthesisVoice
+StaticRange
+StereoPannerNode
+Storage
+StorageAccessHandle
+StorageEvent
+StorageManager
+StylePropertyMap
+StylePropertyMapReadOnly
+StyleSheet
+StyleSheetList
+SubmitEvent
+SubtleCrypto
+SummarizerExperimental
+SVGAElement
+SVGAngle
+SVGAnimateColorElementDeprecated
+SVGAnimatedAngle
+SVGAnimatedBoolean
+SVGAnimatedEnumeration
+SVGAnimatedInteger
+SVGAnimatedLength
+SVGAnimatedLengthList
+SVGAnimatedNumber
+SVGAnimatedNumberList
+SVGAnimatedPreserveAspectRatio
+SVGAnimatedRect
+SVGAnimatedString
+SVGAnimatedTransformList
+SVGAnimateElement
+SVGAnimateMotionElement
+SVGAnimateTransformElement
+SVGAnimationElement
+SVGCircleElement
+SVGClipPathElement
+SVGComponentTransferFunctionElement
+SVGDefsElement
+SVGDescElement
+SVGDiscardElementDeprecated
+SVGElement
+SVGEllipseElement
+SVGFEBlendElement
+SVGFEColorMatrixElement
+SVGFEComponentTransferElement
+SVGFECompositeElement
+SVGFEConvolveMatrixElement
+SVGFEDiffuseLightingElement
+SVGFEDisplacementMapElement
+SVGFEDistantLightElement
+SVGFEDropShadowElement
+SVGFEFloodElement
+SVGFEFuncAElement
+SVGFEFuncBElement
+SVGFEFuncGElement
+SVGFEFuncRElement
+SVGFEGaussianBlurElement
+SVGFEImageElement
+SVGFEMergeElement
+SVGFEMergeNodeElement
+SVGFEMorphologyElement
+SVGFEOffsetElement
+SVGFEPointLightElement
+SVGFESpecularLightingElement
+SVGFESpotLightElement
+SVGFETileElement
+SVGFETurbulenceElement
+SVGFilterElement
+SVGForeignObjectElement
+SVGGElement
+SVGGeometryElement
+SVGGradientElement
+SVGGraphicsElement
+SVGImageElement
+SVGLength
+SVGLengthList
+SVGLinearGradientElement
+SVGLineElement
+SVGMarkerElement
+SVGMaskElement
+SVGMetadataElement
+SVGMPathElement
+SVGNumber
+SVGNumberList
+SVGPathElement
+SVGPatternElement
+SVGPointDeprecated
+SVGPointList
+SVGPolygonElement
+SVGPolylineElement
+SVGPreserveAspectRatio
+SVGRadialGradientElement
+SVGRect
+SVGRectElement
+SVGRenderingIntentDeprecated
+SVGScriptElement
+SVGSetElement
+SVGStopElement
+SVGStringList
+SVGStyleElement
+SVGSVGElement
+SVGSwitchElement
+SVGSymbolElement
+SVGTextContentElement
+SVGTextElement
+SVGTextPathElement
+SVGTextPositioningElement
+SVGTitleElement
+SVGTransform
+SVGTransformList
+SVGTSpanElement
+SVGUnitTypes
+SVGUseElement
+SVGViewElement
+SyncEvent
+SyncManager
+T
+TaskAttributionTimingExperimental
+TaskController
+TaskPriorityChangeEvent
+TaskSignal
+Text
+TextDecoder
+TextDecoderStream
+TextEncoder
+TextEncoderStream
+TextEventDeprecated
+TextFormatExperimental
+TextFormatUpdateEventExperimental
+TextMetrics
+TextTrack
+TextTrackCue
+TextTrackCueList
+TextTrackList
+TextUpdateEventExperimental
+TimeEvent
+TimeRanges
+ToggleEvent
+Touch
+TouchEvent
+TouchList
+TrackEvent
+TransformStream
+TransformStreamDefaultController
+TransitionEvent
+TranslatorExperimental
+TreeWalker
+TrustedHTML
+TrustedScript
+TrustedScriptURL
+TrustedTypePolicy
+TrustedTypePolicyFactory
+U
+UIEvent
+URL
+URLPattern
+URLSearchParams
+USBExperimental
+USBAlternateInterfaceExperimental
+USBConfigurationExperimental
+USBConnectionEventExperimental
+USBDeviceExperimental
+USBEndpointExperimental
+USBInterfaceExperimental
+USBInTransferResultExperimental
+USBIsochronousInTransferPacketExperimental
+USBIsochronousInTransferResultExperimental
+USBIsochronousOutTransferPacketExperimental
+USBIsochronousOutTransferResultExperimental
+USBOutTransferResultExperimental
+UserActivation
+V
+ValidityState
+VideoColorSpace
+VideoDecoder
+VideoEncoder
+VideoFrame
+VideoPlaybackQuality
+VideoTrack
+VideoTrackGeneratorExperimental
+VideoTrackList
+ViewportExperimental
+ViewTimeline
+ViewTransition
+ViewTransitionTypeSet
+VirtualKeyboardExperimental
+VisibilityStateEntryExperimental
+VisualViewport
+VRDisplayNon-standardDeprecated
+VRDisplayCapabilitiesNon-standardDeprecated
+VRDisplayEventNon-standardDeprecated
+VREyeParametersNon-standardDeprecated
+VRFieldOfViewNon-standardDeprecated
+VRFrameDataNon-standardDeprecated
+VRLayerInitNon-standardDeprecated
+VRPoseNon-standardDeprecated
+VRStageParametersNon-standardDeprecated
+VTTCue
+VTTRegion
+W
+WakeLock
+WakeLockSentinel
+WaveShaperNode
+WebGL2RenderingContext
+WebGLActiveInfo
+WebGLBuffer
+WebGLContextEvent
+WebGLFramebuffer
+WebGLObjectExperimental
+WebGLProgram
+WebGLQuery
+WebGLRenderbuffer
+WebGLRenderingContext
+WebGLSampler
+WebGLShader
+WebGLShaderPrecisionFormat
+WebGLSync
+WebGLTexture
+WebGLTransformFeedback
+WebGLUniformLocation
+WebGLVertexArrayObject
+WebSocket
+WebSocketStreamExperimental
+WebTransport
+WebTransportBidirectionalStream
+WebTransportDatagramDuplexStream
+WebTransportError
+WebTransportReceiveStreamExperimental
+WebTransportSendStreamExperimental
+WGSLLanguageFeatures
+WheelEvent
+Window
+WindowClient
+WindowControlsOverlayExperimental
+WindowControlsOverlayGeometryChangeEventExperimental
+WindowSharedStorageExperimental
+Worker
+WorkerGlobalScope
+WorkerLocation
+WorkerNavigator
+Worklet
+WorkletGlobalScope
+WorkletSharedStorageExperimental
+WritableStream
+WritableStreamDefaultController
+WritableStreamDefaultWriter
+X
+XMLDocument
+XMLHttpRequest
+XMLHttpRequestEventTarget
+XMLHttpRequestUpload
+XMLSerializer
+XPathEvaluator
+XPathExpression
+XPathResult
+XRAnchorExperimental
+XRAnchorSetExperimental
+XRBoundedReferenceSpaceExperimental
+XRCompositionLayerExperimental
+XRCPUDepthInformationExperimental
+XRCubeLayerExperimental
+XRCylinderLayerExperimental
+XRDepthInformationExperimental
+XREquirectLayerExperimental
+XRFrameExperimental
+XRHand
+XRHitTestResultExperimental
+XRHitTestSourceExperimental
+XRInputSource
+XRInputSourceArrayExperimental
+XRInputSourceEvent
+XRInputSourcesChangeEvent
+XRJointPose
+XRJointSpace
+XRLayerExperimental
+XRLayerEventExperimental
+XRLightEstimateExperimental
+XRLightProbeExperimental
+XRMediaBindingExperimental
+XRPose
+XRProjectionLayerExperimental
+XRQuadLayerExperimental
+XRRayExperimental
+XRReferenceSpace
+XRReferenceSpaceEvent
+XRRenderStateExperimental
+XRRigidTransform
+XRSessionExperimental
+XRSessionEvent
+XRSpace
+XRSubImageExperimental
+XRSystemExperimental
+XRTransientInputHitTestResultExperimental
+XRTransientInputHitTestSourceExperimental
+XRViewExperimental
+XRViewerPose
+XRViewport
+XRWebGLBindingExperimental
+XRWebGLDepthInformationExperimental
+XRWebGLLayerExperimental
+XRWebGLSubImageExperimental
+XSLTProcessor

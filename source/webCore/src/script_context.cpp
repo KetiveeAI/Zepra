@@ -28,6 +28,7 @@
 #include <iostream>
 #include <algorithm>
 #include <cmath>
+#include <thread>
 
 namespace Zepra::WebCore {
 
@@ -532,6 +533,113 @@ void ScriptContext::setupWindowGlobals() {
             return Runtime::Value::undefined();
         }, 0)));
     vm_->setGlobal("sessionStorage", Runtime::Value::object(sessionStorageObj));
+    
+    // =========================================================================
+    // navigator object - Browser/device information
+    // =========================================================================
+    Runtime::Object* navigatorObj = new Runtime::Object(Runtime::ObjectType::Ordinary);
+    
+    // navigator.userAgent
+    navigatorObj->set("userAgent", Runtime::Value::string(new Runtime::String(
+        "Mozilla/5.0 (X11; Linux x86_64) ZepraBrowser/1.0 ZepraScript/1.0")));
+    
+    // navigator.language
+    navigatorObj->set("language", Runtime::Value::string(new Runtime::String("en-US")));
+    
+    // navigator.languages
+    Runtime::Object* languagesArr = new Runtime::Object(Runtime::ObjectType::Array);
+    languagesArr->set(0, Runtime::Value::string(new Runtime::String("en-US")));
+    languagesArr->set(1, Runtime::Value::string(new Runtime::String("en")));
+    languagesArr->set("length", Runtime::Value::number(2));
+    navigatorObj->set("languages", Runtime::Value::object(languagesArr));
+    
+    // navigator.platform
+    navigatorObj->set("platform", Runtime::Value::string(new Runtime::String("Linux x86_64")));
+    
+    // navigator.vendor
+    navigatorObj->set("vendor", Runtime::Value::string(new Runtime::String("Zepra")));
+    
+    // navigator.onLine
+    navigatorObj->set("onLine", Runtime::Value::boolean(true));
+    
+    // navigator.cookieEnabled
+    navigatorObj->set("cookieEnabled", Runtime::Value::boolean(true));
+    
+    // navigator.hardwareConcurrency
+    navigatorObj->set("hardwareConcurrency", Runtime::Value::number(
+        static_cast<double>(std::thread::hardware_concurrency())));
+    
+    // navigator.vibrate(pattern) - Vibration API
+    navigatorObj->set("vibrate", Runtime::Value::object(Runtime::createNativeFunction("vibrate",
+        [](Runtime::Context*, const std::vector<Runtime::Value>& args) -> Runtime::Value {
+            // On desktop, vibrate is a no-op but returns true for compatibility
+            // Could be wired to gamepad rumble or system notification
+            if (args.empty()) return Runtime::Value::boolean(false);
+            // Pattern can be number or array
+            // For now, just log and return true
+            if (g_currentContext) {
+                g_currentContext->log("[Vibration API] vibrate() called");
+            }
+            return Runtime::Value::boolean(true);
+        }, 1)));
+    
+    // navigator.clipboard - Clipboard API
+    Runtime::Object* clipboardObj = new Runtime::Object(Runtime::ObjectType::Ordinary);
+    clipboardObj->set("writeText", Runtime::Value::object(Runtime::createNativeFunction("writeText",
+        [](Runtime::Context*, const std::vector<Runtime::Value>& args) -> Runtime::Value {
+            // TODO: Implement X11 clipboard write
+            if (args.empty()) return Runtime::Value::undefined();
+            std::string text = args[0].toString();
+            if (g_currentContext) {
+                g_currentContext->log("[Clipboard API] writeText: " + text);
+            }
+            // Return a resolved Promise (stub)
+            return Runtime::Value::undefined();
+        }, 1)));
+    clipboardObj->set("readText", Runtime::Value::object(Runtime::createNativeFunction("readText",
+        [](Runtime::Context*, const std::vector<Runtime::Value>&) -> Runtime::Value {
+            // TODO: Implement X11 clipboard read
+            if (g_currentContext) {
+                g_currentContext->log("[Clipboard API] readText called");
+            }
+            return Runtime::Value::string(new Runtime::String(""));
+        }, 0)));
+    navigatorObj->set("clipboard", Runtime::Value::object(clipboardObj));
+    
+    // navigator.geolocation - Geolocation API (stub)
+    Runtime::Object* geolocationObj = new Runtime::Object(Runtime::ObjectType::Ordinary);
+    geolocationObj->set("getCurrentPosition", Runtime::Value::object(Runtime::createNativeFunction("getCurrentPosition",
+        [](Runtime::Context*, const std::vector<Runtime::Value>& args) -> Runtime::Value {
+            // TODO: Integrate with GeoClue on Linux
+            if (g_currentContext) {
+                g_currentContext->log("[Geolocation API] getCurrentPosition called - not implemented");
+            }
+            // Call error callback if provided
+            if (args.size() > 1 && args[1].isObject() && args[1].asObject()->isFunction()) {
+                auto* errorCb = static_cast<Runtime::Function*>(args[1].asObject());
+                Runtime::Object* posError = new Runtime::Object(Runtime::ObjectType::Ordinary);
+                posError->set("code", Runtime::Value::number(2)); // POSITION_UNAVAILABLE
+                posError->set("message", Runtime::Value::string(new Runtime::String("Geolocation not available")));
+                errorCb->call(nullptr, Runtime::Value::undefined(), {Runtime::Value::object(posError)});
+            }
+            return Runtime::Value::undefined();
+        }, 3)));
+    navigatorObj->set("geolocation", Runtime::Value::object(geolocationObj));
+    
+    vm_->setGlobal("navigator", Runtime::Value::object(navigatorObj));
+    
+    // =========================================================================
+    // performance object - High-resolution timing
+    // =========================================================================
+    Runtime::Object* performanceObj = new Runtime::Object(Runtime::ObjectType::Ordinary);
+    performanceObj->set("now", Runtime::Value::object(Runtime::createNativeFunction("now",
+        [](Runtime::Context*, const std::vector<Runtime::Value>&) -> Runtime::Value {
+            auto now = std::chrono::high_resolution_clock::now();
+            auto epoch = now.time_since_epoch();
+            double ms = std::chrono::duration<double, std::milli>(epoch).count();
+            return Runtime::Value::number(ms);
+        }, 0)));
+    vm_->setGlobal("performance", Runtime::Value::object(performanceObj));
     
     // location (basic string for now)
     vm_->setGlobal("location", Runtime::Value::string(new Runtime::String("about:blank")));
