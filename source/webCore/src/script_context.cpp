@@ -666,8 +666,195 @@ void ScriptContext::setupWindowGlobals() {
         }, 0)));
     vm_->setGlobal("performance", Runtime::Value::object(performanceObj));
     
-    // location (basic string for now)
-    vm_->setGlobal("location", Runtime::Value::string(new Runtime::String("about:blank")));
+    // =========================================================================
+    // requestAnimationFrame / cancelAnimationFrame
+    // =========================================================================
+    auto* rafFn = Runtime::createNativeFunction("requestAnimationFrame",
+        [](Runtime::Context* ctx, const std::vector<Runtime::Value>& args) -> Runtime::Value {
+            if (!g_currentContext || args.empty()) return Runtime::Value::number(0);
+            
+            Runtime::Value callback = args[0];
+            Runtime::VM* vm = g_currentContext->vm();
+            
+            // Use setTimeout with ~16ms (60fps) as approximation
+            int id = g_currentContext->setTimeout([vm, callback]() {
+                if (vm && callback.isObject() && callback.asObject()->isFunction()) {
+                    auto* fn = static_cast<Runtime::Function*>(callback.asObject());
+                    // Pass timestamp as argument
+                    auto now = std::chrono::high_resolution_clock::now();
+                    auto epoch = now.time_since_epoch();
+                    double ms = std::chrono::duration<double, std::milli>(epoch).count();
+                    fn->call(nullptr, Runtime::Value::undefined(), {Runtime::Value::number(ms)});
+                }
+            }, 16);
+            
+            return Runtime::Value::number(static_cast<double>(id));
+        }, 1);
+    vm_->setGlobal("requestAnimationFrame", Runtime::Value::object(rafFn));
+    
+    auto* cafFn = Runtime::createNativeFunction("cancelAnimationFrame",
+        [](Runtime::Context*, const std::vector<Runtime::Value>& args) -> Runtime::Value {
+            if (!g_currentContext || args.empty()) return Runtime::Value::undefined();
+            int id = static_cast<int>(args[0].toNumber());
+            g_currentContext->clearTimeout(id);
+            return Runtime::Value::undefined();
+        }, 1);
+    vm_->setGlobal("cancelAnimationFrame", Runtime::Value::object(cafFn));
+    
+    // =========================================================================
+    // atob / btoa - Base64 encoding/decoding
+    // =========================================================================
+    static const std::string base64_chars = 
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        "abcdefghijklmnopqrstuvwxyz"
+        "0123456789+/";
+    
+    auto* btoaFn = Runtime::createNativeFunction("btoa",
+        [](Runtime::Context*, const std::vector<Runtime::Value>& args) -> Runtime::Value {
+            if (args.empty()) return Runtime::Value::string(new Runtime::String(""));
+            std::string input = args[0].toString();
+            std::string result;
+            
+            int val = 0, valb = -6;
+            for (unsigned char c : input) {
+                val = (val << 8) + c;
+                valb += 8;
+                while (valb >= 0) {
+                    result.push_back("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"[(val >> valb) & 0x3F]);
+                    valb -= 6;
+                }
+            }
+            if (valb > -6) result.push_back("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"[((val << 8) >> (valb + 8)) & 0x3F]);
+            while (result.size() % 4) result.push_back('=');
+            
+            return Runtime::Value::string(new Runtime::String(result));
+        }, 1);
+    vm_->setGlobal("btoa", Runtime::Value::object(btoaFn));
+    
+    auto* atobFn = Runtime::createNativeFunction("atob",
+        [](Runtime::Context*, const std::vector<Runtime::Value>& args) -> Runtime::Value {
+            if (args.empty()) return Runtime::Value::string(new Runtime::String(""));
+            std::string input = args[0].toString();
+            std::string result;
+            
+            std::vector<int> T(256, -1);
+            for (int i = 0; i < 64; i++) T["ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"[i]] = i;
+            
+            int val = 0, valb = -8;
+            for (unsigned char c : input) {
+                if (T[c] == -1) break;
+                val = (val << 6) + T[c];
+                valb += 6;
+                if (valb >= 0) {
+                    result.push_back(char((val >> valb) & 0xFF));
+                    valb -= 8;
+                }
+            }
+            
+            return Runtime::Value::string(new Runtime::String(result));
+        }, 1);
+    vm_->setGlobal("atob", Runtime::Value::object(atobFn));
+    
+    // =========================================================================
+    // URL constructor
+    // =========================================================================
+    auto* urlConstructor = Runtime::createNativeFunction("URL",
+        [](Runtime::Context*, const std::vector<Runtime::Value>& args) -> Runtime::Value {
+            if (args.empty()) return Runtime::Value::null();
+            
+            std::string urlStr = args[0].toString();
+            std::string base = args.size() > 1 ? args[1].toString() : "";
+            
+            Runtime::Object* urlObj = new Runtime::Object(Runtime::ObjectType::Ordinary);
+            urlObj->set("href", Runtime::Value::string(new Runtime::String(urlStr)));
+            
+            // Parse basic URL components
+            size_t protocolEnd = urlStr.find("://");
+            if (protocolEnd != std::string::npos) {
+                urlObj->set("protocol", Runtime::Value::string(new Runtime::String(urlStr.substr(0, protocolEnd + 1))));
+                size_t hostStart = protocolEnd + 3;
+                size_t pathStart = urlStr.find('/', hostStart);
+                if (pathStart != std::string::npos) {
+                    urlObj->set("host", Runtime::Value::string(new Runtime::String(urlStr.substr(hostStart, pathStart - hostStart))));
+                    urlObj->set("pathname", Runtime::Value::string(new Runtime::String(urlStr.substr(pathStart))));
+                } else {
+                    urlObj->set("host", Runtime::Value::string(new Runtime::String(urlStr.substr(hostStart))));
+                    urlObj->set("pathname", Runtime::Value::string(new Runtime::String("/")));
+                }
+            }
+            
+            // toString method
+            urlObj->set("toString", Runtime::Value::object(Runtime::createNativeFunction("toString",
+                [urlStr](Runtime::Context*, const std::vector<Runtime::Value>&) -> Runtime::Value {
+                    return Runtime::Value::string(new Runtime::String(urlStr));
+                }, 0)));
+            
+            return Runtime::Value::object(urlObj);
+        }, 2);
+    vm_->setGlobal("URL", Runtime::Value::object(urlConstructor));
+    
+    // =========================================================================
+    // TextEncoder / TextDecoder
+    // =========================================================================
+    auto* textEncoderConstructor = Runtime::createNativeFunction("TextEncoder",
+        [](Runtime::Context*, const std::vector<Runtime::Value>&) -> Runtime::Value {
+            Runtime::Object* encoder = new Runtime::Object(Runtime::ObjectType::Ordinary);
+            encoder->set("encoding", Runtime::Value::string(new Runtime::String("utf-8")));
+            encoder->set("encode", Runtime::Value::object(Runtime::createNativeFunction("encode",
+                [](Runtime::Context*, const std::vector<Runtime::Value>& args) -> Runtime::Value {
+                    if (args.empty()) return Runtime::Value::null();
+                    std::string str = args[0].toString();
+                    Runtime::Object* arr = new Runtime::Object(Runtime::ObjectType::Array);
+                    for (size_t i = 0; i < str.size(); i++) {
+                        arr->set(static_cast<uint32_t>(i), Runtime::Value::number(static_cast<unsigned char>(str[i])));
+                    }
+                    arr->set("length", Runtime::Value::number(static_cast<double>(str.size())));
+                    return Runtime::Value::object(arr);
+                }, 1)));
+            return Runtime::Value::object(encoder);
+        }, 0);
+    vm_->setGlobal("TextEncoder", Runtime::Value::object(textEncoderConstructor));
+    
+    auto* textDecoderConstructor = Runtime::createNativeFunction("TextDecoder",
+        [](Runtime::Context*, const std::vector<Runtime::Value>&) -> Runtime::Value {
+            Runtime::Object* decoder = new Runtime::Object(Runtime::ObjectType::Ordinary);
+            decoder->set("encoding", Runtime::Value::string(new Runtime::String("utf-8")));
+            decoder->set("decode", Runtime::Value::object(Runtime::createNativeFunction("decode",
+                [](Runtime::Context*, const std::vector<Runtime::Value>& args) -> Runtime::Value {
+                    if (args.empty()) return Runtime::Value::string(new Runtime::String(""));
+                    // Simple decode - just convert array to string
+                    Runtime::Object* arr = args[0].asObject();
+                    if (!arr) return Runtime::Value::string(new Runtime::String(""));
+                    
+                    std::string result;
+                    auto lenVal = arr->get("length");
+                    int len = static_cast<int>(lenVal.toNumber());
+                    for (int i = 0; i < len; i++) {
+                        auto byte = arr->get(static_cast<uint32_t>(i));
+                        result += static_cast<char>(static_cast<int>(byte.toNumber()));
+                    }
+                    return Runtime::Value::string(new Runtime::String(result));
+                }, 1)));
+            return Runtime::Value::object(decoder);
+        }, 1);
+    vm_->setGlobal("TextDecoder", Runtime::Value::object(textDecoderConstructor));
+    
+    // location object (full version)
+    Runtime::Object* locationObj = new Runtime::Object(Runtime::ObjectType::Ordinary);
+    locationObj->set("href", Runtime::Value::string(new Runtime::String("about:blank")));
+    locationObj->set("protocol", Runtime::Value::string(new Runtime::String("about:")));
+    locationObj->set("host", Runtime::Value::string(new Runtime::String("")));
+    locationObj->set("pathname", Runtime::Value::string(new Runtime::String("blank")));
+    locationObj->set("search", Runtime::Value::string(new Runtime::String("")));
+    locationObj->set("hash", Runtime::Value::string(new Runtime::String("")));
+    locationObj->set("reload", Runtime::Value::object(Runtime::createNativeFunction("reload",
+        [](Runtime::Context*, const std::vector<Runtime::Value>&) -> Runtime::Value {
+            if (g_currentContext) {
+                g_currentContext->log("[Location] reload() called");
+            }
+            return Runtime::Value::undefined();
+        }, 0)));
+    vm_->setGlobal("location", Runtime::Value::object(locationObj));
 }
 
 void ScriptContext::setupDocumentGlobals() {
