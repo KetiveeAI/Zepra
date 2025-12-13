@@ -1083,6 +1083,170 @@ void ScriptContext::setupWindowGlobals() {
     
     // Also expose as webkitAudioContext for compatibility
     vm_->setGlobal("webkitAudioContext", Runtime::Value::object(audioContextConstructor));
+    
+    // =========================================================================
+    // Canvas 2D API - Minimal for charts and UI libraries
+    // =========================================================================
+    // Note: Canvas 2D context is created via document.createElement('canvas').getContext('2d')
+    // This adds CanvasRenderingContext2D constructor for type checking
+    auto* canvasContextConstructor = Runtime::createNativeFunction("CanvasRenderingContext2D",
+        [](Runtime::Context*, const std::vector<Runtime::Value>&) -> Runtime::Value {
+            Runtime::Object* ctx = new Runtime::Object(Runtime::ObjectType::Ordinary);
+            
+            // Canvas state
+            ctx->set("fillStyle", Runtime::Value::string(new Runtime::String("#000000")));
+            ctx->set("strokeStyle", Runtime::Value::string(new Runtime::String("#000000")));
+            ctx->set("lineWidth", Runtime::Value::number(1.0));
+            ctx->set("font", Runtime::Value::string(new Runtime::String("10px sans-serif")));
+            ctx->set("textAlign", Runtime::Value::string(new Runtime::String("start")));
+            ctx->set("textBaseline", Runtime::Value::string(new Runtime::String("alphabetic")));
+            ctx->set("globalAlpha", Runtime::Value::number(1.0));
+            
+            // Drawing methods
+            ctx->set("fillRect", Runtime::Value::object(Runtime::createNativeFunction("fillRect",
+                [](Runtime::Context*, const std::vector<Runtime::Value>&) -> Runtime::Value {
+                    return Runtime::Value::undefined();
+                }, 4)));
+            ctx->set("strokeRect", Runtime::Value::object(Runtime::createNativeFunction("strokeRect",
+                [](Runtime::Context*, const std::vector<Runtime::Value>&) -> Runtime::Value {
+                    return Runtime::Value::undefined();
+                }, 4)));
+            ctx->set("clearRect", Runtime::Value::object(Runtime::createNativeFunction("clearRect",
+                [](Runtime::Context*, const std::vector<Runtime::Value>&) -> Runtime::Value {
+                    return Runtime::Value::undefined();
+                }, 4)));
+            
+            // Path methods
+            ctx->set("beginPath", Runtime::Value::object(Runtime::createNativeFunction("beginPath",
+                [](Runtime::Context*, const std::vector<Runtime::Value>&) -> Runtime::Value {
+                    return Runtime::Value::undefined();
+                }, 0)));
+            ctx->set("moveTo", Runtime::Value::object(Runtime::createNativeFunction("moveTo",
+                [](Runtime::Context*, const std::vector<Runtime::Value>&) -> Runtime::Value {
+                    return Runtime::Value::undefined();
+                }, 2)));
+            ctx->set("lineTo", Runtime::Value::object(Runtime::createNativeFunction("lineTo",
+                [](Runtime::Context*, const std::vector<Runtime::Value>&) -> Runtime::Value {
+                    return Runtime::Value::undefined();
+                }, 2)));
+            ctx->set("arc", Runtime::Value::object(Runtime::createNativeFunction("arc",
+                [](Runtime::Context*, const std::vector<Runtime::Value>&) -> Runtime::Value {
+                    return Runtime::Value::undefined();
+                }, 6)));
+            ctx->set("closePath", Runtime::Value::object(Runtime::createNativeFunction("closePath",
+                [](Runtime::Context*, const std::vector<Runtime::Value>&) -> Runtime::Value {
+                    return Runtime::Value::undefined();
+                }, 0)));
+            ctx->set("fill", Runtime::Value::object(Runtime::createNativeFunction("fill",
+                [](Runtime::Context*, const std::vector<Runtime::Value>&) -> Runtime::Value {
+                    return Runtime::Value::undefined();
+                }, 0)));
+            ctx->set("stroke", Runtime::Value::object(Runtime::createNativeFunction("stroke",
+                [](Runtime::Context*, const std::vector<Runtime::Value>&) -> Runtime::Value {
+                    return Runtime::Value::undefined();
+                }, 0)));
+            
+            // Text methods
+            ctx->set("fillText", Runtime::Value::object(Runtime::createNativeFunction("fillText",
+                [](Runtime::Context*, const std::vector<Runtime::Value>&) -> Runtime::Value {
+                    return Runtime::Value::undefined();
+                }, 4)));
+            ctx->set("strokeText", Runtime::Value::object(Runtime::createNativeFunction("strokeText",
+                [](Runtime::Context*, const std::vector<Runtime::Value>&) -> Runtime::Value {
+                    return Runtime::Value::undefined();
+                }, 4)));
+            ctx->set("measureText", Runtime::Value::object(Runtime::createNativeFunction("measureText",
+                [](Runtime::Context*, const std::vector<Runtime::Value>& args) -> Runtime::Value {
+                    Runtime::Object* metrics = new Runtime::Object(Runtime::ObjectType::Ordinary);
+                    // Estimate width based on text length
+                    double width = args.empty() ? 0 : args[0].toString().length() * 7.0;
+                    metrics->set("width", Runtime::Value::number(width));
+                    return Runtime::Value::object(metrics);
+                }, 1)));
+            
+            // Transform methods
+            ctx->set("save", Runtime::Value::object(Runtime::createNativeFunction("save",
+                [](Runtime::Context*, const std::vector<Runtime::Value>&) -> Runtime::Value {
+                    return Runtime::Value::undefined();
+                }, 0)));
+            ctx->set("restore", Runtime::Value::object(Runtime::createNativeFunction("restore",
+                [](Runtime::Context*, const std::vector<Runtime::Value>&) -> Runtime::Value {
+                    return Runtime::Value::undefined();
+                }, 0)));
+            ctx->set("translate", Runtime::Value::object(Runtime::createNativeFunction("translate",
+                [](Runtime::Context*, const std::vector<Runtime::Value>&) -> Runtime::Value {
+                    return Runtime::Value::undefined();
+                }, 2)));
+            ctx->set("rotate", Runtime::Value::object(Runtime::createNativeFunction("rotate",
+                [](Runtime::Context*, const std::vector<Runtime::Value>&) -> Runtime::Value {
+                    return Runtime::Value::undefined();
+                }, 1)));
+            ctx->set("scale", Runtime::Value::object(Runtime::createNativeFunction("scale",
+                [](Runtime::Context*, const std::vector<Runtime::Value>&) -> Runtime::Value {
+                    return Runtime::Value::undefined();
+                }, 2)));
+            
+            return Runtime::Value::object(ctx);
+        }, 0);
+    vm_->setGlobal("CanvasRenderingContext2D", Runtime::Value::object(canvasContextConstructor));
+    
+    // =========================================================================
+    // Web Workers API - Basic message passing
+    // =========================================================================
+    auto* workerConstructor = Runtime::createNativeFunction("Worker",
+        [](Runtime::Context*, const std::vector<Runtime::Value>& args) -> Runtime::Value {
+            if (args.empty()) return Runtime::Value::null();
+            
+            std::string scriptUrl = args[0].toString();
+            
+            Runtime::Object* worker = new Runtime::Object(Runtime::ObjectType::Ordinary);
+            
+            // Store message handler
+            worker->set("onmessage", Runtime::Value::null());
+            worker->set("onerror", Runtime::Value::null());
+            
+            // postMessage
+            worker->set("postMessage", Runtime::Value::object(Runtime::createNativeFunction("postMessage",
+                [](Runtime::Context*, const std::vector<Runtime::Value>& args) -> Runtime::Value {
+                    if (g_currentContext) {
+                        g_currentContext->log("[Web Worker] postMessage called");
+                    }
+                    // In real impl, this would serialize and send to worker thread
+                    return Runtime::Value::undefined();
+                }, 1)));
+            
+            // terminate
+            worker->set("terminate", Runtime::Value::object(Runtime::createNativeFunction("terminate",
+                [](Runtime::Context*, const std::vector<Runtime::Value>&) -> Runtime::Value {
+                    if (g_currentContext) {
+                        g_currentContext->log("[Web Worker] Worker terminated");
+                    }
+                    return Runtime::Value::undefined();
+                }, 0)));
+            
+            if (g_currentContext) {
+                g_currentContext->log("[Web Worker] Created worker for: " + scriptUrl);
+            }
+            
+            return Runtime::Value::object(worker);
+        }, 1);
+    vm_->setGlobal("Worker", Runtime::Value::object(workerConstructor));
+    
+    // =========================================================================
+    // Strict Mode Enforcers
+    // =========================================================================
+    
+    // Override window.open to require user gesture
+    // (The actual enforcement happens in content_policy.hpp)
+    auto* windowOpenFn = Runtime::createNativeFunction("open",
+        [](Runtime::Context*, const std::vector<Runtime::Value>& args) -> Runtime::Value {
+            // In strict mode, this would check for user gesture
+            if (g_currentContext) {
+                g_currentContext->log("[Strict Mode] window.open() - requires user gesture");
+            }
+            return Runtime::Value::null(); // Return null if blocked
+        }, 3);
+    // Note: This would be set on window object, not global in real impl
 }
 
 void ScriptContext::setupDocumentGlobals() {
