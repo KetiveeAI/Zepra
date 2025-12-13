@@ -1,1 +1,0 @@
-/usr/bin/c++ -O3 -DNDEBUG -Wl,--dependency-file=CMakeFiles/config_test.dir/link.d CMakeFiles/config_test.dir/src/config/config_test.cpp.o CMakeFiles/config_test.dir/src/config/config_manager.cpp.o -o bin/config_test
