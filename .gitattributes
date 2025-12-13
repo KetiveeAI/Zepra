@@ -1,9 +1,0 @@
-# Exclude Makefiles from language stats
-Makefile linguist-detectable=false
-*.mk linguist-detectable=false
-
-# Exclude build directories  
-build/** linguist-vendored
-build_nxrender/** linguist-vendored
-*/build/** linguist-vendored
-**/CMakeFiles/** linguist-vendored
