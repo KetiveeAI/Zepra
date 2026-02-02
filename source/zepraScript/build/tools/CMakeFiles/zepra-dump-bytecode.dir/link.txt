@@ -1,1 +1,0 @@
-/usr/bin/c++ -O3 -DNDEBUG -Wl,--dependency-file=CMakeFiles/zepra-dump-bytecode.dir/link.d "CMakeFiles/zepra-dump-bytecode.dir/zepra-dump-bytecode.cpp.o" -o ../bin/zepra-dump-bytecode  ../lib/libzepra-core.a /usr/lib/x86_64-linux-gnu/libcurl.so /usr/lib/x86_64-linux-gnu/libcurl.so -ldl

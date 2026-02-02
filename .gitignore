@@ -1,24 +1,34 @@
 # Build outputs
 build/
-build_nxrender/
+build_*/
 */build/
+**/build/
 **/CMakeFiles/
 **/cmake_install.cmake
 **/Makefile
 **/*.o
+**/*.o.d
 **/*.a
 **/*.so
+**/*.so.*
 **/*.dll
 **/*.exe
+**/*.lib
+**/*.obj
+**/*.ilk
+**/*.exp
 
 # Rust
 **/target/
 
 # Visual Studio / Windows
 x64/
+Debug/
+Release/
 *.dir/
 *.vcxproj
 *.vcxproj.filters
+*.vcxproj.user
 *.sln
 bin/Debug/
 bin/Release/
@@ -26,6 +36,9 @@ lib/Debug/
 lib/Release/
 *.pdb
 *.tlog/
+*.tlog
+*.recipe
+*.lastbuildstate
 
 # CMake
 CMakeCache.txt
@@ -34,6 +47,26 @@ install_manifest.txt
 compile_commands.json
 CTestTestfile.cmake
 _deps/
+**/*.make
+**/link.txt
+**/link.d
+**/progress.marks
+**/DependInfo.cmake
+**/depend.make
+**/flags.make
+**/compiler_depend.*
+**/progress.make
+**/CMakeDetermineCompilerABI*
+**/CMakeSystem.cmake
+**/CMakeCCompiler.cmake
+**/CMakeCXXCompiler.cmake
+**/CompilerIdC/
+**/CompilerIdCXX/
+
+# Ninja
+**/.ninja_deps
+**/.ninja_log
+**/build.ninja
 
 # IDE
 .vscode/
@@ -49,3 +82,12 @@ Thumbs.db
 # Test outputs
 Testing/
 *.log
+
+# Temp/cache
+temp/
+tmp/
+*.tmp
+*.cache
+
+# Package files
+*.pc
