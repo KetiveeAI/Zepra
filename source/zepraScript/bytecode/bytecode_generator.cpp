@@ -460,6 +460,7 @@ void BytecodeGenerator::compileFunctionDeclaration(const Frontend::FunctionDecl*
             emit(Opcode::OP_POP); // Pop the 'false' boolean
             
             patchJump(doneJump);
+        }
         // Handle rest parameter (must be last)
         if (param.rest) {
             // Create array from remaining arguments

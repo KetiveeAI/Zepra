@@ -1,6 +1,6 @@
 KETIVEE APP DEVELOPER LICENSE v1.0
-Issued by: Ketivee Team (https://ketivee.org)
-Effective: 2025
+Issued by: Ketivee Team (https://ketivee.com)
+Effective: 2026
 
 This license governs the terms under which developers can create and distribute applications on the Ketivee OS platform and App Store.
 
@@ -37,4 +37,4 @@ This license ensures that developers can build freely on Ketivee while maintaini
 Signed,  
 Swanaya Gupta  
 Ketivee Founder & Lead Developer  
-https://ketivee.org
+https://ketivee.com

@@ -145,9 +145,7 @@ private:
     void compileArrowFunction(const Frontend::ArrowFunctionExpr* expr);
     void compileThisExpression(const Frontend::ThisExpr* expr);
     void compileAwaitExpression(const Frontend::AwaitExpr* expr);
-    void compileAwaitExpression(const Frontend::AwaitExpr* expr);
     void compileYieldExpression(const Frontend::YieldExpr* expr);
-    void compileTemplateLiteral(const Frontend::TemplateLiteralExpr* expr);
     void compileSpreadElement(const Frontend::SpreadExpr* expr);
     void compileRestElement(const Frontend::RestElem* expr);
     

@@ -171,3 +171,15 @@ Declarations exist for Temporal, Decorators, Pipeline, WeakRef, FinalizationRegi
 - [x] super() call in class constructor using OP_SUPER_CALL (was placeholder)
 - [x] Class constructor closure upvalue count byte emission
 - [x] Class method closure upvalue count byte emission
+
+### Phase 61: VM Opcode Handlers & ES Features ✅
+
+- [x] 8 Missing VM Opcodes implemented: `OP_INHERIT`, `OP_DEFINE_METHOD`, `OP_DEFINE_STATIC`, `OP_DEFINE_GETTER`, `OP_DEFINE_SETTER`, `OP_SUPER_CALL`, `OP_FOR_IN`
+- [x] Fixed `PropertyDescriptor` memory-attribute mapping, properly invoking `Object::defineProperty`
+- [x] Fixed `OP_FOR_IN` iterator array initialization strategy using `Object::keys()`
+- [x] Added `SpreadElement` and `RestElement` AST classes to frontend (`ast.hpp`)
+- [x] Implemented `compileSpreadElement` mapped to `OP_SPREAD` byte emission
+- [x] Implemented proper argument array collection for `RestElement` mapping
+- [x] Fixed `compileFunctionDeclaration`/`compileFunctionExpression`/`compileArrowFunction` for default parameter support using `OP_NIL` and `OP_STRICT_EQUAL` equality condition jump
+
+---

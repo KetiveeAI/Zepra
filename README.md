@@ -16,15 +16,15 @@ ZepraBrowser is part of a larger ecosystem of independent tools and technologies
 
 For architectural details, development guides, and deeper dives into the engine's subsystems, please refer to the files in the [`docs/`](docs/) directory. We highly recommend reviewing the architecture overview for details on the engine's multi-tier JIT, GC, and memory layouts.
 
-## License
+## Community & License
 
-ZepraBrowser & ZebraScript are licensed under the KetiveeAI Source Available License (KSAL-2.0).
+ZepraBrowser & ZebraScript are licensed under the KetiveeAI Public License (KPL-2.0).
 
-For more information, please see:
+Please review the following documents before participating:
 
-- [Ketivee Public License](docs/Ketivee_Public_License.md)
-- [Legal Information](LEGAL.md)
-- [Contributing Guidelines](CONTRIBUTING.md)
+- [KetiveeAI Public License (KPL 2.0)](LICENSE)
+- [Contributing Guidelines & Engineering Manual](CONTRIBUTING.md)
+- [Code of Conduct](CODE_OF_CONDUCT.md)
 
 ## Contact
 
