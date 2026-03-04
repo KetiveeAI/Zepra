@@ -4,9 +4,9 @@
  */
 
 #include <gtest/gtest.h>
-#include "zeprascript/browser/fetch.hpp"
-#include "zeprascript/browser/url.hpp"
-#include "zeprascript/runtime/promise.hpp"
+#include "browser/fetch.hpp"
+#include "browser/url.hpp"
+#include "runtime/async/promise.hpp"
 
 using namespace Zepra::Browser;
 using namespace Zepra::Runtime;

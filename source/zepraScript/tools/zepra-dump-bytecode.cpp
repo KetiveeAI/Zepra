@@ -6,9 +6,9 @@
 #include <iostream>
 #include <string>
 
-#include "zeprascript/config.hpp"
-#include "zeprascript/frontend/source_code.hpp"
-#include "zeprascript/frontend/lexer.hpp"
+#include "config.hpp"
+#include "frontend/source_code.hpp"
+#include "frontend/lexer.hpp"
 
 using namespace Zepra;
 

@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NXRender Documentation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        dark: { 900: '#0a0a0f', 800: '#12121a', 700: '#1a1a24', 600: '#24242f' },
+                        accent: { DEFAULT: '#f43f5e', light: '#fb7185' }, // rose/pink for render
+                    },
+                    fontFamily: { sans: ['Inter', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #12121a; }
+        ::-webkit-scrollbar-thumb { background: #3f3f5a; border-radius: 4px; }
+        .gradient-text { background: linear-gradient(135deg, #f43f5e 0%, #a855f7 50%, #3b82f6 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .hero-gradient { background: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(244, 63, 94, 0.15), transparent); }
+        .glass { background: rgba(26, 26, 36, 0.8); backdrop-filter: blur(20px); border: 1px solid rgba(244, 63, 94, 0.1); }
+        .glow { box-shadow: 0 0 80px rgba(244, 63, 94, 0.2); }
+        .nav-link.active { background: linear-gradient(90deg, rgba(244, 63, 94, 0.2) 0%, transparent 100%); border-left-color: #f43f5e; }
+        .card-hover { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .card-hover:hover { transform: translateY(-8px) scale(1.02); box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5); border-color: rgba(244, 63, 94, 0.5); }
+        .float { animation: float 6s ease-in-out infinite; }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
+    </style>
+</head>
+<body class="bg-dark-900 text-gray-100 font-sans antialiased">
+    <div class="fixed inset-0 pointer-events-none hero-gradient"></div>
+    <div class="fixed inset-0 pointer-events-none overflow-hidden">
+        <div class="absolute top-1/4 left-1/4 w-[800px] h-[800px] bg-accent/5 rounded-full blur-[200px] float"></div>
+        <div class="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-purple-500/5 rounded-full blur-[150px]"></div>
+    </div>
+
+    <aside class="fixed left-0 top-0 w-72 h-screen bg-dark-800/90 backdrop-blur-xl border-r border-white/5 z-50 overflow-y-auto">
+        <div class="p-6 border-b border-white/5">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-accent to-purple-500 flex items-center justify-center glow">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/></svg>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg">NXRender</h1>
+                    <span class="text-xs text-gray-500">v2.0.0 Documentation</span>
+                </div>
+            </div>
+        </div>
+        <nav class="p-4">
+            <div class="mb-6">
+                <span class="text-[10px] font-semibold uppercase tracking-wider text-gray-500 px-3">Navigation</span>
+                <div class="mt-2 space-y-1">
+                    <a href="../index.html" class="nav-link flex items-center gap-3 px-3 py-2 text-sm text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all border-l-2 border-transparent">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                        Hub Home</a>
+                    <a href="index.html" class="nav-link active flex items-center gap-3 px-3 py-2 text-sm text-white rounded-lg border-l-2 border-accent">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                        NXRender Home</a>
+                    <a href="architecture.html" class="nav-link flex items-center gap-3 px-3 py-2 text-sm text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all border-l-2 border-transparent">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                        Architecture API</a>
+                    <a href="dev.html" class="nav-link flex items-center gap-3 px-3 py-2 text-sm text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all border-l-2 border-transparent">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+                        Developer Guide</a>
+                    <a href="todo.html" class="nav-link flex items-center gap-3 px-3 py-2 text-sm text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all border-l-2 border-transparent">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                        TODOs</a>
+                </div>
+            </div>
+            <div class="mb-6">
+                <span class="text-[10px] font-semibold uppercase tracking-wider text-gray-500 px-3">This Page</span>
+                <div class="mt-2 space-y-1">
+                    <a href="#features" class="nav-link flex items-center gap-3 px-3 py-2 text-sm text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all border-l-2 border-transparent pl-6">Core Features</a>
+                    <a href="#architecture" class="nav-link flex items-center gap-3 px-3 py-2 text-sm text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all border-l-2 border-transparent pl-6">Architecture</a>
+                    <a href="#modules" class="nav-link flex items-center gap-3 px-3 py-2 text-sm text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all border-l-2 border-transparent pl-6">C++ Modules</a>
+                </div>
+            </div>
+        </nav>
+    </aside>
+
+    <main class="ml-72 min-h-screen">
+        <div class="max-w-5xl mx-auto px-8 py-20">
+            <!-- Hero -->
+            <header class="mb-24 text-center animate-header">
+                <div class="inline-flex items-center gap-2 px-4 py-2 glass rounded-full mb-8">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span class="text-sm text-gray-400">Hardware-Accelerated C++ Rendering Engine</span>
+                </div>
+                <h1 class="text-6xl md:text-7xl font-extrabold mb-6">
+                    <span class="gradient-text">NXRender Engine</span>
+                </h1>
+                <p class="text-xl text-gray-400 max-w-2xl mx-auto mb-10">High-performance custom compositor & layout engine for NeolyxOS and ZepraBrowser. Written in modern C++.</p>
+                <div class="flex gap-4 justify-center">
+                    <a href="architecture.html" class="px-6 py-3 bg-gradient-to-r from-accent to-purple-500 text-white font-semibold rounded-xl hover:opacity-90 transition-opacity">
+                        Architecture Internals →
+                    </a>
+                    <a href="dev.html" class="px-6 py-3 glass rounded-xl text-gray-300 hover:text-white transition-colors">
+                        Build & Run
+                    </a>
+                </div>
+            </header>
+
+            <!-- Stats -->
+            <section class="mb-24 animate-section">
+                <div class="grid grid-cols-4 gap-6">
+                    <div class="glass rounded-2xl p-6 text-center glow card-hover">
+                        <div class="text-4xl font-bold bg-gradient-to-r from-accent to-purple-400 bg-clip-text text-transparent mb-2">GPU</div>
+                        <div class="text-sm text-gray-500">Compositing</div>
+                    </div>
+                    <div class="glass rounded-2xl p-6 text-center card-hover">
+                        <div class="text-4xl font-bold text-purple-400 mb-2">12</div>
+                        <div class="text-sm text-gray-500">Core Submodules</div>
+                    </div>
+                    <div class="glass rounded-2xl p-6 text-center card-hover">
+                        <div class="text-4xl font-bold text-pink-400 mb-2">C++20</div>
+                        <div class="text-sm text-gray-500">Modern Codebase</div>
+                    </div>
+                    <div class="glass rounded-2xl p-6 text-center card-hover">
+                        <div class="text-4xl font-bold text-emerald-400 mb-2">0</div>
+                        <div class="text-sm text-gray-500">WebKit/Blink Relies</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Features -->
+            <section id="features" class="mb-24">
+                <h2 class="text-3xl font-bold text-center mb-12 animate-section">Rendering Capabilities</h2>
+                <div class="grid md:grid-cols-3 gap-6">
+                    <a href="architecture.html" class="glass rounded-2xl p-8 card-hover block animate-section">
+                        <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-accent/20 to-purple-500/20 flex items-center justify-center mb-6">
+                            <svg class="w-7 h-7 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-2">Layer Compositor</h3>
+                        <p class="text-gray-400 text-sm mb-4">Multi-layered rendering with damage tracking and optimized redraws through NXGFX binding.</p>
+                        <span class="text-accent text-sm font-medium">Read Architecture →</span>
+                    </a>
+                    <a href="dev.html" class="glass rounded-2xl p-8 card-hover block animate-section">
+                        <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 flex items-center justify-center mb-6">
+                            <svg class="w-7 h-7 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/></svg>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-2">Flexbox UI System</h3>
+                        <p class="text-gray-400 text-sm mb-4">Complete widget hierarchy featuring containers, layouts, and constraints logic.</p>
+                        <span class="text-emerald-400 text-sm font-medium">View API →</span>
+                    </a>
+                    <a href="todo.html" class="glass rounded-2xl p-8 card-hover block animate-section">
+                        <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center mb-6">
+                            <svg class="w-7 h-7 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"/></svg>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-2">Native Theming</h3>
+                        <p class="text-gray-400 text-sm mb-4">First-class support for animations, transitions, and platform-specific theming constraints.</p>
+                        <span class="text-amber-400 text-sm font-medium">See Status →</span>
+                    </a>
+                </div>
+            </section>
+
+            <!-- Architecture Map -->
+            <section id="architecture" class="mb-24 animate-section">
+                <h2 class="text-3xl font-bold text-center mb-8">System Overview</h2>
+                <div class="glass rounded-2xl p-8 glow">
+                    <pre class="text-xs md:text-sm font-mono text-gray-400 overflow-x-auto leading-relaxed">
+<span class="text-gray-600">┌─────────────────────────────────────────────────────────────────┐</span>
+<span class="text-gray-600">│</span>                     <span class="text-accent">ZepraBrowser / NeolyxOS</span>                     <span class="text-gray-600">│</span>
+<span class="text-gray-600">└─────────────────────────────────┬───────────────────────────────┘</span>
+                                  <span class="text-gray-600">│</span>
+<span class="text-gray-600">┌─────────────────────────────────▼───────────────────────────────┐</span>
+<span class="text-gray-600">│</span>                      <span class="text-pink-400">NXRender C++ API Bridge</span>                    <span class="text-gray-600">│</span>
+<span class="text-gray-600">│</span> <span class="text-gray-500">(nxrender_cpp.h & nxrender_c_bridge.h)</span>                          <span class="text-gray-600">│</span>
+<span class="text-gray-600">└─────────────────────────────────────────────────────────────────┘</span>
+  <span class="text-gray-600">┌─────────────┬─────────────┬─────────────┬─────────────┐</span>
+  <span class="text-gray-600">│</span>             <span class="text-gray-600">│</span>             <span class="text-gray-600">│</span>             <span class="text-gray-600">│</span>             <span class="text-gray-600">│</span>
+<span class="text-gray-600">┌─▼─┐         ┌─▼─┐         ┌─▼─┐         ┌─▼─┐         ┌─▼─┐</span>
+<span class="text-gray-600">│</span><span class="text-blue-400">UI </span><span class="text-gray-600">│         │</span><span class="text-teal-400">Lyt</span><span class="text-gray-600">│         │</span><span class="text-amber-400">Inp</span><span class="text-gray-600">│         │</span><span class="text-purple-400">Ani</span><span class="text-gray-600">│         │</span><span class="text-emerald-400">Thm</span><span class="text-gray-600">│</span>
+<span class="text-gray-600">│</span>Widgets      Layout        Input         Animation     Theme
+<span class="text-gray-600">└─┬─┘         └─┬─┘         └─┬─┘         └─┬─┘         └─┬─┘</span>
+  <span class="text-gray-600">│</span>             <span class="text-gray-600">│</span>             <span class="text-gray-600">│</span>             <span class="text-gray-600">│</span>             <span class="text-gray-600">│</span>
+<span class="text-gray-600">┌─▼─────────────▼─────────────▼─────────────▼─────────────▼─┐</span>
+<span class="text-gray-600">│</span>                    <span class="text-accent">Core Compositor</span>                          <span class="text-gray-600">│</span>
+<span class="text-gray-600">│</span>               <span class="text-gray-500">Surface Mgmt, Layers, Render Loops</span>            <span class="text-gray-600">│</span>
+<span class="text-gray-600">└─────────────────────────────────┬───────────────────────────────┘</span>
+                                  <span class="text-gray-600">│</span>
+<span class="text-gray-600">┌─────────────────────────────────▼───────────────────────────────┐</span>
+<span class="text-gray-600">│</span>                  <span class="text-rose-400">NXGFX Backend & Platform</span>                       <span class="text-gray-600">│</span>
+<span class="text-gray-600">│</span>            <span class="text-gray-500">DRM/KMS | OpenGL/Vulkan | Graphics Primitives</span>    <span class="text-gray-600">│</span>
+<span class="text-gray-600">└─────────────────────────────────────────────────────────────────┘</span>
+                    </pre>
+                </div>
+            </section>
+
+            <!-- Modules -->
+            <section id="modules" class="mb-24 animate-section">
+                <h2 class="text-3xl font-bold text-center mb-8">C++ Source Layout</h2>
+                <div class="glass rounded-2xl p-8">
+                    <div class="grid md:grid-cols-2 gap-x-12 gap-y-2 font-mono text-sm">
+                        <div class="flex items-center gap-3 text-gray-400"><span class="text-accent">📁</span> core/ <span class="text-gray-600 text-xs ml-auto">compositor & layers</span></div>
+                        <div class="flex items-center gap-3 text-gray-400"><span class="text-purple-400">📁</span> nxgfx/ <span class="text-gray-600 text-xs ml-auto">hardware context</span></div>
+                        <div class="flex items-center gap-3 text-gray-400"><span class="text-pink-400">📁</span> widgets/ <span class="text-gray-600 text-xs ml-auto">buttons & inputs</span></div>
+                        <div class="flex items-center gap-3 text-gray-400"><span class="text-emerald-400">📁</span> layout/ <span class="text-gray-600 text-xs ml-auto">flex logic</span></div>
+                        <div class="flex items-center gap-3 text-gray-400"><span class="text-amber-400">📁</span> input/ <span class="text-gray-600 text-xs ml-auto">events & dispatch</span></div>
+                        <div class="flex items-center gap-3 text-gray-400"><span class="text-red-400">📁</span> animation/ <span class="text-gray-600 text-xs ml-auto">easing & timelines</span></div>
+                        <div class="flex items-center gap-3 text-gray-400"><span class="text-cyan-400">📁</span> theme/ <span class="text-gray-600 text-xs ml-auto">color & styling</span></div>
+                        <div class="flex items-center gap-3 text-gray-400"><span class="text-teal-400">📁</span> platform/ <span class="text-gray-600 text-xs ml-auto">OS bindings</span></div>
+                        <div class="flex items-center gap-3 text-gray-400"><span class="text-orange-400">📁</span> web/ <span class="text-gray-600 text-xs ml-auto">webview bindings</span></div>
+                        <div class="flex items-center gap-3 text-gray-400"><span class="text-yellow-400">📄</span> nxrender_c_bridge.h <span class="text-gray-600 text-xs ml-auto">C wrapper</span></div>
+                        <div class="flex items-center gap-3 text-gray-400"><span class="text-lime-400">📄</span> nxrender_cpp.h <span class="text-gray-600 text-xs ml-auto">main import</span></div>
+                    </div>
+                </div>
+            </section>
+
+            <footer class="pt-12 border-t border-white/5 text-center">
+                <div class="text-sm text-gray-500">NXRender Framework • ZepraBrowser • © 2026 KetiveeAI</div>
+            </footer>
+        </div>
+    </main>
+
+    <script>
+        gsap.registerPlugin(ScrollTrigger);
+        gsap.from('.animate-header', { opacity: 0, y: 50, duration: 1, ease: 'power3.out' });
+        gsap.utils.toArray('.animate-section').forEach((section, i) => {
+            gsap.from(section, {
+                scrollTrigger: { trigger: section, start: 'top 85%' },
+                opacity: 0, y: 50, duration: 0.8, ease: 'power3.out', delay: i * 0.1
+            });
+        });
+    </script>
+</body>
+</html>

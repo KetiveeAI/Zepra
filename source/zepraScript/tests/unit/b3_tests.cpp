@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
-#include "zeprascript/b3/B3Procedure.h"
-#include "zeprascript/b3/B3Generate.h"
+#include "b3/B3Procedure.h"
+#include "b3/B3Generate.h"
 #include <sys/mman.h>
 
 using namespace Zepra::B3;
@@ -222,7 +222,7 @@ TEST_F(B3Tests, ControlFlowJump) {
 }
 
 // Integration test: DFG -> B3 Lowering -> B3 Generate
-#include "zeprascript/b3/B3Lowering.h"
+#include "b3/B3Lowering.h"
 
 TEST_F(B3Tests, DFGToB3Pipeline) {
     // Create a simple DFG graph: return 10 + 32

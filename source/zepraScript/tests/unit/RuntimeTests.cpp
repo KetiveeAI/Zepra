@@ -8,9 +8,9 @@
 #include <string>
 
 // Would include actual headers
-// #include "zeprascript/runtime/value.hpp"
-// #include "zeprascript/runtime/Shape.h"
-// #include "zeprascript/runtime/PropertyStorage.h"
+// #include "runtime/objects/value.hpp"
+// #include "runtime/objects/Shape.h"
+// #include "runtime/objects/PropertyStorage.h"
 
 namespace Tests {
 

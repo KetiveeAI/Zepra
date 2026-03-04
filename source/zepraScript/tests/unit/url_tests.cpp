@@ -4,7 +4,7 @@
  */
 
 #include <gtest/gtest.h>
-#include "zeprascript/browser/url.hpp"
+#include "browser/url.hpp"
 
 using namespace Zepra::Browser;
 

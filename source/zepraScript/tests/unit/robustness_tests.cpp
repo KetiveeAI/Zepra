@@ -6,8 +6,8 @@
  */
 
 #include <gtest/gtest.h>
-#include "zeprascript/runtime/Sandbox.h"
-#include "zeprascript/safety/CrashBoundary.h"
+#include "runtime/execution/Sandbox.h"
+#include "safety/CrashBoundary.h"
 #include <vector>
 #include <thread>
 #include <chrono>

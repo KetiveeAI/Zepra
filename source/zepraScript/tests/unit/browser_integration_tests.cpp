@@ -7,8 +7,8 @@
  */
 
 #include <gtest/gtest.h>
-#include "zeprascript/runtime/Sandbox.h"
-#include "zeprascript/runtime/IsolatedGlobal.h"
+#include "runtime/execution/Sandbox.h"
+#include "runtime/execution/IsolatedGlobal.h"
 #include <vector>
 #include <thread>
 #include <chrono>

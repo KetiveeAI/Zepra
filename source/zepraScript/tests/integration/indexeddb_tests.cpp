@@ -4,10 +4,10 @@
  */
 
 #include <gtest/gtest.h>
-#include "zeprascript/browser/IndexedDBAPI.h"
-#include "zeprascript/browser/StructuredClone.h"
-#include "zeprascript/runtime/string.hpp"
-#include "zeprascript/runtime/array.hpp"
+#include "browser/IndexedDBAPI.h"
+#include "browser/StructuredClone.h"
+#include "builtins/string.hpp"
+#include "builtins/array.hpp"
 
 using namespace Zepra::Browser;
 using namespace Zepra::Runtime;

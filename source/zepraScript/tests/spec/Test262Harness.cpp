@@ -3,11 +3,12 @@
  * @brief Test262 harness implementation
  */
 
-#include "zeprascript/spec/Test262Harness.h"
+#include "tests/spec/Test262Harness.h"
 #include <fstream>
 #include <sstream>
 #include <regex>
 #include <chrono>
+#include <stdexcept>
 
 namespace Zepra::Spec {
 

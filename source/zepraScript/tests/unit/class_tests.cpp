@@ -4,10 +4,10 @@
  */
 
 #include <gtest/gtest.h>
-#include <zeprascript/runtime/class_fields.hpp>
-#include <zeprascript/runtime/function.hpp>
-#include <zeprascript/runtime/object.hpp>
-#include <zeprascript/runtime/value.hpp>
+#include "runtime/objects/class_fields.hpp"
+#include "runtime/objects/function.hpp"
+#include "runtime/objects/object.hpp"
+#include "runtime/objects/value.hpp"
 
 using namespace Zepra::Runtime;
 

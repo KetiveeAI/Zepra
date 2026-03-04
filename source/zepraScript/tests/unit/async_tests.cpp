@@ -4,10 +4,10 @@
  */
 
 #include <gtest/gtest.h>
-#include <zeprascript/runtime/async_function.hpp>
-#include <zeprascript/runtime/promise.hpp>
-#include <zeprascript/runtime/function.hpp>
-#include <zeprascript/runtime/object.hpp>
+#include "runtime/async/async_function.hpp"
+#include "runtime/async/promise.hpp"
+#include "runtime/objects/function.hpp"
+#include "runtime/objects/object.hpp"
 
 using namespace Zepra::Runtime;
 

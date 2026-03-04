@@ -4,7 +4,6 @@
  *
  * Provides information about the browser and system.
  *
- * @see https://developer.mozilla.org/en-US/docs/Web/API/Navigator
  */
 
 #pragma once

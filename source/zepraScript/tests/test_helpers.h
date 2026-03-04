@@ -12,11 +12,12 @@
 #include <functional>
 
 // Include runtime APIs for testing
-#include <zeprascript/runtime/ArrayAPI.h>
-#include <zeprascript/runtime/StringAPI.h>
-#include <zeprascript/runtime/MapSetAPI.h>
-#include <zeprascript/runtime/Base64API.h>
-#include <zeprascript/runtime/CoercionAPI.h>
+#include "runtime/builtins_api/ArrayAPI.h"
+#include "runtime/builtins_api/StringAPI.h"
+#include "runtime/objects/MapSetAPI.h"
+#include "runtime/builtins_api/Base64API.h"
+#include "runtime/objects/CoercionAPI.h"
+#include <stdexcept>
 
 namespace Zepra::Tests {
 

@@ -4,10 +4,11 @@
  */
 
 #include <gtest/gtest.h>
-#include "zeprascript/runtime/GeneratorAPI.h"
-#include "zeprascript/runtime/IteratorAPI.h"
+#include "runtime/async/GeneratorAPI.h"
+#include "runtime/async/IteratorAPI.h"
 #include <vector>
 #include <string>
+#include <stdexcept>
 
 using namespace Zepra::Runtime;
 

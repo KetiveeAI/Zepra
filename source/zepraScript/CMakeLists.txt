@@ -1,166 +1,231 @@
-cmake_minimum_required(VERSION 3.20)
-project(ZepraScript
-    VERSION 1.0.0
-    DESCRIPTION "ZebraScript JavaScript Engine for ZepraBrowser"
-    LANGUAGES CXX
+# =============================================================================
+# ZepraScript Core Engine Library
+# =============================================================================
+
+set(ZEPRA_CORE_SOURCES
+    # Frontend
+    frontend/lexer.cpp
+    frontend/parser.cpp
+    frontend/ast.cpp
+    frontend/source_code.cpp
+    frontend/syntax_checker.cpp
+
+    # Runtime — Objects
+    runtime/objects/value.cpp
+    runtime/objects/object.cpp
+    runtime/objects/function.cpp
+    runtime/objects/symbol.cpp
+    runtime/objects/proxy.cpp
+    runtime/objects/class_fields.cpp
+    runtime/objects/map.cpp
+    runtime/objects/set.cpp
+
+    # Runtime — Execution
+    runtime/execution/vm.cpp
+    runtime/execution/environment.cpp
+    runtime/execution/global_object.cpp
+
+    # Runtime — Async
+    runtime/async/promise.cpp
+    runtime/async/async.cpp
+    runtime/async/async_function.cpp
+    runtime/async/iterator.cpp
+
+    # Runtime — Handles
+    runtime/handles/module.cpp
+    runtime/handles/module_loader.cpp
+    runtime/handles/inline_cache.cpp
+
+    # Heap (was gc/)
+    heap/heap.cpp
+    heap/gc_heap.cpp
+    heap/concurrent_gc.cpp
+    heap/allocator.cpp
+    heap/marking.cpp
+    heap/sweeping.cpp
+    heap/handle.cpp
+    heap/write_barrier.cpp
+    heap/incremental_gc.cpp
+    heap/compacting.cpp
+    heap/generational_gc.cpp
+    heap/finalizer.cpp
+
+    # Bytecode
+    bytecode/bytecode_generator.cpp
+    bytecode/opcode.cpp
+    bytecode/peephole_optimizer.cpp
+
+    # Interpreter
+    interpreter/interpreter.cpp
+    interpreter/stack_frame.cpp
+
+    # Builtins
+    builtins/object_builtins.cpp
+    builtins/array.cpp
+    builtins/string.cpp
+    builtins/number.cpp
+    builtins/boolean.cpp
+    builtins/math.cpp
+    builtins/date.cpp
+    builtins/console.cpp
+    builtins/json.cpp
+    builtins/map.cpp
+    builtins/set.cpp
+    builtins/regexp.cpp
+    builtins/symbol.cpp
+    builtins/weakmap.cpp
+    builtins/reflect.cpp
+    builtins/generator.cpp
+    builtins/intl.cpp
+    builtins/typed_array.cpp
+    builtins/data_view.cpp
+    builtins/temporal.cpp
+    builtins/atomics.cpp
+
+    # WebAssembly
+    wasm/wasm.cpp
+    wasm/WasmValidate.cpp
+    wasm/WasmBaselineCompile.cpp
+    wasm/WasmInterpreter.cpp
+    wasm/WasmStackManager.cpp
+    wasm/WasmSignalHandlers.cpp
+    wasm/ZWasmFaultHandler.cpp
+
+    # JIT
+    jit/jit_profiler.cpp
+    jit/type_profiler.cpp
+    jit/baseline_jit.cpp
+    jit/osr.cpp
+    jit/macro_assembler.cpp
+    jit/deoptimizer.cpp
+
+    # DFG Optimizer
+    dfg/DFGGraph.cpp
+    dfg/DFGBuilder.cpp
+    dfg/DFGLowering.cpp
+    dfg/DFGPipeline.cpp
+
+    # Memory
+    memory/page_allocator.cpp
+    memory/arena_allocator.cpp
+    memory/memory_pool.cpp
+
+    # API
+    api/isolate.cpp
+    api/context.cpp
+    api/local_handle.cpp
+    api/script.cpp
+    api/value_api.cpp
+
+    # Debugger (was debug/)
+    debugger/debug_api.cpp
+    debugger/breakpoint_manager.cpp
+    debugger/call_stack_info.cpp
+    debugger/execution_control.cpp
+    debugger/debugger.cpp
+    debugger/inspector.cpp
+    debugger/profiler.cpp
+    debugger/console.cpp
+
+    # Profiler
+    profiler/cpu_profiler.cpp
+    profiler/heap_profiler.cpp
+    profiler/sampling_profiler.cpp
+    profiler/timeline.cpp
+
+    # Utils
+    utils/platform.cpp
+    utils/unicode.cpp
+    utils/string_builder.cpp
+
+    # Host
+    host/script_engine.cpp
+    host/native_function.cpp
+
+    # Browser
+    browser/window.cpp
+    browser/document.cpp
+    browser/fetch.cpp
+    browser/url.cpp
+    browser/worker.cpp
+    browser/event_system.cpp
+    browser/storage_api.cpp
+    browser/secure_storage.cpp
+    browser/password_vault.cpp
+    browser/structured_clone.cpp
+    browser/indexeddb.cpp
+    browser/service_worker.cpp
+    browser/websocket.cpp
+    browser/performance.cpp
+    browser/console_api.cpp
+    browser/devtools.cpp
+
+    # Regex Engine
+    regex/regex_compiler.cpp
+    regex/regex_engine.cpp
+
+    # Threading
+    threading/thread_pool.cpp
+
+    # Optimization
+    optimization/hidden_class.cpp
+    optimization/inline_cache_opt.cpp
+    optimization/property_table.cpp
+    optimization/speculation.cpp
+
+    # Workers
+    workers/WorkerModuleLoader.cpp
+
+    # Integration
+    integration/VMModuleIntegration.cpp
 )
 
-# =============================================================================
-# CMake Configuration
-# =============================================================================
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+# Create core library
+add_library(zepra-core STATIC ${ZEPRA_CORE_SOURCES})
 
-# Module path for custom CMake modules
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-
-# =============================================================================
-# Build Options
-# =============================================================================
-option(ZEPRA_BUILD_DEVTOOLS "Build Zepra DevTools UI" OFF)
-option(ZEPRA_BUILD_CDP_EXTENSION "Build CDP extension (for 3rd party tools)" OFF)
-option(ZEPRA_BUILD_TESTS "Build unit and integration tests" ON)
-option(ZEPRA_BUILD_BENCHMARKS "Build performance benchmarks" OFF)
-option(ZEPRA_BUILD_TOOLS "Build CLI tools (REPL, etc.)" ON)
-option(ZEPRA_ENABLE_ASAN "Enable Address Sanitizer" OFF)
-option(ZEPRA_ENABLE_UBSAN "Enable Undefined Behavior Sanitizer" OFF)
-option(ZEPRA_ENABLE_TSAN "Enable Thread Sanitizer" OFF)
-
-# =============================================================================
-# Compiler Warnings
-# =============================================================================
-if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    add_compile_options(
-        -Wall
-        -Wextra
-        -Wpedantic
-        -Werror=return-type
-        -Wno-unused-parameter
-        -fno-omit-frame-pointer
-    )
-    
-    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-        add_compile_options(-g -O0)
-    elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
-        add_compile_options(-O3 -DNDEBUG)
-    elseif(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
-        add_compile_options(-O2 -g)
-    endif()
+# Determine nxhttp path
+set(ZEPRA_SOURCE_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/..")
+if(EXISTS "${CMAKE_SOURCE_DIR}/source/nxhttp/include")
+    set(NXHTTP_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/source/nxhttp/include")
+    set(NXHTTP_LIB "${CMAKE_SOURCE_DIR}/source/nxhttp/build/libnxhttp.a")
+elseif(EXISTS "${ZEPRA_SOURCE_ROOT}/nxhttp/include")
+    set(NXHTTP_INCLUDE_DIR "${ZEPRA_SOURCE_ROOT}/nxhttp/include")
+    set(NXHTTP_LIB "${ZEPRA_SOURCE_ROOT}/nxhttp/build/libnxhttp.a")
+else()
+    message(WARNING "nxhttp not found - fetch.cpp will fail to build")
+    set(NXHTTP_INCLUDE_DIR "")
+    set(NXHTTP_LIB "")
 endif()
 
-if(MSVC)
-    add_compile_options(/W4 /WX /permissive-)
-endif()
-
-# =============================================================================
-# Sanitizers
-# =============================================================================
-if(ZEPRA_ENABLE_ASAN)
-    add_compile_options(-fsanitize=address)
-    add_link_options(-fsanitize=address)
-endif()
-
-if(ZEPRA_ENABLE_UBSAN)
-    add_compile_options(-fsanitize=undefined)
-    add_link_options(-fsanitize=undefined)
-endif()
-
-if(ZEPRA_ENABLE_TSAN)
-    add_compile_options(-fsanitize=thread)
-    add_link_options(-fsanitize=thread)
-endif()
-
-# =============================================================================
-# Output Directories
-# =============================================================================
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-
-# =============================================================================
-# Include Directories - Core Headers
-# =============================================================================
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
-
-# =============================================================================
-# Core Engine Library (always built)
-# =============================================================================
-add_subdirectory(src)
-
-# =============================================================================
-# Optional: Zepra DevTools (Primary Debugging Tool)
-# =============================================================================
-if(ZEPRA_BUILD_DEVTOOLS)
-    find_package(Qt6 COMPONENTS Widgets QUIET)
-    if(Qt6_FOUND)
-        add_subdirectory(zepra-devtools)
-    else()
-        message(WARNING "Qt6 not found, skipping DevTools build")
-    endif()
-endif()
-
-# =============================================================================
-# Optional: CDP Extension (Chrome DevTools Compatibility)
-# =============================================================================
-if(ZEPRA_BUILD_CDP_EXTENSION)
-    add_subdirectory(cdp-extension)
-endif()
-
-# =============================================================================
-# CLI Tools (REPL, bytecode dumper, etc.)
-# =============================================================================
-if(ZEPRA_BUILD_TOOLS)
-    add_subdirectory(tools)
-endif()
-
-# =============================================================================
-# Tests
-# =============================================================================
-if(ZEPRA_BUILD_TESTS)
-    enable_testing()
-    add_subdirectory(tests)
-endif()
-
-# =============================================================================
-# Benchmarks
-# =============================================================================
-if(ZEPRA_BUILD_BENCHMARKS)
-    add_subdirectory(benchmarks)
-endif()
-
-# =============================================================================
-# Installation
-# =============================================================================
-install(DIRECTORY include/zeprascript
-    DESTINATION include
-    FILES_MATCHING PATTERN "*.hpp"
+# Include directories — the engine root itself is the include root
+target_include_directories(zepra-core
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${NXHTTP_INCLUDE_DIR}
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-install(TARGETS zepra-core
-    LIBRARY DESTINATION lib
-    ARCHIVE DESTINATION lib
-    RUNTIME DESTINATION bin
+# Link threading support
+find_package(Threads REQUIRED)
+
+target_link_libraries(zepra-core
+    PUBLIC
+        Threads::Threads
 )
 
-# =============================================================================
-# Summary
-# =============================================================================
-message(STATUS "")
-message(STATUS "=== ZepraScript Build Configuration ===")
-message(STATUS "Version:        ${PROJECT_VERSION}")
-message(STATUS "Build type:     ${CMAKE_BUILD_TYPE}")
-message(STATUS "C++ Compiler:   ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
-message(STATUS "")
-message(STATUS "Options:")
-message(STATUS "  DevTools:     ${ZEPRA_BUILD_DEVTOOLS}")
-message(STATUS "  CDP Extension: ${ZEPRA_BUILD_CDP_EXTENSION}")
-message(STATUS "  Tests:        ${ZEPRA_BUILD_TESTS}")
-message(STATUS "  Benchmarks:   ${ZEPRA_BUILD_BENCHMARKS}")
-message(STATUS "  Tools:        ${ZEPRA_BUILD_TOOLS}")
-message(STATUS "  ASAN:         ${ZEPRA_ENABLE_ASAN}")
-message(STATUS "  UBSAN:        ${ZEPRA_ENABLE_UBSAN}")
-message(STATUS "  TSAN:         ${ZEPRA_ENABLE_TSAN}")
-message(STATUS "========================================")
-message(STATUS "")
+if(NXHTTP_LIB AND EXISTS "${NXHTTP_LIB}")
+    target_link_libraries(zepra-core PUBLIC ${NXHTTP_LIB})
+endif()
+
+if(UNIX AND NOT APPLE)
+    target_link_libraries(zepra-core PUBLIC dl)
+endif()
+
+target_compile_definitions(zepra-core
+    PRIVATE
+        ZEPRA_VERSION="${PROJECT_VERSION}"
+        ZEPRA_VERSION_MAJOR=${PROJECT_VERSION_MAJOR}
+        ZEPRA_VERSION_MINOR=${PROJECT_VERSION_MINOR}
+        ZEPRA_VERSION_PATCH=${PROJECT_VERSION_PATCH}
+)

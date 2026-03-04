@@ -1,7 +1,7 @@
 // Lexer unit tests
 #include <gtest/gtest.h>
-#include "zeprascript/frontend/lexer.hpp"
-#include "zeprascript/frontend/source_code.hpp"
+#include "frontend/lexer.hpp"
+#include "frontend/source_code.hpp"
 
 using namespace Zepra::Frontend;
 

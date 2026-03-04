@@ -4,7 +4,7 @@
  */
 
 #include "WasmBenchmarks.h"
-#include "zeprascript/wasm/WasmRelaxedSimd.h"
+#include "wasm/WasmRelaxedSimd.h"
 #include <vector>
 
 namespace Zepra::Wasm::Benchmark {

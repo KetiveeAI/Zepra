@@ -4,7 +4,7 @@
  */
 
 #include <gtest/gtest.h>
-#include "zeprascript/runtime/object.hpp"
+#include "runtime/objects/object.hpp"
 
 using namespace Zepra::Runtime;
 

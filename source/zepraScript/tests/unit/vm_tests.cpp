@@ -1,6 +1,6 @@
 // VM unit tests stub
 #include <gtest/gtest.h>
-#include "zeprascript/runtime/vm.hpp"
+#include "runtime/execution/vm.hpp"
 
 using namespace Zepra::Runtime;
 

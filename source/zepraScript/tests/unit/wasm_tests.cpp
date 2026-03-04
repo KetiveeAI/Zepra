@@ -3,7 +3,8 @@
  * @brief WebAssembly module parsing, validation, and execution tests
  */
 #include <gtest/gtest.h>
-#include "zeprascript/wasm/wasm.hpp"
+#include "wasm/wasm.hpp"
+#include <stdexcept>
 
 using namespace Zepra::Wasm;
 

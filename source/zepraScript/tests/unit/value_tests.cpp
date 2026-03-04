@@ -1,6 +1,6 @@
 // Unit test stubs for ZepraScript
 #include <gtest/gtest.h>
-#include "zeprascript/runtime/value.hpp"
+#include "runtime/objects/value.hpp"
 
 using namespace Zepra::Runtime;
 

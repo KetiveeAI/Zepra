@@ -120,7 +120,7 @@ include_directories(${CMAKE_SOURCE_DIR}/external)
 # ============================================================================
 # Build ZepraScript JS engine (creates zepra-core library)
 add_subdirectory(source/zepraScript)
-include_directories(${CMAKE_SOURCE_DIR}/source/zepraScript/include)
+include_directories(${CMAKE_SOURCE_DIR}/source/zepraScript)
 
 # Build WebCore rendering engine (creates webcore library)
 add_subdirectory(source/webCore)

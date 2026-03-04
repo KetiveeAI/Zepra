@@ -16,9 +16,9 @@
 #include <functional>
 #include <variant>
 
-#include "zeprascript/wasm/WasmModule.h"
-#include "zeprascript/wasm/WasmInstance.h"
-#include "zeprascript/runtime/value.hpp"
+#include "wasm/WasmModule.h"
+#include "wasm/WasmInstance.h"
+#include "runtime/objects/value.hpp"
 
 namespace Zepra::Wasm::Test {
 

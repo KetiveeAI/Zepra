@@ -10,7 +10,7 @@
  */
 
 #include <gtest/gtest.h>
-#include "zeprascript/runtime/value.hpp"
+#include "runtime/objects/value.hpp"
 
 #include <cmath>
 #include <limits>

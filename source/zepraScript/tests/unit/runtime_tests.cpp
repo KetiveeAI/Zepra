@@ -6,12 +6,12 @@
 #include <gtest/gtest.h>
 
 // Runtime APIs
-#include <zeprascript/runtime/MapSetAPI.h>
-#include <zeprascript/runtime/TypedArrayAPI.h>
-#include <zeprascript/runtime/BufferAPI.h>
-#include <zeprascript/runtime/Base64API.h>
-#include <zeprascript/runtime/CoercionAPI.h>
-#include <zeprascript/runtime/TemporalAPI.h>
+#include "runtime/objects/MapSetAPI.h"
+#include "runtime/builtins_api/TypedArrayAPI.h"
+#include "runtime/builtins_api/BufferAPI.h"
+#include "runtime/builtins_api/Base64API.h"
+#include "runtime/objects/CoercionAPI.h"
+#include "runtime/intl/TemporalAPI.h"
 
 using namespace Zepra::Runtime;
 

@@ -3,8 +3,8 @@
  * @brief Comprehensive parser tests for ES6 features
  */
 #include <gtest/gtest.h>
-#include "zeprascript/frontend/parser.hpp"
-#include "zeprascript/frontend/ast.hpp"
+#include "frontend/parser.hpp"
+#include "frontend/ast.hpp"
 
 using namespace Zepra::Frontend;
 

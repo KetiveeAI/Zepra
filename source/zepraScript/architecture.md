@@ -1,982 +1,563 @@
+# ZepraScript Engine — Architecture
 
+> A high-performance JavaScript engine for the Zepra browser.
+> Target: 2M+ lines of C++. Multi-tier JIT. Custom GC. Full ES2025 compliance.
 
-# ZebraScript Engine - Complete Architecture with Modular Inspector
-
-## 🎯 Implementation Status
-
-**Current Version**: v0.3.0  
-**Last Updated**: December 18, 2025
-
-### ES6 Features (Phase 1 Complete)
-- ✅ Arrow Functions `() => {}`
-- ✅ Template Literals `` `${expr}` ``
-- ✅ const/let Scoping (Block scope + Temporal Dead Zone)
-- ✅ Default Parameters `function(x = 0)`
-- ✅ Spread Operator (parser ready)
-- ✅ Rest Parameters `function(...args)`
-- ✅ Destructuring (basic support)
-
-**Progress**: 7/55 ES6 features (12.7%)
-
-### Core Components Status
-- ✅ Lexer/Parser (ES6 Phase 1)
-- ✅ AST (Complete ES6 nodes)
-- ✅ Bytecode Generator (with ES6 support)
-- ✅ Interpreter (ES5 + ES6 Phase 1)
-- ⏳ JIT Compiler (infrastructure ready, disabled)
-- ✅ Garbage Collector (mark-sweep basic)
-- ✅ Value System (numbers, strings, objects)
-- ⏳ Built-ins (basic Array, String, Object)
-- ⏳ Promises (planned Phase 2)
-- ⏳ async/await (planned Phase 2)
-- ⏳ Classes (planned Phase 2)
-
-### Build Status
-- **Binary**: `/tmp/zepra_native`
-- **Build System**: CMake + Make
-- **Platforms**: Linux (primary), macOS/Windows (future)
-- **Dependencies**: zlib (compression)
+**Version:** 1.2.0
+**Last Updated:** 2026-03-04
 
 ---
 
-## Core Principle: Your Own DevTools + Optional CDP Extension
+## Table of Contents
 
+1. [High-Level Overview](#1-high-level-overview)
+2. [Repository Layout](#2-repository-layout)
+3. [Subsystem Reference](#3-subsystem-reference)
+4. [Execution Pipeline](#4-execution-pipeline)
+5. [JIT Tier Escalation](#5-jit-tier-escalation)
+6. [GC Strategy](#6-gc-strategy)
+7. [Public API Surface](#7-public-api-surface)
+8. [Debug Architecture](#8-debug-architecture)
+9. [Dependency Map](#9-dependency-map)
+10. [Build System](#10-build-system)
+11. [Testing Strategy](#11-testing-strategy)
+12. [Design Principles](#12-design-principles)
+13. [Development TODO](#13-development-todo)
+
+---
+
+## 1. High-Level Overview
+
+ZepraScript is a multi-tier JavaScript engine with four execution tiers:
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│              PRIMARY: Zepra DevTools (C++)                  │
-│                                                             │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │  Native UI: Qt/GTK/ImGui (Your Design, Your Brand)  │  │
-│  │  • Console  • Debugger  • Sources  • Network        │  │
-│  │  • Performance  • Memory  • Elements (DOM)          │  │
-│  └──────────────────┬───────────────────────────────────┘  │
-│                     │                                       │
-│                     │ Direct Native API                     │
-└─────────────────────┼───────────────────────────────────────┘
-                      │
-                      │
-   ┌──────────────────▼──────────────────┐
-   │   Zepra Debug Protocol (Native)     │ ← Your protocol
-   │   - Direct C++ API calls            │
-   │   - Zero overhead                   │
-   │   - No JSON/WebSocket               │
-   └──────────────────┬──────────────────┘
-                      │
-                      │
-   ┌──────────────────▼──────────────────┐
-   │    Core Debug API (Always present)  │
-   │    - Breakpoints                    │
-   │    - Call stack                     │
-   │    - Variable inspection            │
-   │    - Execution control              │
-   └──────────────────┬──────────────────┘
-                      │
-                      │
-   ┌──────────────────▼──────────────────┐
-   │      ZepraScript Core Engine        │
-   │   (VM, JIT, GC, Runtime, etc.)      │
-   └─────────────────────────────────────┘
-
-
-┌─────────────────────────────────────────────────────────────┐
-│         OPTIONAL EXTENSION: CDP Compatibility Layer         │
-│              (For 3rd party tools like Chrome)              │
-│                                                             │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐     │
-│  │ Chrome       │  │ VSCode       │  │ Any CDP      │     │
-│  │ DevTools     │  │ Debugger     │  │ Client       │     │
-│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘     │
-│         │                  │                  │             │
-│         └──────────────────┴──────────────────┘             │
-│                            │                                │
-│         ┌──────────────────▼──────────────────┐            │
-│         │  libzepra-cdp-extension.so/.dll     │            │
-│         │  (Optional, can be deleted)         │            │
-│         │  - WebSocket server                 │            │
-│         │  - CDP JSON protocol                │            │
-│         │  - Translates CDP ↔ Native API      │            │
-│         └──────────────────┬──────────────────┘            │
-│                            │                                │
-└────────────────────────────┼────────────────────────────────┘
-                             │
-                             │ Uses same Core Debug API
-                             ↓
-                    (connects to engine)
+Source Code
+    |
+    v
+[ Frontend ]     Lexer -> Parser -> AST -> Syntax Checker
+    |
+    v
+[ Compiler ]     Scope analysis -> Bytecode generation -> Peephole optimizer
+    |
+    v
+[ Interpreter ]  Bytecode dispatch, baseline profiling
+    |
+    v  (hot path)
+[ Baseline JIT ] Fast native code + inline cache stubs
+    |
+    v  (type feedback)
+[ DFG JIT ]      Speculative optimization, type-specialized IR
+    |
+    v  (critical hot loops)
+[ FTL / B3 ]     LLVM-style backend, aggressive inlining
+    |
+    v  (speculation failure)
+[ Interpreter ]  Bail-out, reset profiling
 ```
 
-## Project Structure
+The engine is both embedded inside the Zepra browser and exposed as a standalone library via a V8-compatible handle/isolate API.
+
+---
+
+## 2. Repository Layout
+
+Each subsystem directory contains **both** `.cpp` and `.h/.hpp` files together. No `src/` + `include/` split.
 
 ```
 zeprascript/
-├── CMakeLists.txt
-├── cmake/
-│   ├── Config.cmake
-│   ├── CompilerWarnings.cmake
-│   ├── Sanitizers.cmake
-│   ├── Dependencies.cmake
-│   └── InspectorModule.cmake              # Optional module build
-│
-├── include/
-│   └── zeprascript/
-│       ├── config.hpp
-│       ├── script_engine.hpp
-│       ├── zepra_api.hpp                  # Main public API
-│       │
-│       ├── frontend/
-│       │   ├── lexer.hpp
-│       │   ├── token.hpp
-│       │   ├── parser.hpp
-│       │   ├── ast.hpp
-│       │   ├── source_code.hpp
-│       │   └── syntax_checker.hpp
-│       │
-│       ├── compiler/
-│       │   ├── bytecode.hpp
-│       │   ├── compiler.hpp
-│       │   ├── optimizer.hpp
-│       │   ├── constant_folder.hpp
-│       │   ├── dead_code_eliminator.hpp
-│       │   └── register_allocator.hpp
-│       │
-│       ├── runtime/
-│       │   ├── value.hpp
-│       │   ├── object.hpp
-│       │   ├── function.hpp
-│       │   ├── vm.hpp
-│       │   ├── gc.hpp
-│       │   ├── environment.hpp
-│       │   ├── global_object.hpp
-│       │   ├── prototype.hpp
-│       │   ├── property_descriptor.hpp
-│       │   ├── symbol.hpp
-│       │   ├── iterator.hpp
-│       │   ├── promise.hpp
-│       │   ├── weak_map.hpp
-│       │   ├── weak_set.hpp
-│       │   ├── proxy.hpp
-│       │   ├── reflect.hpp
-│       │   └── module.hpp
-│       │
-│       ├── builtins/
-│       │   ├── array.hpp
-│       │   ├── string.hpp
-│       │   ├── number.hpp
-│       │   ├── boolean.hpp
-│       │   ├── object_builtins.hpp
-│       │   ├── function_builtins.hpp
-│       │   ├── math.hpp
-│       │   ├── date.hpp
-│       │   ├── regexp.hpp
-│       │   ├── json.hpp
-│       │   ├── map.hpp
-│       │   ├── set.hpp
-│       │   ├── typed_array.hpp
-│       │   ├── array_buffer.hpp
-│       │   ├── data_view.hpp
-│       │   └── console.hpp
-│       │
-│       ├── jit/
-│       │   ├── jit_compiler.hpp
-│       │   ├── baseline_jit.hpp
-│       │   ├── dfg_jit.hpp
-│       │   ├── ftl_jit.hpp
-│       │   ├── assembler.hpp
-│       │   ├── code_block.hpp
-│       │   ├── call_frame.hpp
-│       │   ├── register.hpp
-│       │   ├── profiler.hpp
-│       │   ├── type_profiler.hpp
-│       │   ├── inline_cache.hpp
-│       │   └── osr.hpp
-│       │
-│       ├── gc/
-│       │   ├── heap.hpp
-│       │   ├── allocator.hpp
-│       │   ├── marking.hpp
-│       │   ├── sweeping.hpp
-│       │   ├── compacting.hpp
-│       │   ├── incremental_gc.hpp
-│       │   ├── concurrent_gc.hpp
-│       │   ├── generational_gc.hpp
-│       │   ├── write_barrier.hpp
-│       │   ├── handle.hpp
-│       │   ├── weak_ref.hpp
-│       │   └── finalizer.hpp
-│       │
-│       ├── memory/
-│       │   ├── memory_pool.hpp
-│       │   ├── arena_allocator.hpp
-│       │   ├── slab_allocator.hpp
-│       │   ├── stack.hpp
-│       │   └── page_allocator.hpp
-│       │
-│       ├── host/
-│       │   ├── host_context.hpp
-│       │   ├── native_function.hpp
-│       │   ├── callback.hpp
-│       │   ├── foreign_function_interface.hpp
-│       │   ├── bindings_generator.hpp
-│       │   └── type_traits.hpp
-│       │
-│       ├── browser/
-│       │   ├── dom_bindings.hpp
-│       │   ├── window_object.hpp
-│       │   ├── document_object.hpp
-│       │   ├── element_bindings.hpp
-│       │   ├── event_system.hpp
-│       │   ├── event_target.hpp
-│       │   ├── event_listener.hpp
-│       │   ├── xhr_bindings.hpp
-│       │   ├── fetch_api.hpp
-│       │   ├── websocket_bindings.hpp
-│       │   ├── storage_api.hpp
-│       │   ├── console_bindings.hpp
-│       │   ├── timer_bindings.hpp
-│       │   ├── url_api.hpp
-│       │   ├── web_worker.hpp
-│       │   └── service_worker.hpp
-│       │
-│       ├── debug/                             # ← Core debug hooks (minimal)
-│       │   ├── debug_api.hpp                 # YOUR native debug protocol
-│       │   ├── breakpoint_manager.hpp
-│       │   ├── call_stack_info.hpp
-│       │   ├── variable_inspector.hpp
-│       │   ├── source_map.hpp
-│       │   └── execution_control.hpp
-│       │
-│       ├── profiler/
-│       │   ├── cpu_profiler.hpp
-│       │   ├── heap_profiler.hpp
-│       │   ├── sampling_profiler.hpp
-│       │   └── timeline.hpp
-│       │
-│       ├── parser/
-│       │   ├── parser_arena.hpp
-│       │   ├── scope_analyzer.hpp
-│       │   ├── variable_resolver.hpp
-│       │   └── module_loader.hpp
-│       │
-│       ├── bytecode/
-│       │   ├── bytecode_generator.hpp
-│       │   ├── bytecode_instructions.hpp
-│       │   ├── opcode.hpp
-│       │   ├── jump_table.hpp
-│       │   └── metadata.hpp
-│       │
-│       ├── interpreter/
-│       │   ├── interpreter.hpp
-│       │   ├── call_frame_manager.hpp
-│       │   ├── stack_frame.hpp
-│       │   └── exception_handler.hpp
-│       │
-│       ├── exception/
-│       │   ├── exception.hpp
-│       │   ├── error_object.hpp
-│       │   ├── stack_trace.hpp
-│       │   └── try_catch.hpp
-│       │
-│       ├── threading/
-│       │   ├── thread_pool.hpp
-│       │   ├── worker_thread.hpp
-│       │   ├── lock.hpp
-│       │   ├── atomic_ops.hpp
-│       │   └── concurrent_queue.hpp
-│       │
-│       ├── async/
-│       │   ├── event_loop.hpp
-│       │   ├── microtask_queue.hpp
-│       │   ├── task_queue.hpp
-│       │   ├── promise_impl.hpp
-│       │   └── async_context.hpp
-│       │
-│       ├── optimization/
-│       │   ├── inline_cache.hpp
-│       │   ├── polymorphic_cache.hpp
-│       │   ├── hidden_class.hpp
-│       │   ├── structure.hpp
-│       │   ├── property_table.hpp
-│       │   └── speculation.hpp
-│       │
-│       ├── api/
-│       │   ├── context.hpp
-│       │   ├── isolate.hpp
-│       │   ├── persistent_handle.hpp
-│       │   ├── local_handle.hpp
-│       │   ├── template.hpp
-│       │   ├── function_template.hpp
-│       │   ├── object_template.hpp
-│       │   └── signature.hpp
-│       │
-│       ├── modules/
-│       │   ├── module_loader.hpp
-│       │   ├── module_record.hpp
-│       │   ├── import_resolver.hpp
-│       │   ├── dynamic_import.hpp
-│       │   └── module_namespace.hpp
-│       │
-│       ├── regex/
-│       │   ├── regex_engine.hpp
-│       │   ├── regex_compiler.hpp
-│       │   ├── regex_bytecode.hpp
-│       │   ├── regex_jit.hpp
-│       │   └── unicode_support.hpp
-│       │
-│       └── utils/
-│           ├── hash_table.hpp
-│           ├── vector.hpp
-│           ├── string_builder.hpp
-│           ├── bit_vector.hpp
-│           ├── assertions.hpp
-│           ├── macros.hpp
-│           ├── platform.hpp
-│           └── unicode.hpp
-│
-├── cdp-extension/                           # ← OPTIONAL: CDP compatibility
-│   ├── CMakeLists.txt                       # For 3rd party tools only
-│   ├── README.md                            # "Optional CDP extension"
-│   │
-│   ├── include/
-│   │   └── zeprascript/
-│   │       └── cdp/
-│   │           ├── cdp_server.hpp
-│   │           ├── protocol_handler.hpp
-│   │           ├── runtime_domain.hpp
-│   │           ├── debugger_domain.hpp
-│   │           ├── profiler_domain.hpp
-│   │           └── cdp_translator.hpp       # Translates CDP ↔ Native API
-│   │
-│   └── src/
-│       ├── cdp_server.cpp
-│       ├── protocol_handler.cpp
-│       ├── runtime_domain.cpp
-│       ├── debugger_domain.cpp
-│       ├── profiler_domain.cpp
-│       └── cdp_translator.cpp
-│
-├── src/                                     # ← CORE ENGINE (required)
-│   ├── main.cpp
-│   ├── frontend/
-│   │   ├── lexer.cpp
-│   │   ├── token.cpp
-│   │   ├── parser.cpp
-│   │   ├── ast.cpp
-│   │   ├── source_code.cpp
-│   │   └── syntax_checker.cpp
-│   │
-│   ├── compiler/
-│   │   ├── bytecode.cpp
-│   │   ├── compiler.cpp
-│   │   ├── optimizer.cpp
-│   │   ├── constant_folder.cpp
-│   │   ├── dead_code_eliminator.cpp
-│   │   └── register_allocator.cpp
-│   │
-│   ├── runtime/
-│   │   ├── value.cpp
-│   │   ├── object.cpp
-│   │   ├── function.cpp
-│   │   ├── vm.cpp
-│   │   ├── gc.cpp
-│   │   ├── environment.cpp
-│   │   ├── global_object.cpp
-│   │   ├── prototype.cpp
-│   │   ├── property_descriptor.cpp
-│   │   ├── symbol.cpp
-│   │   ├── iterator.cpp
-│   │   ├── promise.cpp
-│   │   ├── weak_map.cpp
-│   │   ├── weak_set.cpp
-│   │   ├── proxy.cpp
-│   │   ├── reflect.cpp
-│   │   └── module.cpp
-│   │
-│   ├── builtins/
-│   │   ├── array.cpp
-│   │   ├── string.cpp
-│   │   ├── number.cpp
-│   │   ├── boolean.cpp
-│   │   ├── object_builtins.cpp
-│   │   ├── function_builtins.cpp
-│   │   ├── math.cpp
-│   │   ├── date.cpp
-│   │   ├── regexp.cpp
-│   │   ├── json.cpp
-│   │   ├── map.cpp
-│   │   ├── set.cpp
-│   │   ├── typed_array.cpp
-│   │   ├── array_buffer.cpp
-│   │   ├── data_view.cpp
-│   │   └── console.cpp
-│   │
-│   ├── jit/
-│   │   ├── jit_compiler.cpp
-│   │   ├── baseline_jit.cpp
-│   │   ├── dfg_jit.cpp
-│   │   ├── ftl_jit.cpp
-│   │   ├── assembler_x86.cpp
-│   │   ├── assembler_x64.cpp
-│   │   ├── assembler_arm.cpp
-│   │   ├── assembler_arm64.cpp
-│   │   ├── code_block.cpp
-│   │   ├── call_frame.cpp
-│   │   ├── register.cpp
-│   │   ├── profiler.cpp
-│   │   ├── type_profiler.cpp
-│   │   ├── inline_cache.cpp
-│   │   └── osr.cpp
-│   │
-│   ├── gc/
-│   │   ├── heap.cpp
-│   │   ├── allocator.cpp
-│   │   ├── marking.cpp
-│   │   ├── sweeping.cpp
-│   │   ├── compacting.cpp
-│   │   ├── incremental_gc.cpp
-│   │   ├── concurrent_gc.cpp
-│   │   ├── generational_gc.cpp
-│   │   ├── write_barrier.cpp
-│   │   ├── handle.cpp
-│   │   ├── weak_ref.cpp
-│   │   └── finalizer.cpp
-│   │
-│   ├── memory/
-│   │   ├── memory_pool.cpp
-│   │   ├── arena_allocator.cpp
-│   │   ├── slab_allocator.cpp
-│   │   ├── stack.cpp
-│   │   └── page_allocator.cpp
-│   │
-│   ├── host/
-│   │   ├── host_context.cpp
-│   │   ├── native_function.cpp
-│   │   ├── callback.cpp
-│   │   ├── foreign_function_interface.cpp
-│   │   ├── bindings_generator.cpp
-│   │   ├── script_engine.cpp
-│   │   └── type_traits.cpp
-│   │
-│   ├── browser/
-│   │   ├── dom_bindings.cpp
-│   │   ├── window_object.cpp
-│   │   ├── document_object.cpp
-│   │   ├── element_bindings.cpp
-│   │   ├── event_system.cpp
-│   │   ├── event_target.cpp
-│   │   ├── event_listener.cpp
-│   │   ├── xhr_bindings.cpp
-│   │   ├── fetch_api.cpp
-│   │   ├── websocket_bindings.cpp
-│   │   ├── storage_api.cpp
-│   │   ├── console_bindings.cpp
-│   │   ├── timer_bindings.cpp
-│   │   ├── url_api.cpp
-│   │   ├── web_worker.cpp
-│   │   └── service_worker.cpp
-│   │
-│   ├── debug/                               # ← Core debug API
-│   │   ├── debug_api.cpp                   # YOUR native protocol
-│   │   ├── breakpoint_manager.cpp
-│   │   ├── call_stack_info.cpp
-│   │   ├── variable_inspector.cpp
-│   │   ├── source_map.cpp
-│   │   └── execution_control.cpp
-│   │
-│   ├── profiler/
-│   │   ├── cpu_profiler.cpp
-│   │   ├── heap_profiler.cpp
-│   │   ├── sampling_profiler.cpp
-│   │   └── timeline.cpp
-│   │
-│   ├── parser/
-│   │   ├── parser_arena.cpp
-│   │   ├── scope_analyzer.cpp
-│   │   ├── variable_resolver.cpp
-│   │   └── module_loader.cpp
-│   │
-│   ├── bytecode/
-│   │   ├── bytecode_generator.cpp
-│   │   ├── bytecode_instructions.cpp
-│   │   ├── opcode.cpp
-│   │   ├── jump_table.cpp
-│   │   └── metadata.cpp
-│   │
-│   ├── interpreter/
-│   │   ├── interpreter.cpp
-│   │   ├── call_frame_manager.cpp
-│   │   ├── stack_frame.cpp
-│   │   └── exception_handler.cpp
-│   │
-│   ├── exception/
-│   │   ├── exception.cpp
-│   │   ├── error_object.cpp
-│   │   ├── stack_trace.cpp
-│   │   └── try_catch.cpp
-│   │
-│   ├── threading/
-│   │   ├── thread_pool.cpp
-│   │   ├── worker_thread.cpp
-│   │   ├── lock.cpp
-│   │   ├── atomic_ops.cpp
-│   │   └── concurrent_queue.cpp
-│   │
-│   ├── async/
-│   │   ├── event_loop.cpp
-│   │   ├── microtask_queue.cpp
-│   │   ├── task_queue.cpp
-│   │   ├── promise_impl.cpp
-│   │   └── async_context.cpp
-│   │
-│   ├── optimization/
-│   │   ├── inline_cache.cpp
-│   │   ├── polymorphic_cache.cpp
-│   │   ├── hidden_class.cpp
-│   │   ├── structure.cpp
-│   │   ├── property_table.cpp
-│   │   └── speculation.cpp
-│   │
-│   ├── api/
-│   │   ├── context.cpp
-│   │   ├── isolate.cpp
-│   │   ├── persistent_handle.cpp
-│   │   ├── local_handle.cpp
-│   │   ├── template.cpp
-│   │   ├── function_template.cpp
-│   │   ├── object_template.cpp
-│   │   └── signature.cpp
-│   │
-│   ├── modules/
-│   │   ├── module_loader.cpp
-│   │   ├── module_record.cpp
-│   │   ├── import_resolver.cpp
-│   │   ├── dynamic_import.cpp
-│   │   └── module_namespace.cpp
-│   │
-│   ├── regex/
-│   │   ├── regex_engine.cpp
-│   │   ├── regex_compiler.cpp
-│   │   ├── regex_bytecode.cpp
-│   │   ├── regex_jit.cpp
-│   │   └── unicode_support.cpp
-│   │
-│   └── utils/
-│       ├── hash_table.cpp
-│       ├── vector.cpp
-│       ├── string_builder.cpp
-│       ├── bit_vector.cpp
-│       ├── assertions.cpp
-│       ├── platform.cpp
-│       └── unicode.cpp
-│
-├── zepra-devtools/                          # ← YOUR OWN DevTools UI (primary)
-│   ├── CMakeLists.txt                       # Native C++ UI with Qt/GTK
-│   ├── include/
-│   │   └── zepra_devtools/
-│   │       ├── main_window.hpp
-│   │       ├── console_panel.hpp
-│   │       ├── debugger_panel.hpp
-│   │       ├── sources_panel.hpp
-│   │       ├── network_panel.hpp
-│   │       ├── performance_panel.hpp
-│   │       ├── memory_panel.hpp
-│   │       ├── elements_panel.hpp          # DOM inspector
-│   │       └── settings_panel.hpp
-│   ├── src/
-│   │   ├── main.cpp                        # Standalone DevTools app
-│   │   ├── main_window.cpp
-│   │   ├── console_panel.cpp
-│   │   ├── debugger_panel.cpp
-│   │   ├── sources_panel.cpp
-│   │   ├── network_panel.cpp
-│   │   ├── performance_panel.cpp
-│   │   ├── memory_panel.cpp
-│   │   ├── elements_panel.cpp
-│   │   └── settings_panel.cpp
-│   ├── ui/                                  # UI files
-│   │   ├── main_window.ui
-│   │   └── panels/*.ui
-│   ├── resources/
-│   │   ├── icons/
-│   │   ├── themes/
-│   │   └── styles/
-│   └── README.md                            # "Zepra's Official DevTools"
-│
-├── tests/
-│   ├── CMakeLists.txt
-│   ├── unit/
-│   │   ├── lexer_tests.cpp
-│   │   ├── parser_tests.cpp
-│   │   ├── vm_tests.cpp
-│   │   ├── gc_tests.cpp
-│   │   ├── jit_tests.cpp
-│   │   ├── builtin_tests.cpp
-│   │   ├── debug_api_tests.cpp             # Test YOUR native protocol
-│   │   ├── devtools_integration_tests.cpp  # Test Zepra DevTools
-│   │   └── api_tests.cpp
-│   ├── integration/
-│   │   ├── browser_integration_tests.cpp
-│   │   ├── promise_tests.cpp
-│   │   ├── module_tests.cpp
-│   │   ├── worker_tests.cpp
-│   │   └── inspector_tests.cpp            # Only if CDP extension enabled
-│   └── test262/
-│       └── runner.cpp
-│
-├── benchmarks/
-│   ├── CMakeLists.txt
-│   ├── bench_startup.cpp
-│   ├── bench_execution.cpp
-│   ├── bench_gc.cpp
-│   ├── bench_jit.cpp
-│   ├── sunspider/
-│   ├── octane/
-│   ├── jetstream/
-│   └── speedometer/
-│
-├── tools/
-│   ├── zepra-repl.cpp
-│   ├── zepra-dump-bytecode.cpp
-│   ├── zepra-jit-debug.cpp
-│   ├── zepra-heap-snapshot.cpp
-│   ├── zepra-devtools.cpp                  # Launch YOUR DevTools UI
-│   ├── bindings-generator/
-│   │   ├── generator.cpp
-│   │   └── templates/
-│   ├── devtools-launcher/                  # Launch Zepra DevTools
-│   │   └── launcher.cpp
-│   └── cdp-server/                         # Optional CDP server
-│       └── server.cpp                      # Only if extension enabled
-│
-├── docs/
-│   ├── architecture.md
-│   ├── bytecode-spec.md
-│   ├── jit-tiers.md
-│   ├── gc-algorithm.md
-│   ├── api-reference.md
-│   ├── embedding-guide.md
-│   ├── browser-integration.md
-│   ├── performance-tuning.md
-│   ├── native-debug-protocol.md            # YOUR debug protocol spec
-│   ├── devtools-guide.md                   # Using Zepra DevTools
-│   ├── cdp-extension.md                    # Optional CDP extension
-│   └── contributing.md
-│
-├── third_party/
-│   ├── double-conversion/
-│   ├── icu/
-│   ├── simdutf/
-│   ├── qt/ or gtk/ or imgui/               # For Zepra DevTools UI
-│   └── websocketpp/                        # Only for CDP extension
-│
-└── examples/
-    ├── basic_embedding.cpp
-    ├── dom_manipulation.cpp
-    ├── custom_native_functions.cpp
-    ├── worker_threads.cpp
-    ├── browser_integration.cpp
-    ├── using_zepra_devtools.cpp            # Using YOUR DevTools
-    └── using_cdp_extension.cpp             # Optional CDP usage
+|-- frontend/          # Lexer, Parser, AST                          (14 files)
+|-- bytecode/          # Opcode definitions, bytecode generator       (9 files)
+|-- interpreter/       # Bytecode dispatch loop                       (2 files)
+|-- jit/               # Baseline JIT, assemblers, IC, OSR           (23 files)
+|-- dfg/               # Data Flow Graph optimizer                   (19 files)
+|-- b3/                # FTL/B3 low-level IR backend                 (11 files)
+|
+|-- runtime/
+|   |-- objects/       # Value, Object, Function, Symbol, Proxy, Map (30 files)
+|   |-- execution/     # VM, Environment, GlobalObject               (16 files)
+|   |-- async/         # Promise, AsyncFunction, Iterator            (18 files)
+|   |-- handles/       # Module, WeakMap, InlineCache                (11 files)
+|   |-- builtins_api/  # ES builtin type API stubs                   (26 files)
+|   |-- intl/          # Intl/locale API stubs                       (14 files)
+|   |-- wasm_api/      # WASM runtime API stubs                       (5 files)
+|   +-- proposals/     # TC39 proposal stubs                          (9 files)
+|
+|-- builtins/          # Native builtin implementations              (42 files)
+|-- heap/              # Generational, incremental, concurrent GC    (22 files)
+|-- memory/            # Page, arena, slab allocators                 (6 files)
+|-- optimization/      # Hidden classes, property tables, speculation (4 files)
+|
+|-- wasm/              # WebAssembly engine                          (50 files)
+|-- browser/           # DOM, Fetch, Events, Workers, Storage        (37 files)
+|-- modules/           # ES Module loader, resolver                   (8 files)
+|-- regex/             # Regex compiler + JIT                         (5 files)
+|-- threading/         # Thread pool, concurrent queue                (3 files)
+|
+|-- api/               # Embedder API (Isolate, Context, Handles)    (18 files)
+|-- host/              # C++ <-> JS bridge, native function binding   (2 files)
+|-- debugger/          # Native debug protocol                       (18 files)
+|-- profiler/          # CPU, heap, sampling profilers                (4 files)
+|-- exception/         # Error objects, stack traces, try/catch       (1 files)
+|
+|-- core/              # Core type definitions                        (3 files)
+|-- codegen/           # Code generation utilities                    (1 files)
+|-- perf/              # Performance measurement utilities            (6 files)
+|-- safety/            # Crash boundaries, security hardening         (2 files)
+|-- security/          # Security audit                               (1 files)
+|-- bridge/            # Host bridge abstractions                     (1 files)
+|-- integration/       # VM-module integration layer                  (2 files)
+|-- workers/           # Worker module loader                         (2 files)
+|-- utils/             # Hash table, string builder, platform, unicode(3 files)
+|
+|-- tests/             # Unit tests, integration tests, test262      (32 files)
+|-- benchmarks/        # Performance benchmarks                       (3 files)
+|-- tools/             # REPL, bytecode dumper                        (2 files)
+|
+|-- cdp-extension/     # Optional: Chrome DevTools Protocol adapter
+|-- zepra-devtools/    # Optional: Native DevTools UI (Qt/GTK)
+|-- docs/              # Architecture docs, bytecode spec, guides
+|-- cmake/             # Build configuration modules
++-- CMakeLists.txt     # Engine build definition
 ```
 
-## Minimal native scaffold to create now (files + dirs)
+---
 
-Create these first so the core JavaScript engine builds incrementally:
+## 3. Subsystem Reference
 
-- `source/zepraScript/include/zeprascript/`
-  - `config.hpp` – feature flags, platform toggles.
-  - `script_engine.hpp` – public entry points to load/execute scripts.
-  - `zepra_api.hpp` – embedding API surface exposed to host apps.
-- `source/zepraScript/include/zeprascript/frontend/`
-  - `lexer.hpp`, `token.hpp`, `parser.hpp`, `ast.hpp`, `source_code.hpp`, `syntax_checker.hpp`.
-- `source/zepraScript/src/frontend/`
-  - `lexer.cpp`, `parser.cpp`, `ast.cpp`, `source_code.cpp`, `syntax_checker.cpp`.
-- `source/zepraScript/include/zeprascript/runtime/`
-  - `vm.hpp`, `value.hpp`, `object.hpp`, `function.hpp`, `gc.hpp`, `environment.hpp`, `global_object.hpp`, `promise.hpp`, `module.hpp`.
-- `source/zepraScript/src/runtime/`
-  - Matching `.cpp` implementations for the headers above.
-- `source/zepraScript/include/zeprascript/builtins/`
-  - `array.hpp`, `string.hpp`, `number.hpp`, `object_builtins.hpp`, `function_builtins.hpp`, `math.hpp`, `date.hpp`, `console.hpp`.
-- `source/zepraScript/src/builtins/`
-  - Matching `.cpp` files implementing each builtin type.
-- `source/zepraScript/include/zeprascript/gc/` and `src/gc/`
-  - `heap.hpp/.cpp`, `allocator.hpp/.cpp`, `marking.hpp/.cpp`, `sweeping.hpp/.cpp`, `write_barrier.hpp/.cpp`.
-- `source/zepraScript/include/zeprascript/api/` and `src/api/`
-  - `context.hpp/.cpp`, `isolate.hpp/.cpp`, `persistent_handle.hpp/.cpp`, `local_handle.hpp/.cpp`, `function_template.hpp/.cpp`.
-- `source/zepraScript/include/zeprascript/debug/` and `src/debug/`
-  - `debug_api.hpp/.cpp`, `breakpoint_manager.hpp/.cpp`, `call_stack_info.hpp/.cpp`, `execution_control.hpp/.cpp`.
-- `source/zepraScript/include/zeprascript/host/` and `src/host/`
-  - `host_context.hpp/.cpp`, `native_function.hpp/.cpp`, `bindings_generator.hpp/.cpp`.
-- `source/zepraScript/tests/`
-  - `unit/` with `lexer_tests.cpp`, `parser_tests.cpp`, `vm_tests.cpp`, `gc_tests.cpp`, `builtin_tests.cpp`.
-  - `integration/` with `module_tests.cpp`, `promise_tests.cpp`, `browser_integration_tests.cpp`.
-- `source/zepraScript/tools/`
-  - `zepra-repl.cpp` (CLI REPL), `zepra-dump-bytecode.cpp` (debug dump), `zepra-heap-snapshot.cpp` (GC inspection).
-- `source/zepraScript/zepra-devtools/`
-  - `include/` + `src/` stubs for `main_window`, panels, and Qt/GTK CMakeLists; links directly to `zepra-core`.
-- `source/zepraScript/cdp-extension/` (optional)
-  - `include/zeprascript/cdp/` + `src/` stubs for `cdp_server`, `protocol_handler`, `runtime_domain`, `debugger_domain`, `profiler_domain`, `cdp_translator`.
+### 3.1 Frontend
 
-Quick start convention:
-- Each header has `#pragma once` and declares the class/struct with TODOs.
-- Each `.cpp` includes its matching header and provides minimal constructor/destructor definitions plus empty method bodies so the tree compiles.
-- Add CMake targets as you add directories: core static library (`zepra-core`), optional `zepra-devtools`, optional `zepra-cdp-extension`, and unit test targets.
+**Location:** `frontend/`
 
-## Your Own Native Debug Protocol
+| File             | Role                                                                           |
+| ---------------- | ------------------------------------------------------------------------------ |
+| `lexer`          | Tokenizes UTF-8 source, Unicode identifiers, template literals, regex literals |
+| `token`          | Token type definitions and metadata                                            |
+| `parser`         | Recursive descent parser, full ES2025 AST                                      |
+| `ast`            | AST node types, visitor interface                                              |
+| `source_code`    | Source buffer management, line/col mapping                                     |
+| `syntax_checker` | Early error detection (strict mode, duplicate params, TDZ)                     |
 
-### debug/debug_api.hpp
+The parser does no semantic analysis. Scope resolution is a separate pass. This keeps the grammar parse fast and stateless.
+
+### 3.2 Bytecode
+
+**Location:** `bytecode/`
+
+| File                 | Role                                             |
+| -------------------- | ------------------------------------------------ |
+| `opcode`             | Opcode enum, instruction widths, operand formats |
+| `bytecode_generator` | Low-level instruction emitter                    |
+| `peephole_optimizer` | Post-emit peephole optimization pass             |
+
+### 3.3 Interpreter
+
+**Location:** `interpreter/`
+
+The baseline execution tier. Threaded dispatch with computed gotos. Maintains type feedback metadata for JIT profiling. All code starts here.
+
+### 3.4 JIT Tiers
+
+**Location:** `jit/`, `dfg/`, `b3/`
+
+**Baseline JIT** (`jit/baseline_jit`) — Triggered after ~100 invocations. Emits unoptimized native code with inline cache stubs. Fast compile latency.
+
+**DFG JIT** (`dfg/`) — Triggered by type feedback after ~1000 calls. Builds a sea-of-nodes IR. Type specialization, inlining, escape analysis. Includes OSR for loop-heavy code.
+
+**FTL/B3** (`b3/`) — For the hottest functions under sustained load. Low-level IR, full register allocation, instruction scheduling, SIMD. Deoptimization bails back to interpreter.
+
+**Platform assemblers:** `macro_assembler`, plus platform-specific backends in `jit/`.
+
+### 3.5 Runtime
+
+**Location:** `runtime/objects/`, `runtime/execution/`, `runtime/async/`, `runtime/handles/`
+
+| Sub-group    | Contents                                                                                                                       |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| `objects/`   | Tagged value (NaN-boxing), base Object, Function closures, Symbol registry, Proxy/Reflect trap dispatch, Map/Set, class fields |
+| `execution/` | VM state, call dispatch, lexical scope records, global object initialization, execution context, sandbox                       |
+| `async/`     | Promise state machine, async function desugaring, iterator protocol, generator support                                         |
+| `handles/`   | Module records, module loader, inline cache runtime, weak collections                                                          |
+
+**API stubs** in `builtins_api/`, `intl/`, `wasm_api/`, `proposals/` define interfaces for future builtin features.
+
+### 3.6 Builtins
+
+**Location:** `builtins/`
+
+Native C++ implementations of all ECMAScript built-in objects: `Array`, `String`, `Number`, `Boolean`, `Object`, `Function`, `Math`, `Date`, `RegExp`, `JSON`, `Map`, `Set`, `TypedArray`, `DataView`, `Console`, `Symbol`, `WeakMap`, `Reflect`, `Generator`, `Intl`, `Temporal`, `Atomics`.
+
+Registered into the global object at engine startup. Performance-critical paths have JIT-inlined intrinsics.
+
+### 3.7 Heap (GC)
+
+**Location:** `heap/`
+
+Generational, incremental, concurrent garbage collector.
+
+| Component      | Description                                                  |
+| -------------- | ------------------------------------------------------------ |
+| Nursery        | Young generation, bump-pointer allocation, frequent minor GC |
+| Old Generation | Mark-sweep-compact with incremental slicing                  |
+| Concurrent GC  | Background marking thread concurrent with JS execution       |
+| Write Barrier  | Dijkstra-style barrier for cross-generation references       |
+| Compaction     | Optional compacting phase to reduce fragmentation            |
+| Handles        | Rooted handle system for GC-safe C++ references              |
+| Finalizers     | Post-collection callbacks for native resources               |
+| Weak Refs      | GC-aware per WeakRef/FinalizationRegistry spec               |
+
+### 3.8 Memory
+
+**Location:** `memory/`
+
+| Allocator         | Use Case                                            |
+| ----------------- | --------------------------------------------------- |
+| `page_allocator`  | OS-level memory mapping (mmap/VirtualAlloc)         |
+| `arena_allocator` | Region-based for AST nodes and compiler temporaries |
+| `memory_pool`     | General-purpose pool with size classes              |
+
+### 3.9 WebAssembly
+
+**Location:** `wasm/`
+
+Full WASM engine: binary validation, baseline compiler, interpreter, stack management, signal handlers, fault handling. 50 files covering the complete WASM spec including threads, SIMD, GC, component model, and tail calls.
+
+### 3.10 Browser Bindings
+
+**Location:** `browser/`
+
+Web platform API implementations:
+
+- **DOM:** window, document bindings
+- **Networking:** fetch, WebSocket
+- **Events:** event system
+- **Storage:** storage API, secure storage, password vault, IndexedDB, structured clone
+- **Workers:** web worker, service worker
+- **Other:** URL, console API, performance, devtools bridge
+
+### 3.11 Modules
+
+**Location:** `modules/`
+
+Full ES module system: `module_loader` (resolve specifiers, caching), `module_record` (parse/eval state), `import_resolver` (browser URL vs Node path), `dynamic_import`, `module_namespace`.
+
+### 3.12 Debugger
+
+**Location:** `debugger/`
+
+ZepraScript's native debug protocol — independent of CDP.
+
+| File                 | Role                                                   |
+| -------------------- | ------------------------------------------------------ |
+| `debug_api`          | Primary debug interface: attach, detach, set hooks     |
+| `breakpoint_manager` | Source-level breakpoint registration and hit detection |
+| `call_stack_info`    | Stack frame inspection during pause                    |
+| `execution_control`  | Step-in, step-over, step-out, continue, pause          |
+| `inspector`          | Variable and scope inspection                          |
+| `profiler`           | Debug-attached profiling                               |
+
+CDP compatibility is an optional extension (`cdp-extension/`), not part of core.
+
+### 3.13 Optimization
+
+**Location:** `optimization/`
+
+| File               | Role                                                    |
+| ------------------ | ------------------------------------------------------- |
+| `hidden_class`     | Shape/hidden class transitions for fast property access |
+| `property_table`   | Hash table for object property storage                  |
+| `inline_cache_opt` | Monomorphic/polymorphic cache optimization pass         |
+| `speculation`      | Type speculation guards and deoptimization triggers     |
+
+### 3.14 API (Embedder Surface)
+
+**Location:** `api/`
+
+V8-compatible handle/isolate API: `Isolate`, `Context`, `LocalHandle<T>`, `PersistentHandle<T>`, `FunctionTemplate`, `ObjectTemplate`, `Script`. Embedders include `zepra_api.hpp` and nothing else.
+
+---
+
+## 4. Execution Pipeline
+
+```
+                     +---------------+
+   Source text --->  |   Frontend    |  Lex -> Parse -> AST -> Syntax check
+                     +------+--------+
+                            | AST
+                     +------v--------+
+                     |   Compiler    |  Scope resolution -> Bytecode emit
+                     +------+--------+
+                            | Bytecode
+                     +------v--------+
+                     |  Interpreter  |  Execute + collect type feedback
+                     +------+--------+
+                   hot?     |
+              +-------------v--------------+
+              |       Baseline JIT         |  Unoptimized native + IC stubs
+              +-------------+--------------+
+                   hot?     | type feedback
+              +-------------v--------------+
+              |          DFG JIT           |  Speculative + type-specialized
+              +-------------+--------------+
+                   hot?     |
+              +-------------v--------------+
+              |        FTL / B3            |  Maximum optimization
+              +----------------------------+
+                            |  deopt?
+                            +------------>  Interpreter (bail-out)
+```
+
+---
+
+## 5. JIT Tier Escalation
+
+| Tier         | Trigger                       | Compile Time | Peak Throughput     |
+| ------------ | ----------------------------- | ------------ | ------------------- |
+| Interpreter  | Always                        | None         | Baseline            |
+| Baseline JIT | ~100 calls or loop iterations | ~1ms         | 2-5x interpreter    |
+| DFG JIT      | ~1000 calls + type stability  | ~10ms        | 10-30x interpreter  |
+| FTL / B3     | ~10000 calls + DFG hotness    | ~50ms        | 50-100x interpreter |
+
+Deoptimization occurs when a speculation assumption is invalidated. The engine bails to interpreter with reconstructed stack state and resets the profiling counter.
+
+---
+
+## 6. GC Strategy
+
+```
+Heap Layout:
+
+  +------------------------------------------------------+
+  |                     Nursery (Young Gen)               |
+  |    bump-pointer allocation | semi-space copy GC       |
+  +------------------------------------------------------+
+  +------------------------------------------------------+
+  |                  Old Generation                       |
+  |    mark-sweep-compact | incremental | concurrent      |
+  +------------------------------------------------------+
+  +------------------------------------------------------+
+  |               Large Object Space                      |
+  |    directly mapped pages | no compaction              |
+  +------------------------------------------------------+
+```
+
+- Minor GC: Nursery collection, ~every few MB, pauses < 1ms
+- Major GC: Old gen, incremental slices keep pauses < 5ms
+- Concurrent marking: Background thread marks while JS runs
+- Write barrier: Every pointer store, tracks cross-generation refs
+- Compaction: On demand, moves objects to contiguous ranges
+
+---
+
+## 7. Public API Surface
+
+Top-level headers at engine root: `zepra_api.hpp`, `script_engine.hpp`, `config.hpp`.
+
+Embedder-facing API in `api/`, modeled after V8:
+
+- `Isolate` — isolated JS heap and engine instance
+- `Context` — JS execution context within an isolate
+- `LocalHandle<T>` — stack-scoped GC-safe reference
+- `PersistentHandle<T>` — heap-allocated long-lived GC-safe reference
+- `FunctionTemplate` / `ObjectTemplate` — blueprints for native-backed JS objects
+
+---
+
+## 8. Debug Architecture
+
+```
++-------------------------------------+
+|   Zepra DevTools (Native C++ UI)    |  Primary debugging tool
+|   Direct API calls, zero overhead   |
++------------------+------------------+
+                   |
++------------------v------------------+
+|   Native Debug API (debugger/)      |  Always present
+|   Breakpoints, call stack,          |
+|   variable inspection               |
++------------------+------------------+
+                   |
++------------------v------------------+
+|   ZepraScript Core Engine           |  Never depends on debug tools
++-------------------------------------+
+
++-------------------------------------+
+|   CDP Extension (Optional)          |  Can be deleted
+|   Chrome DevTools compatibility     |
++-------------------------------------+
+```
+
+The native debug protocol is the primary protocol. CDP is a compatibility adapter only.
+
+---
+
+## 9. Dependency Map
+
+```
+utils         <-  no engine deps (foundational)
+memory        <-  utils
+heap          <-  memory, utils
+runtime       <-  heap, memory, utils
+builtins      <-  runtime
+interpreter   <-  bytecode, runtime
+jit           <-  interpreter, optimization, runtime, memory
+dfg           <-  jit, runtime
+b3            <-  dfg
+optimization  <-  runtime, heap
+async (src)   <-  runtime (promise), threading
+modules       <-  runtime
+regex         <-  utils, memory
+exception     <-  runtime
+browser       <-  runtime, builtins, modules              <- LEAF
+host          <-  runtime, heap                            <- LEAF
+debugger      <-  runtime, interpreter                     <- LEAF
+profiler      <-  runtime, jit, heap                       <- LEAF
+api           <-  runtime, heap                            <- LEAF (embedder)
+cdp-extension <-  debugger                                 <- OPTIONAL LEAF
+zepra-devtools<-  debugger, profiler                       <- OPTIONAL LEAF
+```
+
+Circular dependencies between core subsystems are forbidden.
+
+---
+
+## 10. Build System
+
+CMake 3.16+ with Ninja recommended.
+
+```bash
+# Configure
+cmake -B build -G Ninja \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DZEPRA_CDP_EXTENSION=OFF \
+  -DZEPRA_DEVTOOLS=ON
+
+# Build
+cmake --build build -j$(nproc)
+
+# Test
+ctest --test-dir build
+```
+
+The engine root (`source/zepraScript/`) is the include root. All `#include` paths are relative to it:
+
 ```cpp
-namespace Zepra::Debug {
-
-// YOUR native debug API - direct C++ calls, zero overhead
-class DebugAPI {
-public:
-    // Breakpoint management
-    struct Breakpoint {
-        uint32_t id;
-        std::string file;
-        uint32_t line;
-        std::string condition;  // Optional
-        bool enabled;
-    };
-    
-    uint32_t setBreakpoint(const std::string& file, uint32_t line,
-                           const std::string& condition = "");
-    void removeBreakpoint(uint32_t id);
-    void toggleBreakpoint(uint32_t id);
-    std::vector<Breakpoint> getAllBreakpoints() const;
-    
-    // Execution control
-    void pause();
-    void resume();
-    void stepOver();
-    void stepInto();
-    void stepOut();
-    
-    // Call stack
-    struct StackFrame {
-        std::string function_name;
-        std::string file;
-        uint32_t line;
-        uint32_t column;
-        std::vector<Variable> locals;
-        std::vector<Variable> closure_vars;
-    };
-    
-    std::vector<StackFrame> getCallStack() const;
-    
-    // Variable inspection
-    struct Variable {
-        std::string name;
-        std::string type;
-        std::string value;
-        bool expandable;
-        std::vector<Variable> properties;  // If expandable
-    };
-    
-    std::vector<Variable> getLocalVariables(uint32_t frame_index) const;
-    std::vector<Variable> getGlobalVariables() const;
-    Variable evaluateExpression(const std::string& expr, uint32_t frame_index);
-    
-    // Event callbacks (for your DevTools UI)
-    using PausedCallback = std::function<void(const StackFrame& frame)>;
-    using ConsoleCallback = std::function<void(const std::string& message, const std::string& level)>;
-    using ExceptionCallback = std::function<void(const std::string& message, const StackFrame& frame)>;
-    
-    void onPaused(PausedCallback callback);
-    void onConsoleMessage(ConsoleCallback callback);
-    void onException(ExceptionCallback callback);
-    
-    // Performance profiling
-    struct ProfileNode {
-        std::string function;
-        double self_time_ms;
-        double total_time_ms;
-        uint32_t call_count;
-        std::vector<ProfileNode> children;
-    };
-    
-    void startProfiling();
-    ProfileNode stopProfiling();
-    
-    // Memory profiling
-    struct HeapSnapshot {
-        size_t total_size;
-        size_t used_size;
-        size_t object_count;
-        std::vector<ObjectInfo> objects;
-    };
-    
-    HeapSnapshot takeHeapSnapshot();
-};
-
-} // namespace Zepra::Debug
+#include "runtime/objects/value.hpp"
+#include "heap/heap.hpp"
+#include "frontend/lexer.hpp"
+#include "config.hpp"
 ```
 
-## Zepra DevTools UI (Your Primary Tool)
+---
 
-### zepra-devtools/include/zepra_devtools/main_window.hpp
-```cpp
-namespace Zepra::DevTools {
+## 11. Testing Strategy
 
-// YOUR DevTools - native C++ UI (Qt/GTK/ImGui)
-class MainWindow : public QMainWindow {
-    Q_OBJECT
-    
-public:
-    explicit MainWindow(Zepra::Runtime::VM* vm);
-    
-private slots:
-    void onPaused(const Zepra::Debug::StackFrame& frame);
-    void onConsoleMessage(const QString& message, const QString& level);
-    void onException(const QString& message);
-    
-private:
-    // Direct connection to engine
-    Zepra::Runtime::VM* vm_;
-    Zepra::Debug::DebugAPI* debug_api_;
-    
-    // UI panels
-    ConsolePanel* console_;
-    DebuggerPanel* debugger_;
-    SourcesPanel* sources_;
-    NetworkPanel* network_;
-    PerformancePanel* performance_;
-    MemoryPanel* memory_;
-    ElementsPanel* elements_;  // DOM inspector
-    
-    // No WebSocket, no JSON, just direct C++ calls!
-};
-
-} // namespace Zepra::DevTools
+```
+tests/
+|-- unit/           # Per-subsystem C++ unit tests (GoogleTest)
+|-- integration/    # Cross-subsystem tests
++-- test262/        # ECMAScript conformance suite
 ```
 
-**Features of YOUR DevTools:**
-- Native C++ performance (no web overhead)
-- Direct API calls to engine (no protocol translation)
-- Custom UI matching Zepra brand
-- Integrated with ZepraBrowser
-- No third-party dependencies
-- Full control over features and design
+| Suite       | Coverage                                                  |
+| ----------- | --------------------------------------------------------- |
+| Unit tests  | Lexer, parser, VM, GC, JIT, builtins, debug API           |
+| Integration | Browser bindings, module loading, promise chains, workers |
+| Test262     | Full ES spec conformance — target 99%+ pass rate          |
+| Benchmarks  | JetStream2, Speedometer, Octane                           |
 
-## Optional CDP Extension (For 3rd Party Tools)
+Current: 266/267 tests passing.
 
-### cdp-extension/include/zeprascript/cdp/cdp_server.hpp
-```cpp
-namespace Zepra::CDP {
+---
 
-// OPTIONAL: Only for Chrome DevTools / VSCode compatibility
-// Translates CDP (JSON/WebSocket) ↔ Native Debug API
-class CDPServer {
-public:
-    explicit CDPServer(Zepra::Runtime::VM* vm, uint16_t port = 9222);
-    
-    void start();
-    void stop();
-    
-    // Handles CDP JSON-RPC messages
-    void handleCDPMessage(const std::string& method, const json& params);
-    
-private:
-    Zepra::Runtime::VM* vm_;
-    Zepra::Debug::DebugAPI* debug_api_;  // Uses YOUR native API
-    WebSocketServer ws_server_;
-    
-    // CDP domain implementations
-    RuntimeDomain runtime_;
-    DebuggerDomain debugger_;
-    ProfilerDomain profiler_;
-    
-    // Translates between CDP and your native protocol
-    CDPTranslator translator_;
-};
+## 12. Design Principles
 
-} // namespace Zepra::CDP
-```
+1. **Correctness first, speed second.** The interpreter is the source of truth. JIT tiers must produce identical observable behavior.
 
-**Purpose of CDP Extension:**
-- Allows developers to use Chrome DevTools (optional)
-- Allows VSCode debugging (optional)
-- Purely for compatibility
-- **Can be completely deleted**
-- Engine and Zepra DevTools work perfectly without it
+2. **The engine does not own the event loop.** ZepraScript exposes `pump()` and `drain_microtasks()` hooks. The browser drives execution.
 
-## Build Configuration
+3. **The native debug protocol is the primary protocol.** CDP is a compatibility adapter. Internal tooling uses native protocol directly.
 
-### Root CMakeLists.txt
-```cmake
-cmake_minimum_required(VERSION 3.20)
-project(ZepraScript VERSION 1.0.0 LANGUAGES CXX)
+4. **No subsystem depends on `browser/`.** Browser bindings are a leaf layer. Core engine has no knowledge of DOM or web APIs.
 
-option(ZEPRA_BUILD_DEVTOOLS "Build Zepra DevTools UI" ON)
-option(ZEPRA_BUILD_CDP_EXTENSION "Build CDP extension (for 3rd party tools)" OFF)
+5. **Public API is stable; internals are not.** `api/` and `zepra_api.hpp` follow semver. Internal headers can change freely.
 
-# Core engine (always built)
-add_subdirectory(src)
+6. **All allocations go through the memory layer.** No raw `new`/`malloc` in engine code. Everything routes through arena, slab, pool, or GC heap.
 
-# YOUR DevTools (primary debugging tool)
-if(ZEPRA_BUILD_DEVTOOLS)
-    find_package(Qt6 COMPONENTS Widgets REQUIRED)  # or GTK, or ImGui
-    add_subdirectory(zepra-devtools)
-endif()
+7. **Each subsystem directory contains both headers and implementation.** No split between `src/` and `include/`. Co-located code is easier to navigate.
 
-# Optional CDP extension (for Chrome/VSCode compatibility)
-if(ZEPRA_BUILD_CDP_EXTENSION)
-    add_subdirectory(cdp-extension)
-endif()
+---
 
-# Tests
-add_subdirectory(tests)
-```
+## 13. Development TODO
 
-### zepra-devtools/CMakeLists.txt
-```cmake
-# Your native DevTools application
+### Immediate (Build Fixes)
 
-find_package(Qt6 COMPONENTS Widgets REQUIRED)
+- [ ] Fix `runtime/objects/symbol.cpp` type mismatch (string vs uint32 in symbol registry)
+- [ ] Fix `heap/generational_gc.cpp` missing closing brace
+- [ ] Fix `runtime/execution/Sandbox.h` missing `<stdexcept>` include
+- [ ] Fix `runtime/handles/module_loader.cpp` `starts_with` (C++20 — either bump standard or use `.substr()`)
+- [ ] Fix `heap/GCController.h` undeclared member variables
 
-add_executable(zepra-devtools
-    src/main.cpp
-    src/main_window.cpp
-    src/console_panel.cpp
-    src/debugger_panel.cpp
-    src/sources_panel.cpp
-    src/network_panel.cpp
-    src/performance_panel.cpp
-    src/memory_panel.cpp
-    src/elements_panel.cpp
-)
+### Phase 1: Core Correctness
 
-target_link_libraries(zepra-devtools
-    PRIVATE
-        zepra-core              # Direct link to engine
-        Qt6::Widgets
-)
+- [ ] Complete ES2024 spec compliance in builtins (Array methods, String methods)
+- [ ] Implement `for-in` / `for-of` iteration protocol end-to-end
+- [ ] Implement `class` syntax with inheritance, private fields, static methods
+- [ ] Implement `Proxy` trap dispatch for all 13 internal methods
+- [ ] Implement `WeakRef` and `FinalizationRegistry`
+- [ ] Implement destructuring assignment (array + object)
+- [ ] Implement generator functions and `yield` / `yield*`
+- [ ] Reach 95%+ on Test262 ES2024 subset
 
-# No WebSocket, no JSON parsing, just native C++ API calls!
-```
+### Phase 2: Performance (JIT)
 
-### cdp-extension/CMakeLists.txt
-```cmake
-# Optional CDP compatibility layer - can be deleted
+- [ ] Wire Baseline JIT tier-up from interpreter
+- [ ] Implement inline cache stubs for property access in Baseline JIT
+- [ ] Implement DFG IR builder from bytecode + type feedback
+- [ ] DFG type specialization for numeric operations
+- [ ] DFG inlining for small functions
+- [ ] OSR entry/exit between interpreter <-> Baseline <-> DFG
+- [ ] B3 lowering pass from DFG IR
+- [ ] Deoptimization with stack reconstruction
 
-find_package(websocketpp REQUIRED)
-find_package(nlohmann_json REQUIRED)
+### Phase 3: GC Hardening
 
-add_library(zepra-cdp-extension SHARED
-    src/cdp_server.cpp
-    src/protocol_handler.cpp
-    src/runtime_domain.cpp
-    src/debugger_domain.cpp
-    src/profiler_domain.cpp
-    src/cdp_translator.cpp
-)
+- [ ] Concurrent marking thread with write barrier enforcement
+- [ ] Nursery semi-space copying collector
+- [ ] Old-gen incremental mark-sweep with configurable slice budget
+- [ ] Compaction for old-gen fragmentation
+- [ ] Large object space (direct-mapped pages, no compaction)
+- [ ] FinalizationRegistry callback scheduling
 
-target_link_libraries(zepra-cdp-extension
-    PRIVATE
-        zepra-core              # Uses native debug API
-        websocketpp::websocketpp
-        nlohmann_json::nlohmann_json
-)
+### Phase 4: WASM
 
-# This module translates CDP ↔ Your Native API
-# If deleted, engine and Zepra DevTools continue working perfectly
+- [ ] WASM binary validation (all sections)
+- [ ] WASM interpreter for tier-0 execution
+- [ ] WASM baseline compiler for hot modules
+- [ ] WASM-JS interop (import/export, memory sharing)
+- [ ] WASM threads + shared memory
+- [ ] WASM SIMD instructions
+- [ ] WASM GC proposal
+
+### Phase 5: Browser Integration
+
+- [ ] DOM node binding via host callbacks
+- [ ] Fetch API with nxhttp backend
+- [ ] Event loop integration with browser main loop
+- [ ] Web Worker isolation (separate Isolate per worker)
+- [ ] Service Worker lifecycle management
+- [ ] IndexedDB transactional storage
+- [ ] WebSocket bidirectional messaging
+
+### Phase 6: Scale to 2M+ LOC
+
+- [ ] Split `browser/` into `browser/dom/`, `browser/networking/`, `browser/events/`, `browser/storage/`, `browser/workers/`
+- [ ] Implement all ES2025 Intl APIs
+- [ ] Implement Temporal API
+- [ ] Implement Decorators (stage 3)
+- [ ] Implement Pattern Matching (stage 2)
+- [ ] Implement Record & Tuple (stage 2)
+
+---
+
+_Update this document alongside any major subsystem addition or API change._
+_For bytecode instruction reference see `docs/bytecode-spec.md`. For JIT internals see `docs/jit-tiers.md`._
