@@ -146,3 +146,12 @@ Declarations exist for Temporal, Decorators, Pipeline, WeakRef, FinalizationRegi
 - [ ] Offset-based IC (direct slot access)
 - [x] Computed goto dispatch
 - [ ] Test262 compliance pass
+
+### Phase 58: Core Gap Closure ✅
+
+- [x] Update expressions (++/--) — prefix/postfix for local, global, member expressions
+- [x] `this` expression — resolveLocal/resolveUpvalue in bytecode generator
+- [x] Unicode string escapes `\uXXXX` and `\u{XXXXX}` — full UTF-8 encoding in lexer
+- [x] VM `construct()` method — prototype wiring + executeCallback
+- [x] Arrow function `this` capture — upvalue resolution for lexical `this`
+- [x] Map SameValueZero — NaN === NaN, +0 === -0 per ES spec

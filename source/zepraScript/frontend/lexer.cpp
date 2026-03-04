@@ -278,11 +278,57 @@ Token Lexer::scanString(char quote) {
                 case '\'': value += '\''; break;
                 case '"': value += '"'; break;
                 case 'u': {
-                    // Unicode escape
                     advance();
-                    // TODO: Parse \uXXXX and \u{XXXXX}
-                    value += '?';
-                    break;
+                    uint32_t codepoint = 0;
+                    if (current() == '{') {
+                        // \u{XXXXX} — 1-6 hex digits
+                        advance();
+                        int digits = 0;
+                        while (current() != '}' && current() != '\0' && digits < 6) {
+                            if (!isHexDigit(current())) {
+                                addError("Invalid Unicode escape");
+                                break;
+                            }
+                            codepoint = (codepoint << 4) | (isDigit(current()) ? current() - '0' :
+                                (current() >= 'a' ? current() - 'a' + 10 : current() - 'A' + 10));
+                            advance();
+                            digits++;
+                        }
+                        if (current() == '}') advance();
+                    } else {
+                        // \uXXXX — exactly 4 hex digits
+                        for (int i = 0; i < 4; i++) {
+                            if (!isHexDigit(current())) {
+                                addError("Invalid Unicode escape");
+                                codepoint = 0xFFFD;
+                                break;
+                            }
+                            codepoint = (codepoint << 4) | (isDigit(current()) ? current() - '0' :
+                                (current() >= 'a' ? current() - 'a' + 10 : current() - 'A' + 10));
+                            advance();
+                        }
+                    }
+                    // Encode codepoint as UTF-8
+                    if (codepoint <= 0x7F) {
+                        value += static_cast<char>(codepoint);
+                    } else if (codepoint <= 0x7FF) {
+                        value += static_cast<char>(0xC0 | (codepoint >> 6));
+                        value += static_cast<char>(0x80 | (codepoint & 0x3F));
+                    } else if (codepoint <= 0xFFFF) {
+                        value += static_cast<char>(0xE0 | (codepoint >> 12));
+                        value += static_cast<char>(0x80 | ((codepoint >> 6) & 0x3F));
+                        value += static_cast<char>(0x80 | (codepoint & 0x3F));
+                    } else if (codepoint <= 0x10FFFF) {
+                        value += static_cast<char>(0xF0 | (codepoint >> 18));
+                        value += static_cast<char>(0x80 | ((codepoint >> 12) & 0x3F));
+                        value += static_cast<char>(0x80 | ((codepoint >> 6) & 0x3F));
+                        value += static_cast<char>(0x80 | (codepoint & 0x3F));
+                    } else {
+                        // Invalid codepoint — replacement character
+                        value += "\xEF\xBF\xBD";
+                    }
+                    // Don't advance again — the loop's advance() handles the next char
+                    continue;
                 }
                 default:
                     value += current();

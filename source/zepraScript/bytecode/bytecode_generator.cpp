@@ -1142,8 +1142,22 @@ void BytecodeGenerator::compileObjectExpression(const Frontend::ObjectExpr* expr
 }
 
 void BytecodeGenerator::compileThisExpression(const Frontend::ThisExpr*) {
-    // TODO: Handle 'this' properly
-    emit(Opcode::OP_NIL);
+    // 'this' is stored as local slot 0 in methods and constructors
+    int slot = resolveLocal("this");
+    if (slot != -1) {
+        emit(Opcode::OP_GET_LOCAL);
+        emit(static_cast<uint8_t>(slot));
+    } else {
+        // Try upvalue (arrow functions capture 'this' from enclosing scope)
+        int upvalue = resolveUpvalue("this");
+        if (upvalue != -1) {
+            emit(Opcode::OP_GET_UPVALUE);
+            emit(static_cast<uint8_t>(upvalue));
+        } else {
+            // Global 'this' — push undefined (strict mode) or global object
+            emit(Opcode::OP_NIL);
+        }
+    }
 }
 
 void BytecodeGenerator::compileFunctionExpression(const Frontend::FunctionExpr* expr) {
@@ -1248,9 +1262,101 @@ void BytecodeGenerator::compileArrowFunction(const Frontend::ArrowFunctionExpr* 
     // TODO: Emit upvalue count and indices for captured 'this'
 }
 
-void BytecodeGenerator::compileUpdateExpression(const Frontend::UpdateExpr*) {
-    // TODO: Implement update expression (++, --)
-    emit(Opcode::OP_NIL);
+void BytecodeGenerator::compileUpdateExpression(const Frontend::UpdateExpr* expr) {
+    const Frontend::Expression* arg = expr->argument();
+    bool isPrefix = expr->isPrefix();
+    bool isIncrement = (expr->op() == Frontend::TokenType::PlusPlus);
+
+    if (arg->type() == Frontend::NodeType::Identifier) {
+        const auto* id = static_cast<const Frontend::IdentifierExpr*>(arg);
+        const std::string& name = id->name();
+        int local = resolveLocal(name);
+
+        if (local != -1) {
+            // Local variable
+            emit(Opcode::OP_GET_LOCAL);
+            emit(static_cast<uint8_t>(local));
+
+            if (!isPrefix) {
+                // Postfix: duplicate original value to return later
+                emit(Opcode::OP_DUP);
+            }
+
+            // Add or subtract 1
+            emitConstant(Runtime::Value::number(1.0));
+            emit(isIncrement ? Opcode::OP_ADD : Opcode::OP_SUBTRACT);
+
+            // Store updated value
+            emit(Opcode::OP_SET_LOCAL);
+            emit(static_cast<uint8_t>(local));
+
+            if (isPrefix) {
+                // Prefix: result is the updated value (already on stack from SET_LOCAL)
+                emit(Opcode::OP_GET_LOCAL);
+                emit(static_cast<uint8_t>(local));
+            }
+            // Postfix: the duplicated original is already below on the stack
+        } else {
+            // Global variable
+            size_t constant = makeConstant(Runtime::Value::string(new Runtime::String(name)));
+
+            emit(Opcode::OP_GET_GLOBAL);
+            emit(static_cast<uint8_t>(constant));
+
+            if (!isPrefix) {
+                emit(Opcode::OP_DUP);
+            }
+
+            emitConstant(Runtime::Value::number(1.0));
+            emit(isIncrement ? Opcode::OP_ADD : Opcode::OP_SUBTRACT);
+
+            emit(Opcode::OP_SET_GLOBAL);
+            emit(static_cast<uint8_t>(constant));
+
+            if (isPrefix) {
+                emit(Opcode::OP_GET_GLOBAL);
+                emit(static_cast<uint8_t>(constant));
+            }
+        }
+    } else if (arg->type() == Frontend::NodeType::MemberExpression) {
+        const auto* member = static_cast<const Frontend::MemberExpr*>(arg);
+
+        // Compile object
+        compileExpression(member->object());
+        emit(Opcode::OP_DUP); // Keep object for set
+
+        // Get current value
+        if (member->isComputed()) {
+            compileExpression(member->property());
+            emit(Opcode::OP_GET_ELEMENT);
+        } else {
+            const auto* prop = static_cast<const Frontend::IdentifierExpr*>(member->property());
+            size_t nameConst = makeConstant(Runtime::Value::string(new Runtime::String(prop->name())));
+            emit(Opcode::OP_GET_PROPERTY);
+            emit(static_cast<uint8_t>(nameConst));
+        }
+
+        if (!isPrefix) {
+            emit(Opcode::OP_DUP); // Save original for postfix
+        }
+
+        // Increment/decrement
+        emitConstant(Runtime::Value::number(1.0));
+        emit(isIncrement ? Opcode::OP_ADD : Opcode::OP_SUBTRACT);
+
+        // Store back
+        if (member->isComputed()) {
+            compileExpression(member->property());
+            emit(Opcode::OP_SET_ELEMENT);
+        } else {
+            const auto* prop = static_cast<const Frontend::IdentifierExpr*>(member->property());
+            size_t nameConst = makeConstant(Runtime::Value::string(new Runtime::String(prop->name())));
+            emit(Opcode::OP_SET_PROPERTY);
+            emit(static_cast<uint8_t>(nameConst));
+        }
+    } else {
+        error("Invalid update expression target");
+    }
 }
 
 void BytecodeGenerator::compileImportDeclaration(const Frontend::ImportDecl* decl) {

@@ -1672,10 +1672,23 @@ Value VM::construct(Function* constructor, const std::vector<Value>& args) {
     if (!constructor) {
         return Value::undefined();
     }
-    
-    // TODO: Implement constructor calls
-    (void)args;
-    return Value::object(new Object());
+
+    if (!constructor->isConstructor()) {
+        throw std::runtime_error(constructor->name() + " is not a constructor");
+    }
+
+    // Create new object with constructor's prototype
+    Object* newObj = new Object();
+    Value prototypeVal = constructor->get("prototype");
+    if (prototypeVal.isObject()) {
+        newObj->setPrototype(prototypeVal.asObject());
+    }
+
+    // Call constructor with newObj as 'this'
+    Value result = executeCallback(constructor, Value::object(newObj), args);
+
+    // If constructor returned an object, use that; otherwise use newObj
+    return result.isObject() ? result : Value::object(newObj);
 }
 
 // Upvalue management

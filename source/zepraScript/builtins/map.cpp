@@ -5,6 +5,7 @@
 
 #include "builtins/map.hpp"
 #include "runtime/objects/function.hpp"
+#include <cmath>
 
 namespace Zepra::Builtins {
 
@@ -14,8 +15,18 @@ namespace Zepra::Builtins {
 
 int MapObject::findKey(const Value& key) const {
     for (size_t i = 0; i < entries_.size(); ++i) {
-        // Simple equality check (TODO: proper SameValueZero)
-        if (entries_[i].first.equals(key)) {
+        const Value& k = entries_[i].first;
+        // SameValueZero: NaN === NaN, +0 === -0, else strict equal
+        if (key.isNumber() && k.isNumber()) {
+            double a = key.asNumber();
+            double b = k.asNumber();
+            if (std::isnan(a) && std::isnan(b)) {
+                return static_cast<int>(i);
+            }
+            if (a == b) {
+                return static_cast<int>(i);
+            }
+        } else if (k.equals(key)) {
             return static_cast<int>(i);
         }
     }
