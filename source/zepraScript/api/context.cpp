@@ -1,6 +1,9 @@
 /**
  * @file context.cpp
- * @brief Context implementation stub - JavaScript execution context
+ * @brief JavaScript execution context — global object provider
+ * 
+ * Manages the global environment for JS execution.
+ * VM instances use this context's global object for name resolution.
  */
 
 #include "runtime/objects/object.hpp"
@@ -10,16 +13,6 @@
 
 namespace Zepra {
 
-// Forward declarations from zepra_api.hpp
-class Isolate;
-class Context;
-
-/**
- * @brief Minimal Context implementation
- * 
- * This is a stub that provides the basic structure.
- * Full implementation requires VM integration.
- */
 class ContextImpl {
 public:
     explicit ContextImpl(void* isolate)
@@ -42,21 +35,25 @@ public:
         return isolate_;
     }
     
+    void setGlobal(const std::string& name, Runtime::Value value) {
+        globalObject_->set(name, value);
+    }
+    
+    Runtime::Value getGlobal(const std::string& name) const {
+        return globalObject_->get(name);
+    }
+    
 private:
     void initializeGlobals() {
-        // Add global constants
         globalObject_->set("undefined", Runtime::Value::undefined());
         globalObject_->set("NaN", Runtime::Value::number(std::numeric_limits<double>::quiet_NaN()));
         globalObject_->set("Infinity", Runtime::Value::number(std::numeric_limits<double>::infinity()));
-        
-        // structuredClone is available via StructuredClone::clone()
     }
     
     void* isolate_;
     Runtime::Object* globalObject_;
 };
 
-// Context factory - called from isolate
 void* createContext(void* isolate) {
     return new ContextImpl(isolate);
 }

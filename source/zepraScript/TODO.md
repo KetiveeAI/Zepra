@@ -143,7 +143,7 @@ Declarations exist for Temporal, Decorators, Pipeline, WeakRef, FinalizationRegi
 - [x] Generator protocol (next/return/throw)
 - [x] Object.freeze/seal/isSealed/isFrozen
 - [x] Scope chain optimization (indexed slots)
-- [ ] Offset-based IC (direct slot access)
+- [x] Offset-based IC (direct slot access)
 - [x] Computed goto dispatch
 - [ ] Test262 compliance pass
 
@@ -155,3 +155,19 @@ Declarations exist for Temporal, Decorators, Pipeline, WeakRef, FinalizationRegi
 - [x] VM `construct()` method — prototype wiring + executeCallback
 - [x] Arrow function `this` capture — upvalue resolution for lexical `this`
 - [x] Map SameValueZero — NaN === NaN, +0 === -0 per ES spec
+
+### Phase 59: Pipeline & GC Hardening ✅
+
+- [x] OP_CLOSURE upvalue emission — upvalue count + (isLocal, index) descriptors for function/arrow
+- [x] ConcurrentSweepTask — std::thread parallel page sweeping with per-thread dead lists
+- [x] ScriptImpl::compile() — real SourceCode→Parser→SyntaxChecker→BytecodeGenerator pipeline
+- [x] ContextImpl — global object provider with setGlobal/getGlobal (no longer a stub)
+- [x] VMModuleIntegration — executor->execute(module) for real module evaluation
+
+### Phase 60: ES Feature Compilation ✅
+
+- [x] ForInStmt AST class + compileForInStatement (OP_FOR_IN + key array iteration loop)
+- [x] TemplateLiteralExpr AST class + compileTemplateLiteral (quasis/expressions with OP_ADD)
+- [x] super() call in class constructor using OP_SUPER_CALL (was placeholder)
+- [x] Class constructor closure upvalue count byte emission
+- [x] Class method closure upvalue count byte emission

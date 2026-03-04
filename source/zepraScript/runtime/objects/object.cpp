@@ -60,6 +60,10 @@ bool Object::set(const std::string& key, Value value) {
     bool isNew = properties_.find(key) == properties_.end();
     properties_[key] = value;
     if (isNew) {
+        // Assign slot index for IC offset access
+        uint32_t slot = static_cast<uint32_t>(propertySlots_.size());
+        propertySlots_.push_back(key);
+        slotIndex_[key] = slot;
         shapeId_ = nextShapeId_++;
     }
     return true;
@@ -100,6 +104,10 @@ bool Object::deleteProperty(const std::string& key) {
     }
     
     if (properties_.erase(key) > 0) {
+        // Invalidate slot index — rebuild on next access
+        slotIndex_.erase(key);
+        // Don't shrink propertySlots_ — stale entries are harmless
+        // since IC validates shapeId before using the offset.
         shapeId_ = nextShapeId_++;  // Shape transition on delete
     }
     return true;
@@ -231,6 +239,32 @@ Value Object::internalSlot(const std::string& name) const {
 
 void Object::setInternalSlot(const std::string& name, Value value) {
     internalSlots_[name] = value;
+}
+
+int32_t Object::findPropertySlot(const std::string& key) const {
+    auto it = slotIndex_.find(key);
+    if (it != slotIndex_.end()) {
+        return static_cast<int32_t>(it->second);
+    }
+    return -1;
+}
+
+Value Object::getPropertyBySlot(uint32_t slot) const {
+    if (slot < propertySlots_.size()) {
+        const std::string& key = propertySlots_[slot];
+        auto it = properties_.find(key);
+        if (it != properties_.end()) {
+            return it->second;
+        }
+    }
+    return Value::undefined();
+}
+
+void Object::setPropertyBySlot(uint32_t slot, Value value) {
+    if (slot < propertySlots_.size()) {
+        const std::string& key = propertySlots_[slot];
+        properties_[key] = value;
+    }
 }
 
 // =============================================================================

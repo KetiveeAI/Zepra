@@ -140,6 +140,11 @@ public:
     virtual bool deleteProperty(const std::string& key);
     virtual bool deleteProperty(uint32_t index);
     
+    // Slot-indexed property access for inline cache
+    int32_t findPropertySlot(const std::string& key) const;
+    Value getPropertyBySlot(uint32_t slot) const;
+    void setPropertyBySlot(uint32_t slot, Value value);
+    
     // Property descriptor operations
     bool defineProperty(const std::string& key, const PropertyDescriptor& desc);
     std::optional<PropertyDescriptor> getOwnPropertyDescriptor(const std::string& key) const;
@@ -227,6 +232,10 @@ protected:
     // Property storage
     std::unordered_map<std::string, Value> properties_;
     std::unordered_map<std::string, PropertyDescriptor> descriptors_;
+    
+    // Slot-indexed property names (insertion order) for IC offset access
+    std::vector<std::string> propertySlots_;
+    std::unordered_map<std::string, uint32_t> slotIndex_;  // name → slot
     
     // Indexed properties (for arrays)
     std::vector<Value> elements_;

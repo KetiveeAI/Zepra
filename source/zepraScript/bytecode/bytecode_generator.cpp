@@ -376,6 +376,9 @@ void BytecodeGenerator::compileStatement(const Frontend::Statement* stmt) {
         case Frontend::NodeType::SwitchStatement:
             compileSwitchStatement(static_cast<const Frontend::SwitchStmt*>(stmt));
             break;
+        case Frontend::NodeType::ForInStatement:
+            compileForInStatement(static_cast<const Frontend::ForInStmt*>(stmt));
+            break;
         default:
             error("Unknown statement type");
             break;
@@ -432,8 +435,6 @@ void BytecodeGenerator::compileFunctionDeclaration(const Frontend::FunctionDecl*
         // Add local at depth 0 so they don't get popped by endScope
         Local local;
         local.name = id->name();
-        local.depth = 0;  // At function's base level
-        local.isCaptured = false;
         local.isConst = false;
         current_->locals.push_back(local);
         
@@ -446,17 +447,19 @@ void BytecodeGenerator::compileFunctionDeclaration(const Frontend::FunctionDecl*
             emit(Opcode::OP_STRICT_EQUAL);
             
             size_t skipDefault = emitJump(Opcode::OP_JUMP_IF_FALSE);
-            emit(Opcode::OP_POP);
+            emit(Opcode::OP_POP); // Pop the 'true' boolean
             
             compileExpression(param.defaultValue.get());
             emit(Opcode::OP_SET_LOCAL);
             emit(static_cast<uint8_t>(paramCount));
-            emit(Opcode::OP_POP);
+            emit(Opcode::OP_POP); // Pop the set value
+            
+            size_t doneJump = emitJump(Opcode::OP_JUMP);
             
             patchJump(skipDefault);
-            emit(Opcode::OP_POP);
-        }
-        
+            emit(Opcode::OP_POP); // Pop the 'false' boolean
+            
+            patchJump(doneJump);
         // Handle rest parameter (must be last)
         if (param.rest) {
             // Create array from remaining arguments
@@ -855,6 +858,15 @@ void BytecodeGenerator::compileExpression(const Frontend::Expression* expr) {
         case Frontend::NodeType::NewExpression:
             compileNewExpression(static_cast<const Frontend::NewExpr*>(expr));
             break;
+        case Frontend::NodeType::TemplateLiteral:
+            compileTemplateLiteral(static_cast<const Frontend::TemplateLiteralExpr*>(expr));
+            break;
+        case Frontend::NodeType::SpreadElement:
+            compileSpreadElement(static_cast<const Frontend::SpreadExpr*>(expr));
+            break;
+        case Frontend::NodeType::RestElement:
+            compileRestElement(static_cast<const Frontend::RestElem*>(expr));
+            break;
         default:
             error("Unknown expression type");
             break;
@@ -1172,10 +1184,34 @@ void BytecodeGenerator::compileFunctionExpression(const Frontend::FunctionExpr* 
         const auto* id = static_cast<const Frontend::IdentifierExpr*>(param.pattern.get());
         Local local;
         local.name = id->name();
-        local.depth = 0;  // Function scope
-        local.isCaptured = false;
         local.isConst = false;
         current_->locals.push_back(local);
+    }
+    
+    // Emit default parameter value checks
+    for (size_t i = 0; i < expr->params().size(); ++i) {
+        const auto& param = expr->params()[i];
+        if (param.defaultValue) {
+            emit(Opcode::OP_GET_LOCAL);
+            emit(static_cast<uint8_t>(i));
+            emit(Opcode::OP_NIL);
+            emit(Opcode::OP_STRICT_EQUAL);
+            
+            size_t skipDefault = emitJump(Opcode::OP_JUMP_IF_FALSE);
+            emit(Opcode::OP_POP); // Pop the 'true' boolean
+            
+            compileExpression(param.defaultValue.get());
+            emit(Opcode::OP_SET_LOCAL);
+            emit(static_cast<uint8_t>(i));
+            emit(Opcode::OP_POP); // Pop the set value
+            
+            size_t doneJump = emitJump(Opcode::OP_JUMP);
+            
+            patchJump(skipDefault);
+            emit(Opcode::OP_POP); // Pop the 'false' boolean
+            
+            patchJump(doneJump);
+        }
     }
     
     // Compile function body
@@ -1203,6 +1239,13 @@ void BytecodeGenerator::compileFunctionExpression(const Frontend::FunctionExpr* 
     size_t funcIndex = makeConstant(Runtime::Value::object(func));
     emit(Opcode::OP_CLOSURE);
     emit(static_cast<uint8_t>(funcIndex));
+    
+    // Emit upvalue descriptors (captured variables from enclosing scope)
+    emit(static_cast<uint8_t>(fnState.upvalues.size()));
+    for (const auto& upval : fnState.upvalues) {
+        emit(upval.isLocal ? uint8_t(1) : uint8_t(0));
+        emit(static_cast<uint8_t>(upval.index));
+    }
 }
 
 void BytecodeGenerator::compileArrowFunction(const Frontend::ArrowFunctionExpr* expr) {
@@ -1221,10 +1264,34 @@ void BytecodeGenerator::compileArrowFunction(const Frontend::ArrowFunctionExpr* 
         const auto* id = static_cast<const Frontend::IdentifierExpr*>(param.pattern.get());
         Local local;
         local.name = id->name();
-        local.depth = 0;  // Function scope
-        local.isCaptured = false;
         local.isConst = false;
         current_->locals.push_back(local);
+    }
+    
+    // Emit default parameter value checks
+    for (size_t i = 0; i < expr->params().size(); ++i) {
+        const auto& param = expr->params()[i];
+        if (param.defaultValue) {
+            emit(Opcode::OP_GET_LOCAL);
+            emit(static_cast<uint8_t>(i));
+            emit(Opcode::OP_NIL);
+            emit(Opcode::OP_STRICT_EQUAL);
+            
+            size_t skipDefault = emitJump(Opcode::OP_JUMP_IF_FALSE);
+            emit(Opcode::OP_POP); // Pop the 'true' boolean
+            
+            compileExpression(param.defaultValue.get());
+            emit(Opcode::OP_SET_LOCAL);
+            emit(static_cast<uint8_t>(i));
+            emit(Opcode::OP_POP); // Pop the set value
+            
+            size_t doneJump = emitJump(Opcode::OP_JUMP);
+            
+            patchJump(skipDefault);
+            emit(Opcode::OP_POP); // Pop the 'false' boolean
+            
+            patchJump(doneJump);
+        }
     }
     
     // Compile body
@@ -1259,7 +1326,13 @@ void BytecodeGenerator::compileArrowFunction(const Frontend::ArrowFunctionExpr* 
     emit(Opcode::OP_CLOSURE);
     emit(static_cast<uint8_t>(funcIndex));
     
-    // TODO: Emit upvalue count and indices for captured 'this'
+    // Emit upvalue descriptors
+    // Arrow functions capture upvalues from enclosing scope including 'this'
+    emit(static_cast<uint8_t>(fnState.upvalues.size()));
+    for (const auto& upval : fnState.upvalues) {
+        emit(upval.isLocal ? uint8_t(1) : uint8_t(0));
+        emit(static_cast<uint8_t>(upval.index));
+    }
 }
 
 void BytecodeGenerator::compileUpdateExpression(const Frontend::UpdateExpr* expr) {
@@ -1464,8 +1537,13 @@ void BytecodeGenerator::compileClassDeclaration(const Frontend::ClassDecl* decl)
         
         // If extends, call super constructor
         if (decl->superClass()) {
-            // super.call(this) equivalent
-            // For now, emit placeholder for super call
+            // Load 'this' and superclass, then call super
+            emit(Opcode::OP_GET_LOCAL);
+            emit(static_cast<uint8_t>(0));  // 'this'
+            compileExpression(decl->superClass());
+            emit(Opcode::OP_SUPER_CALL);
+            emit(static_cast<uint8_t>(0));  // arg count (default super())
+            emit(Opcode::OP_POP);  // Discard super return
         }
         
         // Compile constructor body
@@ -1497,6 +1575,13 @@ void BytecodeGenerator::compileClassDeclaration(const Frontend::ClassDecl* decl)
     size_t ctorIndex = makeConstant(Runtime::Value::object(ctorFunc));
     emit(Opcode::OP_CLOSURE);
     emit(static_cast<uint8_t>(ctorIndex));
+    
+    // Emit upvalue descriptors for constructor
+    emit(static_cast<uint8_t>(classState.upvalues.size()));
+    for (const auto& upval : classState.upvalues) {
+        emit(upval.isLocal ? uint8_t(1) : uint8_t(0));
+        emit(static_cast<uint8_t>(upval.index));
+    }
     
     // If extends, set up prototype chain
     if (decl->superClass()) {
@@ -1562,6 +1647,13 @@ void BytecodeGenerator::compileClassDeclaration(const Frontend::ClassDecl* decl)
         size_t methodIndex = makeConstant(Runtime::Value::object(methodFunc));
         emit(Opcode::OP_CLOSURE);
         emit(static_cast<uint8_t>(methodIndex));
+        
+        // Emit upvalue descriptors for method
+        emit(static_cast<uint8_t>(methodState.upvalues.size()));
+        for (const auto& upval : methodState.upvalues) {
+            emit(upval.isLocal ? uint8_t(1) : uint8_t(0));
+            emit(static_cast<uint8_t>(upval.index));
+        }
         
         // Add method name constant
         size_t nameConstant = makeConstant(
@@ -1710,6 +1802,153 @@ void BytecodeGenerator::compileYieldExpression(const Frontend::YieldExpr* expr) 
         emit(static_cast<uint8_t>(0));  // No delegation
     }
     // The value passed to next() is left on stack
+}
+
+void BytecodeGenerator::compileForInStatement(const Frontend::ForInStmt* stmt) {
+    // for (let key in object) { body }
+    // becomes:
+    // let keys = Object.keys(object);
+    // for (let i = 0; i < keys.length; i++) {
+    //     let key = keys[i];
+    //     body
+    // }
+    
+    beginScope();
+    
+    // Compile object and get its keys
+    compileExpression(stmt->right());
+    emit(Opcode::OP_FOR_IN);  // Pushes array of keys
+    
+    // Store keys array in hidden local
+    addLocal("$keys", false);
+    
+    // Store index counter (starts at 0)
+    emitConstant(Runtime::Value::number(0));
+    addLocal("$idx", false);
+    
+    size_t loopStart = currentChunk()->currentOffset();
+    
+    // Check: $idx < $keys.length
+    emit(Opcode::OP_GET_LOCAL);
+    emit(static_cast<uint8_t>(current_->locals.size() - 1));  // $idx
+    emit(Opcode::OP_GET_LOCAL);
+    emit(static_cast<uint8_t>(current_->locals.size() - 2));  // $keys
+    size_t lenConst = makeConstant(
+        Runtime::Value::string(new Runtime::String("length")));
+    emit(Opcode::OP_GET_PROPERTY);
+    emit(static_cast<uint8_t>(lenConst));
+    emit(Opcode::OP_LESS);
+    
+    size_t exitJump = emitJump(Opcode::OP_JUMP_IF_FALSE);
+    emit(Opcode::OP_POP);  // Pop comparison result
+    
+    // Get current key: $keys[$idx]
+    emit(Opcode::OP_GET_LOCAL);
+    emit(static_cast<uint8_t>(current_->locals.size() - 2));  // $keys
+    emit(Opcode::OP_GET_LOCAL);
+    emit(static_cast<uint8_t>(current_->locals.size() - 1));  // $idx
+    emit(Opcode::OP_GET_ELEMENT);
+    
+    // Assign to loop variable
+    const Frontend::ASTNode* left = stmt->left();
+    if (left->type() == Frontend::NodeType::VariableDeclaration) {
+        const auto* varDecl = static_cast<const Frontend::VariableDecl*>(left);
+        if (!varDecl->declarators().empty()) {
+            const auto* id = static_cast<const Frontend::IdentifierExpr*>(
+                varDecl->declarators()[0].id.get());
+            bool isConst = varDecl->kind() == Frontend::VariableDecl::Kind::Const;
+            declareVariable(id->name(), isConst);
+            defineVariable(id->name());
+        }
+    } else if (left->type() == Frontend::NodeType::Identifier) {
+        const auto* id = static_cast<const Frontend::IdentifierExpr*>(left);
+        int slot = resolveLocal(id->name());
+        if (slot != -1) {
+            emit(Opcode::OP_SET_LOCAL);
+            emit(static_cast<uint8_t>(slot));
+        } else {
+            size_t constant = makeConstant(
+                Runtime::Value::string(new Runtime::String(id->name())));
+            emit(Opcode::OP_SET_GLOBAL);
+            emit(static_cast<uint8_t>(constant));
+        }
+        emit(Opcode::OP_POP);
+    }
+    
+    // Track loop
+    breakJumps_.push_back({});
+    continueTargets_.push_back(loopStart);
+    
+    // Compile body
+    compileStatement(stmt->body());
+    
+    // Increment $idx
+    emit(Opcode::OP_GET_LOCAL);
+    emit(static_cast<uint8_t>(current_->locals.size() - 1));  // $idx
+    emitConstant(Runtime::Value::number(1));
+    emit(Opcode::OP_ADD);
+    emit(Opcode::OP_SET_LOCAL);
+    emit(static_cast<uint8_t>(current_->locals.size() - 1));  // $idx
+    emit(Opcode::OP_POP);
+    
+    // Loop back
+    emitLoop(loopStart);
+    
+    // Patch exit
+    patchJump(exitJump);
+    emit(Opcode::OP_POP);  // Pop comparison result
+    
+    // Patch breaks
+    for (size_t breakJump : breakJumps_.back()) {
+        patchJump(breakJump);
+    }
+    breakJumps_.pop_back();
+    continueTargets_.pop_back();
+    
+    endScope();
+}
+
+void BytecodeGenerator::compileTemplateLiteral(const Frontend::TemplateLiteralExpr* expr) {
+    // `hello ${name}, you are ${age}!`
+    // => "hello " + String(name) + ", you are " + String(age) + "!"
+    
+    const auto& quasis = expr->quasis();
+    const auto& expressions = expr->expressions();
+    
+    // Emit first quasi
+    if (!quasis.empty()) {
+        emitConstant(Runtime::Value::string(new Runtime::String(quasis[0])));
+    } else {
+        emitConstant(Runtime::Value::string(new Runtime::String("")));
+    }
+    
+    // Interleave expressions and remaining quasis
+    for (size_t i = 0; i < expressions.size(); ++i) {
+        // Compile expression and convert to string (OP_ADD with string does coercion)
+        compileExpression(expressions[i].get());
+        emit(Opcode::OP_ADD);  // Concatenate with previous
+        
+        // Emit next quasi part
+        if (i + 1 < quasis.size()) {
+            emitConstant(Runtime::Value::string(new Runtime::String(quasis[i + 1])));
+            emit(Opcode::OP_ADD);
+        }
+    }
+}
+
+void BytecodeGenerator::compileSpreadElement(const Frontend::SpreadExpr* expr) {
+    // Compile the argument (iterable)
+    compileExpression(expr->argument());
+    
+    // Emit spread opcode to expand the iterable onto the stack
+    emit(Opcode::OP_SPREAD);
+}
+
+void BytecodeGenerator::compileRestElement(const Frontend::RestElem* expr) {
+    // Rest element typically doesn't need standalone bytecode compilation 
+    // outside of destructuring patterns or function parameters.
+    // However, if compiled directly, emit undefined.
+    emit(Opcode::OP_NIL);
 }
 
 } // namespace Zepra::Bytecode

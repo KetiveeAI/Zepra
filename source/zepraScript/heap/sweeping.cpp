@@ -13,6 +13,7 @@
 #include <atomic>
 #include <chrono>
 #include <cassert>
+#include <thread>
 
 namespace Zepra::GC {
 
@@ -318,14 +319,63 @@ public:
     ConcurrentSweepTask(const ConcurrentSweepConfig& config)
         : config_(config) {}
     
-    // Placeholder - would implement actual concurrent sweeping
     void execute(std::vector<SweepPage>& pages) {
-        // For now, just sweep sequentially
-        // TODO: Implement actual concurrent sweeping with thread pool
+        if (pages.empty() || !config_.enabled || config_.numWorkers <= 1) {
+            // Fallback to sequential sweep
+            for (auto& page : pages) {
+                sweepPage(page, deadObjects_);
+            }
+            return;
+        }
+        
+        size_t numWorkers = std::min(config_.numWorkers, pages.size());
+        std::vector<std::thread> workers;
+        std::vector<std::vector<Runtime::Object*>> perThreadDead(numWorkers);
+        
+        // Divide pages among workers
+        size_t pagesPerWorker = (pages.size() + numWorkers - 1) / numWorkers;
+        
+        for (size_t w = 0; w < numWorkers; ++w) {
+            size_t start = w * pagesPerWorker;
+            size_t end = std::min(start + pagesPerWorker, pages.size());
+            if (start >= pages.size()) break;
+            
+            workers.emplace_back([&pages, &perThreadDead, start, end, w]() {
+                for (size_t i = start; i < end; ++i) {
+                    sweepPage(pages[i], perThreadDead[w]);
+                }
+            });
+        }
+        
+        // Wait for all workers
+        for (auto& t : workers) {
+            t.join();
+        }
+        
+        // Merge per-thread dead lists
+        for (auto& threadDead : perThreadDead) {
+            deadObjects_.insert(deadObjects_.end(), 
+                threadDead.begin(), threadDead.end());
+        }
     }
     
+    std::vector<Runtime::Object*>& deadObjects() { return deadObjects_; }
+    
 private:
+    static void sweepPage(SweepPage& page, std::vector<Runtime::Object*>& dead) {
+        for (auto* obj : page.objects) {
+            if (!obj) continue;
+            if (obj->isMarked()) {
+                obj->clearMark();
+            } else {
+                dead.push_back(obj);
+            }
+        }
+        page.complete = true;
+    }
+    
     ConcurrentSweepConfig config_;
+    std::vector<Runtime::Object*> deadObjects_;
 };
 
 } // namespace Zepra::GC

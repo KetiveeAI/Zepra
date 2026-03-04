@@ -459,13 +459,13 @@ void VM::dispatch(Opcode op) {
                         break;
                     }
                     
-                    // IC fast path: check cached shape
+                    // IC fast path: check cached shape → direct slot access
                     InlineCache* ic = icManager_.getIC(propSiteIP);
                     if (ic) {
                         uint32_t cachedOffset;
                         if (ic->lookup(obj->shapeId(), cachedOffset)) {
-                            // IC hit — use cached value directly
-                            push(obj->get(name));  // Still uses get() but IC validates shape stability
+                            // IC hit — direct slot access, skip hash lookup
+                            push(obj->getPropertyBySlot(cachedOffset));
                             break;
                         }
                     }
@@ -485,9 +485,12 @@ void VM::dispatch(Opcode op) {
                     Value result = obj->get(name);
                     push(result);
                     
-                    // Update IC for next access at this site
+                    // Update IC with real slot offset for next access
                     if (ic) {
-                        ic->update(obj->shapeId(), 0);
+                        int32_t slot = obj->findPropertySlot(name);
+                        if (slot >= 0) {
+                            ic->update(obj->shapeId(), static_cast<uint32_t>(slot));
+                        }
                     }
                 } else {
                     push(Value::undefined());
@@ -513,6 +516,7 @@ void VM::dispatch(Opcode op) {
         }
         
         case Opcode::OP_SET_PROPERTY: {
+            size_t setSiteIP = ip_ - 1;  // IC key for set site
             uint8_t nameIdx = readByte();
             Value nameValue = chunk_->constant(nameIdx);
             Value value = pop();
@@ -532,7 +536,21 @@ void VM::dispatch(Opcode op) {
                             setterFn->call(nullptr, objValue, args);
                         }
                     } else {
-                        obj->set(name, value);
+                        // IC fast path for set: direct slot access on shape match
+                        InlineCache* ic = icManager_.getIC(setSiteIP);
+                        uint32_t cachedOffset;
+                        if (ic && ic->lookup(obj->shapeId(), cachedOffset)) {
+                            obj->setPropertyBySlot(cachedOffset, value);
+                        } else {
+                            obj->set(name, value);
+                            // Cache the slot for next access
+                            if (ic) {
+                                int32_t slot = obj->findPropertySlot(name);
+                                if (slot >= 0) {
+                                    ic->update(obj->shapeId(), static_cast<uint32_t>(slot));
+                                }
+                            }
+                        }
                     }
                     
                     // Write barrier: notify GC of potential old→young reference
@@ -1511,6 +1529,125 @@ void VM::dispatch(Opcode op) {
         }
         case Opcode::OP_DEBUGGER: {
             // Debugger statement — pauses execution if debug callback is set
+            break;
+        }
+        // Class operations
+        case Opcode::OP_INHERIT: {
+            Value superclass = pop();
+            Value subclass = peek(0);
+            if (!superclass.isObject() || !subclass.isObject()) {
+                throw std::runtime_error("Superclass and subclass must be objects");
+            }
+            if (!superclass.asObject()->isFunction() || !subclass.asObject()->isFunction()) {
+                throw std::runtime_error("Superclass and subclass must be constructors");
+            }
+            // Setup prototype chain: subclass.prototype.__proto__ = superclass.prototype
+            Value superProto = superclass.asObject()->get("prototype");
+            Value subProto = subclass.asObject()->get("prototype");
+            if (subProto.isObject() && superProto.isObject()) {
+                subProto.asObject()->setPrototype(superProto.asObject());
+            }
+            break;
+        }
+        case Opcode::OP_DEFINE_METHOD:
+        case Opcode::OP_DEFINE_STATIC:
+        case Opcode::OP_DEFINE_GETTER:
+        case Opcode::OP_DEFINE_SETTER: {
+            uint8_t nameIdx = readByte();
+            Value methodName = chunk_->constant(nameIdx);
+            Value methodFunc = pop();
+            Value classConstructor = peek(0);
+            
+            if (!methodName.isString() || !methodFunc.isObject() || !classConstructor.isObject()) {
+                throw std::runtime_error("Invalid operands for define method/getter/setter");
+            }
+            
+            String* nameStr = static_cast<String*>(methodName.asObject());
+            Object* targetObj = classConstructor.asObject();
+            
+            if (op != Opcode::OP_DEFINE_STATIC) {
+                // Add to prototype instead of constructor directly
+                Value proto = targetObj->get("prototype");
+                if (proto.isObject()) {
+                    targetObj = proto.asObject();
+                }
+            }
+            
+            if (op == Opcode::OP_DEFINE_GETTER) {
+                PropertyDescriptor desc;
+                desc.getter = methodFunc;
+                desc.attributes = PropertyAttribute::Configurable | PropertyAttribute::Enumerable;
+                targetObj->defineProperty(nameStr->value(), desc);
+            } else if (op == Opcode::OP_DEFINE_SETTER) {
+                PropertyDescriptor desc;
+                desc.setter = methodFunc;
+                desc.attributes = PropertyAttribute::Configurable | PropertyAttribute::Enumerable;
+                targetObj->defineProperty(nameStr->value(), desc);
+            } else {
+                targetObj->set(nameStr->value(), methodFunc);
+            }
+            break;
+        }
+        case Opcode::OP_SUPER_CALL: {
+            uint8_t argCount = readByte();
+            Value superclass = pop();
+            Value thisValue = pop();
+            
+            if (!superclass.isObject() || !superclass.asObject()->isFunction()) {
+                throw std::runtime_error("Superclass is not a constructor");
+            }
+            
+            Function* superConstructor = static_cast<Function*>(superclass.asObject());
+            
+            std::vector<Value> args;
+            args.reserve(argCount);
+            for (int i = 0; i < argCount; i++) {
+                args.push_back(pop());
+            }
+            // args were popped in reverse order, reverse them back
+            std::reverse(args.begin(), args.end());
+            
+            // Execute super constructor with 'this' value
+            if (superConstructor->isBuiltin()) {
+                FunctionCallInfo info(context_, thisValue, args);
+                push(superConstructor->builtinFunction()(info));
+            } else if (superConstructor->isNative()) {
+                push(superConstructor->nativeFunction()(context_, args));
+            } else if (superConstructor->isCompiled()) {
+                VMCallFrame frame;
+                frame.function = superConstructor;
+                frame.returnAddress = ip_;
+                frame.slotBase = stack_.size();
+                frame.thisValue = thisValue;
+                frame.savedChunk = chunk_;
+                pushCallFrame(frame);
+                
+                push(thisValue);
+                for (const auto& arg : args) {
+                    push(arg);
+                }
+                
+                chunk_ = superConstructor->bytecodeChunk();
+                ip_ = 0;
+            } else {
+                push(Value::undefined());
+            }
+            break;
+        }
+        case Opcode::OP_FOR_IN: {
+            Value obj = pop();
+            if (obj.isObject()) {
+                std::vector<std::string> keysStr = obj.asObject()->keys();
+                std::vector<Value> keysVal;
+                keysVal.reserve(keysStr.size());
+                for (const auto& k : keysStr) {
+                    keysVal.push_back(Value::string(new String(k)));
+                }
+                Array* keysArray = new Array(keysVal);
+                push(Value::object(keysArray));
+            } else {
+                push(Value::object(new Array()));
+            }
             break;
         }
 

@@ -632,6 +632,83 @@ private:
 };
 
 /**
+ * @brief For-in statement (object key enumeration)
+ * 
+ * for (let key in object) { ... }
+ */
+class ForInStmt : public Statement {
+public:
+    ForInStmt(ASTNodePtr left, ExprPtr right, StmtPtr body,
+              SourceLocation loc = {})
+        : Statement(NodeType::ForInStatement, loc)
+        , left_(std::move(left))
+        , right_(std::move(right))
+        , body_(std::move(body)) {}
+    
+    ASTNode* left() const { return left_.get(); }
+    Expression* right() const { return right_.get(); }
+    Statement* body() const { return body_.get(); }
+    
+private:
+    ASTNodePtr left_;
+    ExprPtr right_;
+    StmtPtr body_;
+};
+
+/**
+ * @brief Template literal expression: `hello ${name}!`
+ * 
+ * quasis: ["hello ", "!"]  (string parts between expressions)
+ * expressions: [name]       (interpolated expressions)
+ */
+class TemplateLiteralExpr : public Expression {
+public:
+    TemplateLiteralExpr(std::vector<std::string> quasis,
+                        std::vector<ExprPtr> expressions,
+                        SourceLocation loc = {})
+        : Expression(NodeType::TemplateLiteral, loc)
+        , quasis_(std::move(quasis))
+        , expressions_(std::move(expressions)) {}
+    
+    const std::vector<std::string>& quasis() const { return quasis_; }
+    const std::vector<ExprPtr>& expressions() const { return expressions_; }
+    
+private:
+    std::vector<std::string> quasis_;
+    std::vector<ExprPtr> expressions_;
+};
+
+/**
+ * @brief Spread element: `...iterable`
+ */
+class SpreadExpr : public Expression {
+public:
+    SpreadExpr(ExprPtr argument, SourceLocation loc = {})
+        : Expression(NodeType::SpreadElement, loc)
+        , argument_(std::move(argument)) {}
+    
+    Expression* argument() const { return argument_.get(); }
+    
+private:
+    ExprPtr argument_;
+};
+
+/**
+ * @brief Rest element: `...rest` pattern
+ */
+class RestElem : public Expression {
+public:
+    RestElem(ExprPtr argument, SourceLocation loc = {})
+        : Expression(NodeType::RestElement, loc)
+        , argument_(std::move(argument)) {}
+    
+    Expression* argument() const { return argument_.get(); }
+    
+private:
+    ExprPtr argument_;
+};
+
+/**
  * @brief Throw statement
  */
 class ThrowStmt : public Statement {

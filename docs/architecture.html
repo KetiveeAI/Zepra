@@ -180,9 +180,12 @@
 ├── source/                                   # ← Main source directory
 │   │
 │   ├── zepraScript/                         # ← JavaScript Engine (already defined)
-│   │   ├── CMakeLists.txt
-│   │   ├── include/zeprascript/             # Engine headers
-│   │   ├── src/                             # Engine implementation
+│   │   ├── builtins/                        # Built-in objects and functions
+│   │   ├── bytecode/                        # Bytecode generation and optimization
+│   │   ├── frontend/                        # Lexer, parser, AST
+│   │   ├── runtime/                         # VM, execution context
+│   │   ├── jit/                             # Just-In-Time compiler
+│   │   ├── heap/                            # Memory management and GC
 │   │   └── tests/                           # Engine tests
 │   │
 │   ├── webCore/                             # ← Browser Core (Rendering)

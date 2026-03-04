@@ -182,14 +182,13 @@
 <pre><code>zeprabrowser/
 ├── source/
 │   ├── zepraScript/        # JavaScript engine (trademark of KetiveeAI)
-│   │   ├── src/
-│   │   │   ├── frontend/   # Lexer, Parser, AST
-│   │   │   ├── compiler/   # Bytecode generation
-│   │   │   ├── runtime/    # VM, GC, Objects
-│   │   │   ├── builtins/   # Array, String, Math, etc.
-│   │   │   ├── jit/        # JIT compilers
-│   │   │   └── browser/    # DOM, Fetch, Events APIs
-│   │   └── include/
+│   │   ├── frontend/       # Lexer, Parser, AST
+│   │   ├── bytecode/       # Bytecode generation
+│   │   ├── runtime/        # VM, Execution, Objects
+│   │   ├── builtins/       # Array, String, Math, etc.
+│   │   ├── jit/            # JIT compilers
+│   │   ├── heap/           # GC and memory
+│   │   └── debugger/       # Debugging and inspection
 │   │
 │   ├── webCore/            # HTML/CSS engine
 │   │   ├── src/
@@ -234,16 +233,16 @@
 - ES modules support
 - Web API bindings</p>
 <p><strong>Key Files:</strong>
-- <code>src/frontend/lexer.cpp</code> - Tokenization
-- <code>src/frontend/parser.cpp</code> - AST generation
-- <code>src/compiler/bytecode_generator.cpp</code> - Bytecode
-- <code>src/runtime/vm.cpp</code> - Virtual machine
-- <code>src/jit/baseline_jit.cpp</code> - First-tier JIT</p>
+- <code>frontend/lexer.cpp</code> - Tokenization
+- <code>frontend/parser.cpp</code> - AST generation
+- <code>bytecode/bytecode_generator.cpp</code> - Bytecode
+- <code>runtime/vm.cpp</code> - Virtual machine
+- <code>jit/baseline_jit.cpp</code> - First-tier JIT</p>
 <h3>2. WebCore Engine</h3>
 <p><strong>Location:</strong> <code>source/webCore/</code></p>
 <p>HTML/CSS parsing and layout engine.</p>
 <p><strong>Key Files:</strong>
-- <code>src/html/tokenizer.cpp</code> - HTML5 tokenizer
+- <code>html/tokenizer.cpp</code> - HTML5 tokenizer
 - <code>src/html/tree_builder.cpp</code> - DOM construction
 - <code>src/css/parser.cpp</code> - CSS parsing
 - <code>src/css/selector.cpp</code> - Selector matching
@@ -291,8 +290,8 @@ LD_LIBRARY_PATH=../../source/nxrender/target/release ./zepra_nxrender
 <h2>Development Workflow</h2>
 <h3>Adding a Web API</h3>
 <ol>
-<li>Define interface in <code>source/zepraScript/include/zeprascript/browser/</code></li>
-<li>Implement in <code>source/zepraScript/src/browser/</code></li>
+<li>Define interface in <code>source/zepraScript/browser/</code></li>
+<li>Implement in <code>source/zepraScript/browser/</code></li>
 <li>Register in global object</li>
 <li>Add tests</li>
 </ol>

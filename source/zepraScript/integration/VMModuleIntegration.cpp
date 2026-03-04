@@ -40,12 +40,8 @@ Runtime::Value VMModuleIntegration::evaluateModule(Modules::ModuleRecord* module
     registerModuleRoots(module);
     
     try {
-        // Get bytecode for module
-        // This would integrate with the bytecode compiler
-        
-        // TODO: compile module to bytecode and execute
-        // auto result = interpreter_->execute(module_bytecode);
-        auto result = Runtime::Value::undefined();
+        // Execute module via executor (handles compile+execute internally)
+        auto result = executor_->execute(module);
         return result;
         
     } catch (const std::exception& e) {

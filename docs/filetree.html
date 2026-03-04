@@ -149,18 +149,17 @@
 ├── source/                                     # === NEW ARCHITECTURE ===
 │   │
 │   ├── zepraScript/                            # ⚠️ DO NOT MODIFY
-│   │   ├── include/zeprascript/               # 70+ headers
-│   │   │   ├── frontend/ (lexer, parser, ast)
-│   │   │   ├── bytecode/ (compiler, opcodes)
-│   │   │   ├── runtime/ (vm, value, object)
-│   │   │   ├── gc/ (heap, garbage collector)
-│   │   │   ├── jit/ (baseline, osr)
-│   │   │   ├── builtins/ (Date, Math, Number)
-│   │   │   ├── browser/ (Window, DOM bindings)
-│   │   │   ├── memory/ (allocators)
-│   │   │   ├── debug/ (devtools, inspector)
-│   │   │   └── api/ (context, handles)
-│   │   ├── src/                               # 50+ implementations
+│   │   ├── frontend/                          # Lexer, parser, ast
+│   │   ├── bytecode/                          # Compiler, opcodes
+│   │   ├── runtime/                           # VM, value, object
+│   │   ├── heap/                              # Garbage collector
+│   │   ├── jit/                               # Baseline, osr, dfg
+│   │   ├── builtins/                          # Date, Math, Number
+│   │   ├── memory/                            # Allocators
+│   │   ├── debugger/                          # Devtools, inspector
+│   │   ├── modules/                           # ES modules, imports
+│   │   ├── wasm/                              # WebAssembly support
+│   │   ├── profiler/                          # CPU, heap profilers
 │   │   └── tests/                             # Unit + integration
 │   │
 │   ├── webCore/                               # Rendering Engine
