@@ -277,4 +277,50 @@ Declarations exist for Temporal, Decorators, Pipeline, WeakRef, FinalizationRegi
 - [x] Registered `atob`, `btoa`, `structuredClone`
 - [x] Build verified
 
+### Phase 73: GC Expansion (In Progress)
+
+Target: 80K GC lines | Current: ~50K | 120+ files across heap/, runtime/, test/
+
+#### Batches 1–15 ✅ — Foundation
+
+- Heap infrastructure: gc_heap, gc_pipeline, concurrent_gc, marking, sweeping, compacting
+- Generational GC, remembered sets, concurrent marker/sweeper, parallel scanner
+- Shape table, property storage, object layout, slab allocator, region allocator
+- GC debug, stress, benchmark, verification, integration tests
+- Weak processing, finalizer engine, ephemeron table, JIT-GC bridge, code space manager
+
+#### Batch 16 ✅ — Heap Spaces + Runtime Integration
+
+- gc_nursery (semi-space Cheney scavenge), gc_old_space (segregated free lists)
+- gc_large_object (per-object mmap), gc_sweeper (page walker)
+- gc_object_visitor, gc_runtime_bridge, gc_write_barrier (runtime side)
+- gc_nursery_test, gc_barrier_test
+
+#### Batch 17 ✅ — Scheduling + Weak Processing
+
+- gc_scheduler (budget + occupancy + idle + pressure), gc_telemetry (ring buffer + histogram)
+- gc_weak_processor (ephemeron fixpoint), gc_finalizer_queue (FIFO drain)
+- gc_incremental (tri-color marking), gc_lifecycle_hooks (runtime hooks)
+- gc_weak_test, gc_scheduler_test
+
+#### Batch 18 ✅ — TLAB + Snapshot + JIT Barriers
+
+- gc_tlab (thread-local allocation), gc_heap_snapshot_serializer (V8 format)
+- gc_barrier_codegen (x86-64/AArch64 stubs), gc_region_metadata
+- gc_safepoint_hooks (runtime), gc_tlab_test, gc_snapshot_test
+
+#### Batch 19 ✅ — Evacuation + Pretenuring
+
+- gc_evacuation (forwarding table + 3-phase), gc_pretenuring (allocation-site feedback)
+- gc_marking_bitmap (atomic 1-bit/granule), gc_stack_scanner (conservative)
+- gc_stats_api (runtime), gc_evacuation_test, gc_pretenure_test
+
+#### Batch 20 ✅ — Card Table + Pinning + Age Tracking
+
+- gc_card_table (512B cards), gc_object_pinning (ref-counted)
+- gc_age_table (adaptive tenuring), gc_heap_iterator, gc_sweep_worklist
+- gc_pressure_api (runtime), gc_card_table_test, gc_age_table_test
+
+#### Batch 21+ — In Progress
+
 ---

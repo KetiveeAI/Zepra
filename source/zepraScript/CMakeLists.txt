@@ -25,6 +25,17 @@ set(ZEPRA_CORE_SOURCES
     runtime/execution/crash_handler.cpp
     runtime/execution/environment.cpp
     runtime/execution/global_object.cpp
+    runtime/gc_object_visitor.cpp
+    runtime/gc_runtime_bridge.cpp
+    runtime/gc_write_barrier.cpp
+    runtime/gc_lifecycle_hooks.cpp
+    runtime/gc_safepoint_hooks.cpp
+    runtime/gc_stats_api.cpp
+    runtime/gc_pressure_api.cpp
+    runtime/gc_config_api.cpp
+    runtime/gc_event_log.cpp
+    runtime/gc_vm_allocator.cpp
+    runtime/gc_vm_hooks.cpp
 
     # Runtime — Async
     runtime/async/promise.cpp
@@ -84,6 +95,65 @@ set(ZEPRA_CORE_SOURCES
     heap/gc_pipeline_orchestrator.cpp
     heap/heap_controller_v2.cpp
     heap/region_allocator.cpp
+    heap/shape_table.cpp
+    heap/property_storage.cpp
+    heap/object_layout.cpp
+    heap/gc_safepoint.cpp
+    heap/heap_snapshot.cpp
+    heap/gc_tracing_engine.cpp
+    heap/gc_heap_facade.cpp
+    heap/gc_handle_scope.cpp
+    heap/gc_integration_test.cpp
+    heap/remembered_set.cpp
+    heap/concurrent_marker.cpp
+    heap/gc_verifier.cpp
+    heap/gc_nursery.cpp
+    heap/gc_old_space.cpp
+    heap/gc_large_object.cpp
+    heap/gc_sweeper.cpp
+    heap/gc_scheduler.cpp
+    heap/gc_telemetry.cpp
+    heap/gc_weak_processor.cpp
+    heap/gc_finalizer_queue.cpp
+    heap/gc_incremental.cpp
+    heap/gc_tlab.cpp
+    heap/gc_heap_snapshot_serializer.cpp
+    heap/gc_barrier_codegen.cpp
+    heap/gc_region_metadata.cpp
+    heap/gc_evacuation.cpp
+    heap/gc_pretenuring.cpp
+    heap/gc_marking_bitmap.cpp
+    heap/gc_stack_scanner.cpp
+    heap/gc_card_table.cpp
+    heap/gc_object_pinning.cpp
+    heap/gc_age_table.cpp
+    heap/gc_heap_iterator.cpp
+    heap/gc_sweep_worklist.cpp
+    heap/gc_mark_worklist.cpp
+    heap/gc_free_list.cpp
+    heap/gc_root_set.cpp
+    heap/gc_barrier_verifier.cpp
+    heap/gc_object_header.cpp
+    heap/gc_segment_manager.cpp
+    heap/gc_wb_buffer.cpp
+    heap/gc_compact_coordinator.cpp
+    heap/gc_promotion_bridge.cpp
+    heap/gc_controller.cpp
+    heap/gc_heap_init.cpp
+    heap/gc_scavenger_controller.cpp
+    heap/gc_allocation_tracker.cpp
+    heap/gc_concurrent_mark_controller.cpp
+    heap/gc_state_machine.cpp
+    heap/gc_heap_sizing.cpp
+    heap/gc_concurrent_sweep_controller.cpp
+    heap/gc_nursery_sizing.cpp
+    heap/gc_handle_table.cpp
+    heap/gc_marking_visitor.cpp
+    heap/gc_allocation_budget.cpp
+    heap/gc_remembered_set_manager.cpp
+    heap/gc_heap_statistics.cpp
+    heap/gc_finalization_executor.cpp
+    heap/gc_heap_verifier.cpp
 
     # Bytecode
     bytecode/bytecode_generator.cpp
