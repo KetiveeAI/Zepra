@@ -7,46 +7,46 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Source files
 set(NXRENDER_SOURCES
     # nxgfx
-    src/nxgfx/color.cpp
-    src/nxgfx/context.cpp
-    src/nxgfx/context3d.cpp
-    src/nxgfx/text.cpp
+    nxgfx/color.cpp
+    nxgfx/context.cpp
+    nxgfx/context3d.cpp
+    nxgfx/text.cpp
     
     # core
-    src/core/compositor.cpp
-    src/core/surface.cpp
+    core/compositor.cpp
+    core/surface.cpp
     
     # widgets
-    src/widgets/widget.cpp
-    src/widgets/button.cpp
-    src/widgets/label.cpp
-    src/widgets/textfield.cpp
-    src/widgets/container.cpp
-    src/widgets/scrollview.cpp
-    src/widgets/listview.cpp
-    src/widgets/tabview.cpp
+    widgets/widget.cpp
+    widgets/button.cpp
+    widgets/label.cpp
+    widgets/textfield.cpp
+    widgets/container.cpp
+    widgets/scrollview.cpp
+    widgets/listview.cpp
+    widgets/tabview.cpp
     
     # layout
-    src/layout/flexbox.cpp
+    layout/flexbox.cpp
     
     # theme
-    src/theme/theme.cpp
+    theme/theme.cpp
     
     # input
-    src/input/mouse.cpp
-    src/input/keyboard.cpp
+    input/mouse.cpp
+    input/keyboard.cpp
     
     # animation
-    src/animation/animator.cpp
+    animation/animator.cpp
     
     # platform
-    src/platform/linux_x11.cpp
+    platform/linux_x11.cpp
     
     # bridge to libnxrender.a (C library) - DISABLED: requires external nxgfx C lib
-    # src/nxrender_c_bridge.cpp
+    # nxrender_c_bridge.cpp
     
     # main
-    src/nxrender.cpp
+    nxrender.cpp
 )
 
 # Create library
@@ -54,7 +54,7 @@ add_library(nxrender STATIC ${NXRENDER_SOURCES})
 
 # Include directories
 target_include_directories(nxrender PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 # Include C library headers for bridge (from nxrender_c)
@@ -82,7 +82,8 @@ install(TARGETS nxrender
     LIBRARY DESTINATION lib
 )
 
-install(DIRECTORY include/
+install(DIRECTORY animation core input layout nxgfx platform theme web widgets
+    DESTINATION include
     DESTINATION include
     FILES_MATCHING PATTERN "*.h"
 )

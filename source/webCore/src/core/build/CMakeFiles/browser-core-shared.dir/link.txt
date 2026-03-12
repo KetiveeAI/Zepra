@@ -1,1 +1,0 @@
-/usr/bin/cc -fPIC -O3 -DNDEBUG -Wl,--dependency-file=CMakeFiles/browser-core-shared.dir/link.d -shared -Wl,-soname,libbrowser-core.so.1 -o libbrowser-core.so.1.0.0 "CMakeFiles/browser-core-shared.dir/src/task_manager.c.o" "CMakeFiles/browser-core-shared.dir/src/auto_manager.c.o" "CMakeFiles/browser-core-shared.dir/src/task_manager_ui.c.o"  -lpthread

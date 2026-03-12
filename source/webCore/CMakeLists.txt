@@ -21,7 +21,7 @@ if(EXISTS ${PREBUILT_LIB})
     
     # Set include directories - these will be propagated to consumers
     target_include_directories(webcore INTERFACE
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}/../zepraScript/include
         ${CMAKE_CURRENT_SOURCE_DIR}/../networking/include
         ${CMAKE_SOURCE_DIR}/source/nxrender-cpp/include
@@ -44,11 +44,11 @@ if(EXISTS ${PREBUILT_LIB})
     endif()
     
 else()
-    # Source-based build (requires source files in src/)
+    # Source-based build (requires source files in )
     message(STATUS "WebCore: Building from source")
     
     # Include directories
-    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+    include_directories(${CMAKE_CURRENT_SOURCE_DIR})
     
     # ZepraScript include path
     set(ZEPRASCRIPT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../zepraScript)
@@ -62,75 +62,17 @@ else()
     set(WEBCORE_SOURCES "")
     
     # Core sources
-    foreach(src
-        src/dom.cpp
-        src/render_tree.cpp
-        src/paint_context.cpp
-        src/js_dom_bridge.cpp
-        src/layout_engine.cpp
-        src/html_parser.cpp
-        src/browser_ui.cpp
-        src/page.cpp
-        src/event.cpp
-        src/event_target.cpp
-        src/scrollbar.cpp
-        src/resource_loader.cpp
-        src/script_context.cpp
-        src/context_menu.cpp
-        src/gl_render_backend.cpp
-        src/script_loader.cpp
-        src/js_realm.cpp
-        src/gc_bridge.cpp
-        src/webgl_context.cpp
-        src/webgl_bindings.cpp
-        src/nxgfx_context.cpp
-        src/simple_font.cpp
-        src/shortcut_manager.cpp
-        src/sidebar.cpp
-        src/svg_loader.cpp
-        src/navigation_history.cpp
-        src/compositor.cpp
-        src/page_renderer.cpp
-        # HTML Elements
-        src/html/html_element.cpp
-        src/html/html_dialog_element.cpp
-        src/html/html_anchor_element.cpp
-        src/html/html_div_element.cpp
-        src/html/html_span_element.cpp
-        src/html/html_image_element.cpp
-        src/html/html_form_element.cpp
-        src/html/html_input_element.cpp
-        src/html/html_button_element.cpp
-        src/html/html_media_element.cpp
-        src/html/html_canvas_element.cpp
-        # New HTML Element implementations
-        src/html/html_link_element.cpp
-        src/html/html_meta_element.cpp
-        src/html/html_style_element.cpp
-        src/html/html_structural_elements.cpp
-        src/html/html_text_elements.cpp
-        src/html/html_form_extras.cpp
-        src/html/html_media_extras.cpp
-        src/html/html_text_formatting.cpp
-        src/html/html_element_factory.cpp
-        # Browser Interfaces
-        src/browser/window.cpp
-        src/browser/navigator.cpp
-        src/browser/location.cpp
-        # CSS Engine
-        src/css/css_style_sheet.cpp
-        src/css/css_style_declaration.cpp
-        src/css/css_rule.cpp
-        src/css/css_selector.cpp
-        src/css/css_computed_style.cpp
-        src/css/css_engine.cpp
-        src/css/css_cascade.cpp
-        src/css/style_resolver.cpp
+    # Find all source files in feature directories
+    file(GLOB_RECURSE WEBCORE_SOURCES
+        "css/*.cpp"
+        "html/*.cpp"
+        "browser/*.cpp"
+        "scripting/*.cpp"
+        "rendering/*.cpp"
+        "graphics/*.cpp"
+        "dom/*.cpp"
+        "core/*.cpp"
     )
-        if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${src}")
-            list(APPEND WEBCORE_SOURCES ${src})
-        endif()
-    endforeach()
     
     if(WEBCORE_SOURCES)
         # Find OpenGL for GPU rendering
@@ -140,7 +82,7 @@ else()
         add_library(webcore STATIC ${WEBCORE_SOURCES})
         
         target_include_directories(webcore PUBLIC
-            ${CMAKE_CURRENT_SOURCE_DIR}/include
+            ${CMAKE_CURRENT_SOURCE_DIR}
             ${CMAKE_CURRENT_SOURCE_DIR}/../zepraScript/include
             ${CMAKE_CURRENT_SOURCE_DIR}/../networking/include
             ${CMAKE_SOURCE_DIR}/source/nxrender-cpp/include
@@ -169,6 +111,6 @@ else()
         )
     else()
         message(FATAL_ERROR "WebCore: No source files found and no pre-built library available. "
-                           "Please either restore source files in src/ or the pre-built library.")
+                           "Please either restore source files in  or the pre-built library.")
     endif()
 endif()

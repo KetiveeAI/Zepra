@@ -1,2 +1,0 @@
-/usr/bin/ar qc libbrowser-core.a "CMakeFiles/browser-core-static.dir/src/task_manager.c.o" "CMakeFiles/browser-core-static.dir/src/auto_manager.c.o" "CMakeFiles/browser-core-static.dir/src/task_manager_ui.c.o"
-/usr/bin/ranlib libbrowser-core.a
