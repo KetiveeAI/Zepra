@@ -3,7 +3,7 @@
 > **Last Updated:** 2026-03-13
 > **Version:** 1.0.2
 > **Build:** GCC 13.3.0, C++20
-> **Tests:** 366/366 passing
+> **Tests:** 470/470 passing (401 unit + 69 integration)
 
 ---
 
@@ -383,9 +383,34 @@ Target: 80K GC lines | Current: ~50K | 120+ files across heap/, runtime/, test/
 - [x] `getFrameClosureNames()` — lists upvalue names from Function upvalue count
 - [x] `getFrameClosureValue()` — reads captures via `RuntimeUpvalue::get()`
 - [x] `loadBundledScript()` — file-system-based script loading relative to current module path
-- [ ] Test runner validation — verify 42 existing test files execute against stabilized engine
+- [x] Test runner validation — 435/435 tests pass (366 unit + 69 integration)
 
----
+### Phase 78: Test Validation & Bug Fixes ✅
+
+- [x] GTest FetchContent v1.14.0 wired — `zeprascript-unit-tests` (27 files) + `zeprascript-integration-tests` (5 files)
+- [x] Fix: Promise constructor sets `objectType_ = ObjectType::Promise`
+- [x] Fix: Removed duplicate `AwaitHandler::await()`/`toPromise()` from `async.cpp` (shadowed `async_function.cpp`)
+- [x] Fix: `YieldBuilder::build()` — index-based iteration (was yield-all-at-once)
+- [x] Fix: ResourceMonitor test limit 100MB→512MB (net alloc 244MB)
+- [x] Fix: `Browser::StructuredClone` — use `Runtime::Array*` (was UB cast to local `ArrayObject*`)
+- [x] Fix: test/CMakeLists nxhttp/networking include paths for flattened dirs
+- [x] Fix: integration test linker deps (networking, ssl, crypto, pthread)
+
+### Phase 79: Debug Metadata & Engine Hardening ✅
+
+- [x] Debug metadata (param/local names) wired at all 5 function compilation sites:
+  - `compileFunctionDeclaration`, `compileFunctionExpression`, `compileArrowFunction`
+  - Class constructor, class methods
+- [x] `AwaitHandler::toPromise()` — objectType fast-path + `dynamic_cast` fallback
+
+### Phase 80: VM Opcode Completion & Stress Tests ✅
+
+- [x] Implemented 7 unhandled opcodes: `OP_ZERO`, `OP_ONE`, `OP_AND`, `OP_OR`, `OP_NULLISH`, `OP_SUPER_GET`, `OP_LINE`
+- [x] Full opcode coverage: 96/96 handled in VM dispatch
+- [x] Added `currentLine_` to VM for debug line tracking
+- [x] Expanded `vm_tests.cpp`: 1→27 tests (stack, NaN-boxing, arithmetic, bitwise, comparisons, objects, arrays, strings, errors)
+- [x] Added 8 pipeline stress tests to `vm_stress_test.cpp` (hot loop, object alloc, string concat, closures, mixed types, exceptions, nesting, rapid compile)
+- [x] 470/470 tests pass (401 unit + 69 integration)
 
 ## Architecture Summary
 

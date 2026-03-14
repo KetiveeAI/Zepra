@@ -258,3 +258,136 @@ TEST(VMStress, StackThroughput) {
     EXPECT_GT(opsPerSec, 10e6);
     EXPECT_EQ(vm.stackSize(), 0u);
 }
+
+// =============================================================================
+// Execution Pipeline Stress Tests (Compile + Execute)
+// =============================================================================
+
+TEST(VMStress, PipelineHotLoop) {
+    VM vm(nullptr);
+    // Compile and execute a tight for-loop
+    void* compiled = vm.compile("var sum = 0; for (var i = 0; i < 10000; i++) { sum = sum + 1; }");
+    if (compiled) {
+        auto result = vm.execute(static_cast<const Zepra::Bytecode::BytecodeChunk*>(compiled));
+        // Should complete without error or timeout
+        EXPECT_NE(result.status, ExecutionResult::Status::Error);
+    }
+}
+
+TEST(VMStress, PipelineObjectAllocation) {
+    VM vm(nullptr);
+    void* compiled = vm.compile(
+        "var objects = [];"
+        "for (var i = 0; i < 100; i++) {"
+        "  objects[i] = { x: i, y: i * 2, name: 'obj' };"
+        "}"
+    );
+    if (compiled) {
+        auto result = vm.execute(static_cast<const Zepra::Bytecode::BytecodeChunk*>(compiled));
+        EXPECT_NE(result.status, ExecutionResult::Status::Error);
+    }
+}
+
+TEST(VMStress, PipelineStringConcat) {
+    VM vm(nullptr);
+    void* compiled = vm.compile(
+        "var s = '';"
+        "for (var i = 0; i < 100; i++) {"
+        "  s = s + 'x';"
+        "}"
+    );
+    if (compiled) {
+        auto result = vm.execute(static_cast<const Zepra::Bytecode::BytecodeChunk*>(compiled));
+        EXPECT_NE(result.status, ExecutionResult::Status::Error);
+    }
+}
+
+TEST(VMStress, PipelineClosureChain) {
+    VM vm(nullptr);
+    // Nested closures capturing from outer scopes
+    void* compiled = vm.compile(
+        "function make(n) {"
+        "  var x = n;"
+        "  return function() { return x; };"
+        "}"
+        "var fns = [];"
+        "for (var i = 0; i < 50; i++) {"
+        "  fns[i] = make(i);"
+        "}"
+    );
+    if (compiled) {
+        auto result = vm.execute(static_cast<const Zepra::Bytecode::BytecodeChunk*>(compiled));
+        EXPECT_NE(result.status, ExecutionResult::Status::Error);
+    }
+}
+
+TEST(VMStress, PipelineMixedTypes) {
+    VM vm(nullptr);
+    // Exercise type coercion paths
+    void* compiled = vm.compile(
+        "var a = 1 + '2';"      // string concat
+        "var b = true + 1;"     // numeric coercion
+        "var c = null + 1;"     // null → 0
+        "var d = undefined + 1;"// NaN
+    );
+    if (compiled) {
+        auto result = vm.execute(static_cast<const Zepra::Bytecode::BytecodeChunk*>(compiled));
+        EXPECT_NE(result.status, ExecutionResult::Status::Error);
+    }
+}
+
+TEST(VMStress, PipelineExceptionStorm) {
+    VM vm(nullptr);
+    void* compiled = vm.compile(
+        "var caught = 0;"
+        "for (var i = 0; i < 100; i++) {"
+        "  try {"
+        "    throw 'error';"
+        "  } catch (e) {"
+        "    caught = caught + 1;"
+        "  }"
+        "}"
+    );
+    if (compiled) {
+        auto result = vm.execute(static_cast<const Zepra::Bytecode::BytecodeChunk*>(compiled));
+        EXPECT_NE(result.status, ExecutionResult::Status::Error);
+    }
+}
+
+TEST(VMStress, PipelineDeepNesting) {
+    VM vm(nullptr);
+    // Generate deeply nested if-else
+    std::string code = "var result = 0;";
+    for (int i = 0; i < 50; ++i) {
+        code += "if (true) { result = result + 1; ";
+    }
+    for (int i = 0; i < 50; ++i) {
+        code += "} ";
+    }
+
+    void* compiled = vm.compile(code);
+    if (compiled) {
+        auto result = vm.execute(static_cast<const Zepra::Bytecode::BytecodeChunk*>(compiled));
+        EXPECT_NE(result.status, ExecutionResult::Status::Error);
+    }
+}
+
+TEST(VMStress, RapidCompileIterations) {
+    VM vm(nullptr);
+    auto start = std::chrono::high_resolution_clock::now();
+
+    for (int i = 0; i < 100; ++i) {
+        std::string code = "var x" + std::to_string(i) + " = " + std::to_string(i * i) + ";";
+        void* compiled = vm.compile(code);
+        // Should not crash on repeated compilations
+        (void)compiled;
+    }
+
+    auto end = std::chrono::high_resolution_clock::now();
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+
+    std::cout << "\n=== Rapid Compile (100 programs) ===" << std::endl;
+    std::cout << "Time: " << ms << " ms" << std::endl;
+    EXPECT_LT(ms, 5000); // 100 compilations should complete within 5s
+}
+

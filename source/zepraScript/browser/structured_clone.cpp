@@ -88,13 +88,12 @@ Value StructuredClone::cloneInternal(const Value& input,
         
         // Handle Array
         if (obj->isArray()) {
-            ArrayObject* arr = static_cast<ArrayObject*>(obj);
-            ArrayObject* clonedArr = new ArrayObject();
+            Runtime::Array* clonedArr = new Runtime::Array();
             memory[obj] = clonedArr;
             
-            size_t len = arr->getLength();
+            size_t len = obj->length();
             for (size_t i = 0; i < len; i++) {
-                Value elem = arr->getAt(i);
+                Value elem = obj->get(static_cast<uint32_t>(i));
                 clonedArr->push(cloneInternal(elem, memory, transferList));
             }
             return Value::object(clonedArr);

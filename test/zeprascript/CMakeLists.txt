@@ -74,6 +74,7 @@ set(ZEPRASCRIPT_INTEGRATION_TEST_SOURCES
     integration/fetch_tests.cpp
     integration/indexeddb_tests.cpp
     integration/browser_vm_integration_test.cpp
+    integration/js_execution_test.cpp
 )
 
 add_executable(zeprascript-integration-tests ${ZEPRASCRIPT_INTEGRATION_TEST_SOURCES})
@@ -81,14 +82,23 @@ add_executable(zeprascript-integration-tests ${ZEPRASCRIPT_INTEGRATION_TEST_SOUR
 target_link_libraries(zeprascript-integration-tests
     PRIVATE
         zepra-core
+        networking
         GTest::gtest
         GTest::gtest_main
+        ssl
+        crypto
+        pthread
 )
 
 target_include_directories(zeprascript-integration-tests
     PRIVATE
         ${PROJECT_SOURCE_DIR}/include
         ${PROJECT_SOURCE_DIR}/source/zepraScript
+)
+
+target_compile_definitions(zeprascript-integration-tests
+    PRIVATE
+        SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/.."
 )
 
 gtest_discover_tests(zeprascript-integration-tests)

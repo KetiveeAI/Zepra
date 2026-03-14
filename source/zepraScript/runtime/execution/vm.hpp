@@ -262,6 +262,7 @@ private:
     // Current bytecode chunk
     const Bytecode::BytecodeChunk* chunk_ = nullptr;
     size_t ip_ = 0;
+    uint16_t currentLine_ = 0;
     
     // Operand stack
     std::vector<Value> stack_;

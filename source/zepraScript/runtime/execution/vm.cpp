@@ -575,9 +575,15 @@ void VM::dispatch(Opcode op) {
             Value index = pop();
             Value array = pop();
             
-            if (array.isObject() && index.isNumber()) {
-                size_t idx = static_cast<size_t>(index.asNumber());
-                push(array.asObject()->get(idx));
+            if (array.isObject()) {
+                if (index.isNumber()) {
+                    size_t idx = static_cast<size_t>(index.asNumber());
+                    push(array.asObject()->get(idx));
+                } else {
+                    // String or other key — resolve as property name
+                    std::string key = index.toString();
+                    push(array.asObject()->get(key));
+                }
             } else {
                 push(Value::undefined());
             }
@@ -589,9 +595,14 @@ void VM::dispatch(Opcode op) {
             Value index = pop();
             Value array = pop();
             
-            if (array.isObject() && index.isNumber()) {
-                size_t idx = static_cast<size_t>(index.asNumber());
-                array.asObject()->set(idx, value);
+            if (array.isObject()) {
+                if (index.isNumber()) {
+                    size_t idx = static_cast<size_t>(index.asNumber());
+                    array.asObject()->set(idx, value);
+                } else {
+                    std::string key = index.toString();
+                    array.asObject()->set(key, value);
+                }
                 
                 // Write barrier: notify GC of potential old→young reference
                 if (value.isObject() && gcHeap_) {
@@ -1814,6 +1825,90 @@ void VM::dispatch(Opcode op) {
                 pop(); // Pop discriminant — match found
                 ip_ += offset;
             }
+            break;
+        }
+
+        // Fast-path constant opcodes
+        case Opcode::OP_ZERO:
+            push(Value::number(0));
+            break;
+
+        case Opcode::OP_ONE:
+            push(Value::number(1));
+            break;
+
+        // Short-circuit logical operators
+        case Opcode::OP_AND: {
+            uint16_t offset = readShort();
+            Value lhs = peek(0);
+            if (lhs.isFalsy()) {
+                // LHS is falsy — short-circuit, skip RHS
+                ip_ += offset;
+            } else {
+                // LHS is truthy — discard it, evaluate RHS
+                pop();
+            }
+            break;
+        }
+
+        case Opcode::OP_OR: {
+            uint16_t offset = readShort();
+            Value lhs = peek(0);
+            if (!lhs.isFalsy()) {
+                // LHS is truthy — short-circuit, skip RHS
+                ip_ += offset;
+            } else {
+                // LHS is falsy — discard it, evaluate RHS
+                pop();
+            }
+            break;
+        }
+
+        case Opcode::OP_NULLISH: {
+            uint16_t offset = readShort();
+            Value lhs = peek(0);
+            if (!lhs.isNull() && !lhs.isUndefined()) {
+                // LHS is not nullish — short-circuit, skip RHS
+                ip_ += offset;
+            } else {
+                // LHS is null/undefined — discard it, evaluate RHS
+                pop();
+            }
+            break;
+        }
+
+        // Super property access: super.prop
+        case Opcode::OP_SUPER_GET: {
+            uint8_t nameIndex = readByte();
+            Value nameVal = chunk_->constant(nameIndex);
+            std::string propName = nameVal.toString();
+
+            // 'this' is at stack slot 0 in method context
+            Value thisVal = getLocal(0);
+            if (!thisVal.isObject()) {
+                throw std::runtime_error("'super' used in non-object context");
+            }
+
+            Object* thisObj = thisVal.asObject();
+            Object* proto = thisObj->prototype();
+            if (proto) {
+                // Get from super prototype (one level up)
+                Object* superProto = proto->prototype();
+                if (superProto) {
+                    push(superProto->get(propName));
+                } else {
+                    push(Value::undefined());
+                }
+            } else {
+                push(Value::undefined());
+            }
+            break;
+        }
+
+        // Debug line tracking
+        case Opcode::OP_LINE: {
+            uint16_t line = readShort();
+            currentLine_ = line;
             break;
         }
 

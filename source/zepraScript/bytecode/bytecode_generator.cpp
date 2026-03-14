@@ -481,8 +481,8 @@ void BytecodeGenerator::compileFunctionDeclaration(const Frontend::FunctionDecl*
         compileStatement(stmt.get());
     }
     
-    // Default return
-    emit(Opcode::OP_NIL);
+    // Default return undefined
+    emitConstant(Runtime::Value::undefined());
     emit(Opcode::OP_RETURN);
     
     // Create the function's bytecode chunk
@@ -1239,7 +1239,7 @@ void BytecodeGenerator::compileFunctionExpression(const Frontend::FunctionExpr* 
     }
     
     // Default return undefined if no explicit return
-    emit(Opcode::OP_NIL);
+    emitConstant(Runtime::Value::undefined());
     emit(Opcode::OP_RETURN);
     
     // Create function chunk
@@ -1249,6 +1249,19 @@ void BytecodeGenerator::compileFunctionExpression(const Frontend::FunctionExpr* 
     // Create function object with bytecode
     auto* func = new Runtime::Function(expr, nullptr);
     func->setBytecodeChunk(functionChunk.get());
+
+    // Debug metadata
+    std::vector<std::string> paramNames;
+    std::vector<std::string> localNames;
+    for (const auto& param : expr->params()) {
+        const auto* id = static_cast<const Frontend::IdentifierExpr*>(param.pattern.get());
+        paramNames.push_back(id->name());
+    }
+    for (const auto& local : fnState.locals) {
+        localNames.push_back(local.name);
+    }
+    func->setParamNames(std::move(paramNames));
+    func->setLocalNames(std::move(localNames));
     
     // Store chunk (transfer ownership)
     static std::vector<std::unique_ptr<BytecodeChunk>> compiledFunctionChunks;
@@ -1324,7 +1337,7 @@ void BytecodeGenerator::compileArrowFunction(const Frontend::ArrowFunctionExpr* 
             compileStatement(stmt.get());
         }
         // Default return undefined
-        emit(Opcode::OP_NIL);
+        emitConstant(Runtime::Value::undefined());
         emit(Opcode::OP_RETURN);
     }
     
@@ -1335,6 +1348,19 @@ void BytecodeGenerator::compileArrowFunction(const Frontend::ArrowFunctionExpr* 
     // Create arrow function object
     auto* arrowFn = new Runtime::Function(expr, nullptr);
     arrowFn->setBytecodeChunk(functionChunk.get());
+
+    // Debug metadata
+    std::vector<std::string> paramNames;
+    std::vector<std::string> localNames;
+    for (const auto& param : expr->params()) {
+        const auto* id = static_cast<const Frontend::IdentifierExpr*>(param.pattern.get());
+        paramNames.push_back(id->name());
+    }
+    for (const auto& local : fnState.locals) {
+        localNames.push_back(local.name);
+    }
+    arrowFn->setParamNames(std::move(paramNames));
+    arrowFn->setLocalNames(std::move(localNames));
     
     // Store chunk (transferred ownership)
     static std::vector<std::unique_ptr<BytecodeChunk>> compiledChunks;
@@ -1600,6 +1626,19 @@ void BytecodeGenerator::compileClassDeclaration(const Frontend::ClassDecl* decl)
     // Create constructor function object
     auto* ctorFunc = new Runtime::Function(ctor, nullptr);
     ctorFunc->setBytecodeChunk(constructorChunk.get());
+
+    // Debug metadata
+    std::vector<std::string> paramNames;
+    std::vector<std::string> localNames;
+    for (const auto& param : ctor->params()) {
+        const auto* id = static_cast<const Frontend::IdentifierExpr*>(param.pattern.get());
+        paramNames.push_back(id->name());
+    }
+    for (const auto& local : classState.locals) {
+        localNames.push_back(local.name);
+    }
+    ctorFunc->setParamNames(std::move(paramNames));
+    ctorFunc->setLocalNames(std::move(localNames));
     
     // Store chunk
     static std::vector<std::unique_ptr<BytecodeChunk>> compiledChunks;
@@ -1668,7 +1707,7 @@ void BytecodeGenerator::compileClassDeclaration(const Frontend::ClassDecl* decl)
         }
         
         // Default return undefined
-        emit(Opcode::OP_NIL);
+        emitConstant(Runtime::Value::undefined());
         emit(Opcode::OP_RETURN);
         
         auto methodChunk = std::make_unique<BytecodeChunk>(std::move(methodState.chunk));
@@ -1676,6 +1715,19 @@ void BytecodeGenerator::compileClassDeclaration(const Frontend::ClassDecl* decl)
         
         auto* methodFunc = new Runtime::Function(method.function.get(), nullptr);
         methodFunc->setBytecodeChunk(methodChunk.get());
+
+        // Debug metadata
+        std::vector<std::string> methodParamNames;
+        std::vector<std::string> methodLocalNames;
+        for (const auto& param : method.function->params()) {
+            const auto* id = static_cast<const Frontend::IdentifierExpr*>(param.pattern.get());
+            methodParamNames.push_back(id->name());
+        }
+        for (const auto& local : methodState.locals) {
+            methodLocalNames.push_back(local.name);
+        }
+        methodFunc->setParamNames(std::move(methodParamNames));
+        methodFunc->setLocalNames(std::move(methodLocalNames));
         compiledChunks.push_back(std::move(methodChunk));
         
         size_t methodIndex = makeConstant(Runtime::Value::object(methodFunc));
