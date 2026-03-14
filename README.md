@@ -1,5 +1,9 @@
 # Zepra Browser
 
+<div align="center">
+  <img src="resources/icons/zepra.svg" alt="Zepra Browser Logo" width="128" />
+</div>
+
 ZepraBrowser is a cutting-edge, high-performance web browser designed exclusively for NeolyxOS.
 
 ## The KetiveeAI Ecosystem
