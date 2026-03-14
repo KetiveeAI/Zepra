@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zepra Extensions</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        dark: { 900: '#0a0a0f', 800: '#12121a', 700: '#1a1a24', 600: '#24242f', 500: '#2d2d3a' },
+                        accent: { DEFAULT: '#a855f7', light: '#c084fc', dark: '#9333ea' },
+                    },
+                    fontFamily: { sans: ['Inter', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #12121a; }
+        ::-webkit-scrollbar-thumb { background: #3f3f5a; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #a855f7; }
+        .gradient-text { background: linear-gradient(135deg, #a855f7 0%, #06b6d4 50%, #f43f5e 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .glass { background: rgba(26, 26, 36, 0.8); backdrop-filter: blur(20px); border: 1px solid rgba(168, 85, 247, 0.1); }
+        .glow { box-shadow: 0 0 60px rgba(168, 85, 247, 0.15); }
+        .nav-link.active { background: linear-gradient(90deg, rgba(168, 85, 247, 0.2) 0%, transparent 100%); border-left-color: #a855f7; }
+        .card-hover { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .card-hover:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4); border-color: rgba(168, 85, 247, 0.5); }
+    </style>
+</head>
+<body class="bg-dark-900 text-gray-100 font-sans antialiased">
+    <!-- Ambient Background -->
+    <div class="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <div class="absolute top-0 right-1/4 w-[600px] h-[600px] bg-accent/5 rounded-full blur-[150px]"></div>
+        <div class="absolute bottom-0 left-1/4 w-[500px] h-[500px] bg-cyan-500/5 rounded-full blur-[150px]"></div>
+    </div>
+
+    <!-- Sidebar -->
+    <aside class="fixed left-0 top-0 w-72 h-screen bg-dark-800/90 backdrop-blur-xl border-r border-white/5 z-50 overflow-y-auto">
+        <div class="p-6 border-b border-white/5">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-accent to-cyan-500 flex items-center justify-center glow">
+                    <i data-lucide="puzzle" class="w-6 h-6 text-white"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg">Extensions</h1>
+                    <span class="text-xs text-gray-500">zeprabrowser/source/extensions</span>
+                </div>
+            </div>
+        </div>
+        <nav class="p-4">
+            <div class="mb-6">
+                <span class="text-[10px] font-semibold uppercase tracking-wider text-gray-500 px-3">Documentation</span>
+                <div class="mt-2 space-y-1">
+                    <a href="../index.html" class="nav-link flex items-center gap-3 px-3 py-2 text-sm text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all border-l-2 border-transparent">
+                        <i data-lucide="layout-grid" class="w-4 h-4 text-purple-500"></i>
+                        Main Hub</a>
+                    <a href="index.html" class="nav-link active flex items-center gap-3 px-3 py-2 text-sm text-white rounded-lg border-l-2 border-accent">
+                        <i data-lucide="puzzle" class="w-4 h-4"></i>
+                        Overview</a>
+                </div>
+            </div>
+            <div class="mb-6">
+                <span class="text-[10px] font-semibold uppercase tracking-wider text-gray-500 px-3">This Page</span>
+                <div class="mt-2 space-y-1">
+                    <a href="#features" class="nav-link flex items-center gap-3 px-3 py-2 text-sm text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all border-l-2 border-transparent pl-6">Capabilities</a>
+                    <a href="#architecture" class="nav-link flex items-center gap-3 px-3 py-2 text-sm text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all border-l-2 border-transparent pl-6">Architecture</a>
+                </div>
+            </div>
+        </nav>
+    </aside>
+
+    <main class="ml-72 min-h-screen">
+        <div class="max-w-5xl mx-auto px-8 py-20 relative z-10">
+            <!-- Hero -->
+            <header class="mb-24 text-center animate-header">
+                <h1 class="text-6xl md:text-7xl font-extrabold mb-6">
+                    <span class="gradient-text">Extensions Subsystem</span>
+                </h1>
+                <p class="text-xl text-gray-400 max-w-2xl mx-auto mb-10">Cross-browser extension runtime supporting Manifest V3, WebExtensions API, message passing, and background workers.</p>
+            </header>
+
+            <!-- Features -->
+            <section id="features" class="mb-24 animate-section">
+                <h2 class="text-3xl font-bold text-center mb-8">Capabilities</h2>
+                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="glass rounded-2xl p-6 card-hover group">
+                        <i data-lucide="file-json" class="w-8 h-8 text-accent mb-4 group-hover:scale-110 transition-transform"></i>
+                        <h3 class="text-lg font-semibold mb-2">Manifest Parsing</h3>
+                        <p class="text-gray-400 text-sm">Validates `manifest.json` definitions, extracting permissions, background scripts, and declarative net requests.</p>
+                    </div>
+                    <div class="glass rounded-2xl p-6 card-hover group">
+                        <i data-lucide="package" class="w-8 h-8 text-cyan-400 mb-4 group-hover:scale-110 transition-transform"></i>
+                        <h3 class="text-lg font-semibold mb-2">Content Scripts</h3>
+                        <p class="text-gray-400 text-sm">Injects isolated JavaScript contexts into specific web pages while bypassing standard DOM environments.</p>
+                    </div>
+                    <div class="glass rounded-2xl p-6 card-hover group">
+                        <i data-lucide="server" class="w-8 h-8 text-pink-400 mb-4 group-hover:scale-110 transition-transform"></i>
+                        <h3 class="text-lg font-semibold mb-2">Service Workers</h3>
+                        <p class="text-gray-400 text-sm">Manages event-driven background scripts that sleep and wake across the extension lifecycle.</p>
+                    </div>
+                    <div class="glass rounded-2xl p-6 card-hover group">
+                        <i data-lucide="radio" class="w-8 h-8 text-indigo-400 mb-4 group-hover:scale-110 transition-transform"></i>
+                        <h3 class="text-lg font-semibold mb-2">IPC Messaging</h3>
+                        <p class="text-gray-400 text-sm">Exposes `chrome.runtime.sendMessage` and `chrome.tabs.sendMessage` over native IPC channels.</p>
+                    </div>
+                    <div class="glass rounded-2xl p-6 card-hover group">
+                        <i data-lucide="mouse-pointer-click" class="w-8 h-8 text-emerald-400 mb-4 group-hover:scale-110 transition-transform"></i>
+                        <h3 class="text-lg font-semibold mb-2">Browser Action UI</h3>
+                        <p class="text-gray-400 text-sm">Renders toolbar popups, context menus, and option pages tightly integrated with zepraEngine.</p>
+                    </div>
+                    <div class="glass rounded-2xl p-6 card-hover group">
+                        <i data-lucide="shield-y" class="w-8 h-8 text-fuchsia-400 mb-4 group-hover:scale-110 transition-transform"></i>
+                        <h3 class="text-lg font-semibold mb-2">API Emulation</h3>
+                        <p class="text-gray-400 text-sm">Native bridge matching Chromium's WebExtensions, enabling plug-and-play support for popular ad blockers and tools.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Architecture -->
+            <section id="architecture" class="mb-24 animate-section">
+                <div class="flex items-center gap-4 mb-8">
+                    <h2 class="text-3xl font-bold">Execution Contexts</h2>
+                    <div class="h-px bg-white/10 flex-1"></div>
+                </div>
+                <div class="glass rounded-2xl p-8 glow">
+                    <pre class="text-xs md:text-sm font-mono text-gray-400 overflow-x-auto leading-relaxed">
+<span class="text-gray-600">┌────────────────────────────────────────────────────────┐</span>
+<span class="text-gray-600">│</span>                  <span class="text-accent">Isolated Context Boundaries</span>           <span class="text-gray-600">│</span>
+<span class="text-gray-600">│</span>                                                        <span class="text-gray-600">│</span>
+<span class="text-gray-600">│</span>   <span class="text-gray-600">┌────────────────┐</span>         <span class="text-gray-600">┌────────────────┐</span>        <span class="text-gray-600">│</span>
+<span class="text-gray-600">│</span>   <span class="text-gray-600">│</span> <span class="text-rose-400">Web Page DOM  </span> <span class="text-gray-600">│</span>         <span class="text-gray-600">│</span> <span class="text-cyan-400">Content Script </span><span class="text-gray-600">│</span>        <span class="text-gray-600">│</span>
+<span class="text-gray-600">│</span>   <span class="text-gray-600">│</span>  <span class="text-gray-500">(window)</span>      <span class="text-gray-600">│</span><span class="text-gray-400">─────────▶</span><span class="text-gray-600">│</span>  <span class="text-gray-500">(chrome.runtime)</span><span class="text-gray-600">│</span>        <span class="text-gray-600">│</span>
+<span class="text-gray-600">│</span>   <span class="text-gray-600">└────────────────┘</span>         <span class="text-gray-600">└──────┬─────────┘</span>        <span class="text-gray-600">│</span>
+<span class="text-gray-600">│</span>      <span class="text-gray-500">Normal V8 Realm</span>            <span class="text-gray-500">Isolated V8 Realm</span>      <span class="text-gray-600">│</span>
+<span class="text-gray-600">│</span>                                         <span class="text-gray-600">│</span>              <span class="text-gray-600">│</span>
+<span class="text-gray-600">└─────────────────────────────────────────│──────────────┘</span>
+                                          <span class="text-gray-600">▼</span> <span class="text-amber-400">IPC Messaging</span>
+<span class="text-gray-600">┌─────────────────────────────────────────▼──────────────┐</span>
+<span class="text-gray-600">│</span>  <span class="text-gray-600">┌──────────────────────────────────────────────┐</span>      <span class="text-gray-600">│</span>
+<span class="text-gray-600">│</span>  <span class="text-gray-600">│</span>              <span class="text-fuchsia-400">Background Worker</span>               <span class="text-gray-600">│</span>      <span class="text-gray-600">│</span>
+<span class="text-gray-600">│</span>  <span class="text-gray-600">│</span> <span class="text-gray-500">(chrome.tabs, chrome.storage, chrome.alarms)</span> <span class="text-gray-600">│</span>      <span class="text-gray-600">│</span>
+<span class="text-gray-600">│</span>  <span class="text-gray-600">└─────────┬───────────────────────────┬────────┘</span>      <span class="text-gray-600">│</span>
+<span class="text-gray-600">│</span>            <span class="text-gray-600">│</span>                           <span class="text-gray-600">│</span>               <span class="text-gray-600">│</span>
+<span class="text-gray-600">│</span>  <span class="text-gray-600">┌─────────▼────────┐</span>         <span class="text-gray-600">┌────────▼────────┐</span>      <span class="text-gray-600">│</span>
+<span class="text-gray-600">│</span>  <span class="text-gray-600">│</span>   <span class="text-emerald-400">Toolbar Popup</span>  <span class="text-gray-600">│</span>         <span class="text-gray-600">│</span> <span class="text-blue-400">Native APIs</span>     <span class="text-gray-600">│</span>      <span class="text-gray-600">│</span>
+<span class="text-gray-600">│</span>  <span class="text-gray-600">└──────────────────┘</span>         <span class="text-gray-600">└─────────────────┘</span>      <span class="text-gray-600">│</span>
+<span class="text-gray-600">│</span>                 <span class="text-gray-500">Extension Process</span>                      <span class="text-gray-600">│</span>
+<span class="text-gray-600">└────────────────────────────────────────────────────────┘</span>
+                    </pre>
+                </div>
+            </section>
+        </div>
+
+        <footer class="py-12 border-t border-white/5 text-center mt-auto">
+            <div class="text-xs text-gray-500 font-mono flex items-center justify-center gap-2">
+                <span>ZepraBrowser Extensions Subsystem</span>
+                <span class="w-1 h-1 rounded-full bg-gray-600"></span>
+                <span>&copy; 2026 KetiveeAI</span>
+            </div>
+        </footer>
+    </main>
+
+    <script>
+        lucide.createIcons();
+        gsap.registerPlugin(ScrollTrigger);
+        gsap.from('.animate-header', { opacity: 0, y: 50, duration: 1, ease: 'power3.out' });
+        gsap.utils.toArray('.animate-section').forEach((section, i) => {
+            gsap.from(section, {
+                scrollTrigger: { trigger: section, start: 'top 85%' },
+                opacity: 0, y: 50, duration: 0.8, ease: 'power3.out', delay: i * 0.1
+            });
+        });
+    </script>
+</body>
+</html>

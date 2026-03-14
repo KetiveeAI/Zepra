@@ -3,317 +3,550 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TODO.md</title>
-    
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    
-    <!-- Tailwind CSS with Typography Plugin -->
-    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    <title>ZepraScript Roadmap & Status</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        bg: {
-                            primary: '#0a0a0f',
-                            secondary: '#12121a',
-                            tertiary: '#1a1a24'
-                        },
-                        accent: {
-                            DEFAULT: '#10b981',
-                            light: '#34d399',
-                            dark: '#059669',
-                            glow: 'rgba(16, 185, 129, 0.3)'
-                        }
+                        dark: { 900: '#0a0a0f', 800: '#12121a', 700: '#1a1a24', 600: '#24242f' },
+                        accent: { DEFAULT: '#6366f1', light: '#818cf8' },
                     },
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                        mono: ['JetBrains Mono', 'monospace'],
-                    },
-                    typography: (theme) => ({
-                        DEFAULT: {
-                            css: {
-                                color: theme('colors.gray.300'),
-                                a: {
-                                    color: theme('colors.emerald.400'),
-                                    '&:hover': {
-                                        color: theme('colors.emerald.300'),
-                                    },
-                                },
-                                h1: { color: theme('colors.white') },
-                                h2: { color: theme('colors.white') },
-                                h3: { color: theme('colors.white') },
-                                h4: { color: theme('colors.gray.100') },
-                                code: { color: theme('colors.pink.400') },
-                                'code::before': { content: '""' },
-                                'code::after': { content: '""' },
-                                pre: {
-                                    backgroundColor: theme('colors.bg.tertiary'),
-                                    color: theme('colors.gray.200'),
-                                },
-                                blockquote: {
-                                    color: theme('colors.gray.400'),
-                                    borderLeftColor: theme('colors.emerald.500'),
-                                },
-                            },
-                        },
-                    }),
+                    fontFamily: { sans: ['Inter', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },
+                    animation: {
+                        'spin-slow': 'spin 8s linear infinite',
+                    }
                 }
             }
         }
     </script>
-
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="../assets/css/docs.css">
+    <style>
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #12121a; }
+        ::-webkit-scrollbar-thumb { background: #3f3f5a; border-radius: 4px; }
+        .gradient-text { background: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .hero-gradient { background: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(99, 102, 241, 0.15), transparent); }
+        .glass { background: rgba(26, 26, 36, 0.8); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .glow { box-shadow: 0 0 80px rgba(99, 102, 241, 0.2); }
+        .nav-link.active { background: linear-gradient(90deg, rgba(99, 102, 241, 0.2) 0%, transparent 100%); border-left-color: #6366f1; }
+        .card-hover { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .card-hover:hover { transform: translateY(-4px) scale(1.01); box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4); border-color: rgba(99, 102, 241, 0.4); }
+        
+        /* Circular Progress variables */
+        .progress-ring__circle {
+            transition: stroke-dashoffset 1.5s ease-in-out;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+    </style>
 </head>
-<body class="antialiased min-h-screen relative selection:bg-emerald-500/30 selection:text-emerald-200">
+<body class="bg-dark-900 text-gray-100 font-sans antialiased overflow-x-hidden">
+    <div class="fixed inset-0 pointer-events-none hero-gradient z-0"></div>
+    <div class="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <div class="absolute top-1/4 left-1/4 w-[800px] h-[800px] bg-accent/5 rounded-full blur-[200px] animate-pulse"></div>
+        <div class="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-purple-500/5 rounded-full blur-[150px]"></div>
+    </div>
 
-    <!-- Background Elements -->
-    <div class="bg-grid"></div>
-    <div class="glow-orb orb-1"></div>
-    <div class="glow-orb orb-2"></div>
-
-    <!-- Navigation -->
-    <nav class="fixed top-0 w-full z-50 bg-bg-primary/80 backdrop-blur-md border-b border-white/5">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16">
-                <!-- Logo -->
-                <div class="flex items-center gap-3">
-                    <a href="../index.html" class="flex items-center gap-3">
-                        <svg class="w-8 h-8 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="10"/>
-                            <path d="M12 6v6l4 2"/>
-                        </svg>
-                        <span class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-blue-500">
-                            ZepraBrowser
-                        </span>
-                    </a>
+    <!-- Sidebar -->
+    <aside class="hidden lg:block fixed left-0 top-0 w-72 h-screen bg-dark-800/90 backdrop-blur-xl border-r border-white/5 z-50 overflow-y-auto w-scroll-override pl-0 pt-0">
+        <div class="p-6 border-b border-white/5 sticky top-0 bg-dark-800/90 backdrop-blur-xl z-10">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-accent to-purple-500 flex items-center justify-center glow shrink-0">
+                    <i data-lucide="blocks" class="w-6 h-6 text-white"></i>
                 </div>
-
-                <!-- Desktop Menu -->
-                <div class="hidden md:block">
-                    <div class="flex items-center gap-8">
-                        <a href="../index.html#modules" class="nav-link text-sm font-medium text-gray-400 hover:text-white transition-colors">Modules</a>
-                        <a href="../index.html#index" class="nav-link text-sm font-medium text-gray-400 hover:text-white transition-colors">Docs Index</a>
-                        <a href="../index.html" class="nav-link text-sm font-medium text-gray-400 hover:text-white transition-colors">ZepraScript</a>
-                    </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight">ZepraScript</h1>
+                    <span class="text-[0.65rem] text-gray-500 uppercase tracking-widest font-semibold block mt-0.5">Live Status</span>
                 </div>
             </div>
         </div>
-    </nav>
-
-    <!-- Main Content Layout -->
-    <div class="pt-24 pb-12 sm:pt-32 sm:pb-16 lg:pb-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex flex-col lg:flex-row gap-12">
-            
-            <!-- Sidebar (Desktop) -->
-            <aside class="hidden lg:block w-64 shrink-0">
-                <div class="sticky top-32 space-y-8">
-                    <div class="space-y-4">
-                        <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider">On This Page</h3>
-                        <!-- TOC injected by JS or simple placeholder for now -->
-                         <nav id="toc" class="text-sm text-gray-400 space-y-2 border-l border-white/10 pl-4">
-                            <!-- TOC links will be populated here -->
-                             <a href="#" class="block hover:text-white">Top</a>
-                        </nav>
-                    </div>
-                    
-                     <div class="space-y-4">
-                        <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider">Quick Links</h3>
-                        <nav class="text-sm text-gray-400 space-y-2">
-                            <a href="../index.html" class="block hover:text-emerald-400 transition-colors">Home</a>
-                            <a href="../architecture.html" class="block hover:text-emerald-400 transition-colors">Architecture</a>
-                            <a href="../security-model.html" class="block hover:text-emerald-400 transition-colors">Security</a>
-                            <a href="../ai.html" class="block hover:text-emerald-400 transition-colors">AI System</a>
-                        </nav>
-                    </div>
+        <nav class="p-4 pt-6 space-y-8">
+            <div>
+                <span class="text-[10px] font-semibold uppercase tracking-widest text-gray-500 px-3 flex items-center gap-2"><i data-lucide="book" class="w-3 h-3"></i> Documentation</span>
+                <div class="mt-3 space-y-1">
+                    <a href="../index.html" class="nav-link flex items-center gap-3 px-3 py-2 text-sm text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all border-l-2 border-transparent">
+                        <i data-lucide="layout-grid" class="w-4 h-4 text-purple-500"></i> Main Hub</a>
+                    <a href="index.html" class="nav-link flex items-center gap-3 px-3 py-2 text-sm text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all border-l-2 border-transparent">
+                        <i data-lucide="home" class="w-4 h-4 text-emerald-500"></i> Home</a>
+                    <a href="architecture.html" class="nav-link flex items-center gap-3 px-3 py-2 text-sm text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all border-l-2 border-transparent">
+                        <i data-lucide="cpu" class="w-4 h-4 text-yellow-500"></i> Architecture</a>
+                    <a href="api.html" class="nav-link flex items-center gap-3 px-3 py-2 text-sm text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all border-l-2 border-transparent">
+                        <i data-lucide="book-open" class="w-4 h-4 text-blue-400"></i> API Reference</a>
+                    <a href="#" class="nav-link active flex items-center gap-3 px-3 py-2 text-sm text-white rounded-lg border-l-2 border-accent bg-white/5">
+                        <i data-lucide="map" class="w-4 h-4 text-accent"></i> Roadmap & Status</a>
                 </div>
-            </aside>
+            </div>
+            <div>
+                <span class="text-[10px] font-semibold uppercase tracking-widest text-gray-500 px-3 flex items-center gap-2"><i data-lucide="list" class="w-3 h-3"></i> On This Page</span>
+                <div class="mt-3 space-y-1">
+                    <a href="#overview" class="nav-link flex items-center gap-3 px-3 py-2 text-sm text-gray-400 hover:text-white hover:text-accent rounded-lg hover:bg-white/5 transition-all border-l-2 border-transparent pl-4">
+                        <i data-lucide="pie-chart" class="w-4 h-4 opacity-70"></i> Overview Stats</a>
+                    <a href="#progress" class="nav-link flex items-center gap-3 px-3 py-2 text-sm text-gray-400 hover:text-white hover:text-purple-400 rounded-lg hover:bg-white/5 transition-all border-l-2 border-transparent pl-4">
+                        <i data-lucide="bar-chart-2" class="w-4 h-4 opacity-70"></i> Progress Bars</a>
+                    <a href="#milestones" class="nav-link flex items-center gap-3 px-3 py-2 text-sm text-gray-400 hover:text-white hover:text-emerald-400 rounded-lg hover:bg-white/5 transition-all border-l-2 border-transparent pl-4">
+                        <i data-lucide="flag" class="w-4 h-4 opacity-70"></i> Key Milestones</a>
+                    <a href="#architecture" class="nav-link flex items-center gap-3 px-3 py-2 text-sm text-gray-400 hover:text-white hover:text-pink-400 rounded-lg hover:bg-white/5 transition-all border-l-2 border-transparent pl-4">
+                        <i data-lucide="database" class="w-4 h-4 opacity-70"></i> Footprint Table</a>
+                </div>
+            </div>
+            
+            <div class="px-3 pt-4 border-t border-white/5">
+                <div class="glass p-4 rounded-xl text-center space-y-2 relative overflow-hidden">
+                    <div class="absolute inset-0 bg-gradient-to-b from-accent/5 to-transparent z-0"></div>
+                    <i data-lucide="check-circle-2" class="w-6 h-6 text-emerald-400 mx-auto relative z-10 mb-2"></i>
+                    <p class="text-xs text-gray-300 relative z-10">470/470 Tests Pass</p>
+                    <p class="text-[10px] text-gray-500 font-mono relative z-10">GCC 13.3.0 · C++20</p>
+                </div>
+            </div>
+        </nav>
+    </aside>
 
-            <!-- Content Area -->
-            <main class="flex-1 min-w-0">
-                <!-- Page Header with Icon -->
-                <div class="flex items-center gap-4 mb-8 border-b border-white/10 pb-8 animate-fade-in">
-                    <div class="w-16 h-16 rounded-2xl bg-bg-secondary border border-white/5 flex items-center justify-center shrink-0">
-                        <img src="../assets/icons/ai.svg" alt="Icon" class="w-8 h-8 opacity-80">
+    <main class="lg:ml-72 min-h-screen relative z-10 pb-20">
+        <!-- Mobile Topbar -->
+        <div class="lg:hidden flex items-center justify-between px-6 py-4 border-b border-white/5 bg-dark-800/90 backdrop-blur-xl sticky top-0 z-50">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-accent to-purple-500 flex items-center justify-center glow shrink-0">
+                    <i data-lucide="blocks" class="w-4 h-4 text-white"></i>
+                </div>
+                <h1 class="font-bold text-sm tracking-wide text-white">ZepraScript</h1>
+            </div>
+            <a href="index.html" class="p-2 bg-white/5 rounded-lg text-gray-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></a>
+        </div>
+
+        <div class="max-w-5xl mx-auto px-6 lg:px-8 py-12 lg:py-20">
+            
+            <header class="mb-16 animate-header">
+                <div class="inline-flex items-center gap-2 px-4 py-2 glass rounded-full mb-6 relative overflow-hidden group">
+                    <div class="absolute inset-0 bg-emerald-500/10 group-hover:bg-emerald-500/20 transition-colors z-0"></div>
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse relative z-10 shadow-[0_0_8px_rgba(52,211,153,0.8)]"></span>
+                    <span class="text-sm font-medium text-emerald-100 relative z-10 tracking-wide">Live Tracker • Engine v1.0.2</span>
+                </div>
+                <h1 class="text-5xl lg:text-6xl font-extrabold mb-6 tracking-tight">
+                    <span class="gradient-text">Engine Status</span>
+                </h1>
+                <p class="text-lg lg:text-xl text-gray-400 max-w-2xl leading-relaxed">
+                    Real-time completion metrics for ZepraScript architecture, advanced Garbage Collection rollout, and WebAssembly framework implementation.
+                </p>
+            </header>
+
+            <!-- Overview Donuts -->
+            <section id="overview" class="mb-24 animate-section scroll-mt-24">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    
+                    <!-- Donut 1 -->
+                    <div class="glass p-10 rounded-3xl flex flex-col items-center relative group card-hover overflow-visible bg-gradient-to-b from-white/[0.03] to-transparent border-t-white/10">
+                        <div class="absolute inset-0 bg-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-3xl z-0"></div>
+                        <div class="relative w-44 h-44 flex items-center justify-center z-10">
+                            <!-- Background Circle -->
+                            <svg class="w-full h-full absolute inset-0 drop-shadow-xl" viewBox="0 0 120 120">
+                                <circle cx="60" cy="60" r="50" stroke="rgba(255,255,255,0.03)" stroke-width="12" fill="transparent" />
+                                <circle class="progress-ring__circle text-emerald-500 drop-shadow-[0_0_15px_rgba(16,185,129,0.7)] transition-all duration-1000 ease-out" 
+                                        cx="60" cy="60" r="50" stroke="currentColor" stroke-width="12" fill="transparent" 
+                                        stroke-dasharray="314.159" stroke-dashoffset="6.28" stroke-linecap="round" />
+                            </svg>
+                            <div class="text-center z-10 flex flex-col items-center justify-center mt-2">
+                                <span class="text-4xl font-extrabold text-white tracking-tighter">98<span class="text-2xl text-emerald-400 ml-0.5">%</span></span>
+                            </div>
+                        </div>
+                        <h3 class="mt-8 text-xl font-bold text-white flex items-center gap-2 z-10">
+                            Core VM Status
+                        </h3>
+                        <p class="text-sm text-center text-gray-400 mt-2 z-10 leading-relaxed font-medium">Phases 1-62 Complete.<br>Opcodes 96/96 handled.</p>
+                    </div>
+
+                    <!-- Donut 2 -->
+                    <div class="glass p-10 rounded-3xl flex flex-col items-center relative group card-hover overflow-visible bg-gradient-to-b from-white/[0.03] to-transparent border-t-white/10">
+                        <div class="absolute inset-0 bg-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-3xl z-0"></div>
+                        <div class="relative w-44 h-44 flex items-center justify-center z-10">
+                            <svg class="w-full h-full absolute inset-0 drop-shadow-xl" viewBox="0 0 120 120">
+                                <circle cx="60" cy="60" r="50" stroke="rgba(255,255,255,0.03)" stroke-width="12" fill="transparent" />
+                                <circle class="progress-ring__circle text-purple-500 drop-shadow-[0_0_15px_rgba(168,85,247,0.7)] transition-all duration-1000 ease-out delay-100" 
+                                        cx="60" cy="60" r="50" stroke="currentColor" stroke-width="12" fill="transparent" 
+                                        stroke-dasharray="314.159" stroke-dashoffset="0" stroke-linecap="round" />
+                            </svg>
+                            <div class="text-center z-10 flex flex-col items-center justify-center mt-2">
+                                <span class="text-4xl font-extrabold text-white tracking-tighter">100<span class="text-2xl text-purple-400 ml-0.5">%</span></span>
+                            </div>
+                        </div>
+                        <h3 class="mt-8 text-xl font-bold text-white flex items-center gap-2 z-10">
+                            Test Suite Pass
+                        </h3>
+                        <p class="text-sm text-center text-gray-400 mt-2 z-10 leading-relaxed font-medium">470/470 Specs<br>(401 Unit / 69 Integ)</p>
+                    </div>
+
+                    <!-- Donut 3 -->
+                    <div class="glass p-10 rounded-3xl flex flex-col items-center relative group card-hover overflow-visible bg-gradient-to-b from-white/[0.03] to-transparent border-t-white/10">
+                        <div class="absolute inset-0 bg-amber-500/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-3xl z-0"></div>
+                        <div class="relative w-44 h-44 flex items-center justify-center z-10">
+                            <svg class="w-full h-full absolute inset-0 drop-shadow-xl" viewBox="0 0 120 120">
+                                <circle cx="60" cy="60" r="50" stroke="rgba(255,255,255,0.03)" stroke-width="12" fill="transparent" />
+                                <circle class="progress-ring__circle text-amber-500 drop-shadow-[0_0_15px_rgba(245,158,11,0.7)] transition-all duration-1000 ease-out delay-200" 
+                                        cx="60" cy="60" r="50" stroke="currentColor" stroke-width="12" fill="transparent" 
+                                        stroke-dasharray="314.159" stroke-dashoffset="47.12" stroke-linecap="round" />
+                            </svg>
+                            <div class="text-center z-10 flex flex-col items-center justify-center mt-2">
+                                <span class="text-4xl font-extrabold text-white tracking-tighter">85<span class="text-2xl text-amber-400 ml-0.5">%</span></span>
+                            </div>
+                        </div>
+                        <h3 class="mt-8 text-xl font-bold text-white flex items-center gap-2 z-10">
+                            GC Maturation
+                        </h3>
+                        <p class="text-sm text-center text-gray-400 mt-2 z-10 leading-relaxed font-medium">Phase 73 Progress.<br>80K+ lines written.</p>
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- Details Progress Bars -->
+            <section id="progress" class="mb-24 animate-section scroll-mt-24">
+                <div class="flex items-center gap-4 mb-10">
+                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border border-blue-500/30 flex items-center justify-center shadow-[0_0_15px_rgba(59,130,246,0.3)]">
+                        <i data-lucide="bar-chart-2" class="w-6 h-6 text-blue-400"></i>
                     </div>
                     <div>
-                        <h1 class="text-3xl sm:text-4xl font-bold text-white tracking-tight">TODO.md</h1>
-                        <p class="text-gray-400 mt-1 text-sm font-mono">TODO.html</p>
+                        <h2 class="text-3xl font-bold tracking-tight">Subsystem Completion</h2>
+                        <span class="text-sm text-gray-400 font-medium">Detailed tracker for specialized engine modules.</span>
+                    </div>
+                </div>
+                
+                <div class="glass p-10 rounded-[2rem] space-y-10 bg-gradient-to-b from-white/[0.02] to-transparent">
+                    
+                    <!-- Item 1 -->
+                    <div class="group">
+                        <div class="flex items-end justify-between mb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="p-2 rounded-lg bg-emerald-500/10 text-emerald-400 group-hover:bg-emerald-500/20 transition-colors">
+                                    <i data-lucide="blocks" class="w-5 h-5"></i>
+                                </div>
+                                <span class="text-lg font-bold text-gray-100">ES2024 Runtime API Surface</span>
+                            </div>
+                            <span class="text-2xl font-black text-emerald-400 tracking-tighter">95%</span>
+                        </div>
+                        <div class="w-full bg-dark-900/50 rounded-full h-3 border border-white-[0.03] overflow-hidden drop-shadow-sm p-0.5">
+                            <div class="bg-gradient-to-r from-emerald-600 to-emerald-400 h-full rounded-full shadow-[0_0_12px_rgba(16,185,129,0.8)] relative overflow-hidden" style="width: 95%">
+                                <div class="absolute top-0 right-0 bottom-0 w-10 bg-gradient-to-l from-white/20 to-transparent"></div>
+                            </div>
+                        </div>
+                        <div class="flex justify-between mt-3 text-xs font-medium text-gray-500">
+                            <span>Map, Set, Date, WeakMap, Promise, Intl, BigInt</span>
+                            <span class="text-emerald-500/70">Completed</span>
+                        </div>
+                    </div>
+
+                    <!-- Item 2 -->
+                    <div class="group">
+                        <div class="flex items-end justify-between mb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="p-2 rounded-lg bg-indigo-500/10 text-indigo-400 group-hover:bg-indigo-500/20 transition-colors">
+                                    <i data-lucide="binary" class="w-5 h-5"></i>
+                                </div>
+                                <span class="text-lg font-bold text-gray-100">WASM 2.0 Integration</span>
+                            </div>
+                            <span class="text-2xl font-black text-indigo-400 tracking-tighter">98%</span>
+                        </div>
+                        <div class="w-full bg-dark-900/50 rounded-full h-3 border border-white-[0.03] overflow-hidden drop-shadow-sm p-0.5">
+                            <div class="bg-gradient-to-r from-blue-600 to-indigo-400 h-full rounded-full shadow-[0_0_12px_rgba(99,102,241,0.8)] relative overflow-hidden" style="width: 98%">
+                                <div class="absolute top-0 right-0 bottom-0 w-10 bg-gradient-to-l from-white/20 to-transparent"></div>
+                            </div>
+                        </div>
+                        <div class="flex justify-between mt-3 text-xs font-medium text-gray-500">
+                            <span>50 files, 27K lines. GC barriers, bounds check, SIMD.</span>
+                            <span class="text-indigo-400/70">Stable Framework</span>
+                        </div>
+                    </div>
+
+                    <!-- Item 3 -->
+                    <div class="group">
+                        <div class="flex items-end justify-between mb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="p-2 rounded-lg bg-pink-500/10 text-pink-400 group-hover:bg-pink-500/20 transition-colors">
+                                    <i data-lucide="zap" class="w-5 h-5"></i>
+                                </div>
+                                <span class="text-lg font-bold text-gray-100">JIT Maturation (ZIR & ZOpt)</span>
+                            </div>
+                            <span class="text-2xl font-black text-pink-400 tracking-tighter">80%</span>
+                        </div>
+                        <div class="w-full bg-dark-900/50 rounded-full h-3 border border-white-[0.03] overflow-hidden drop-shadow-sm p-0.5">
+                            <div class="bg-gradient-to-r from-rose-600 to-pink-500 h-full rounded-full shadow-[0_0_12px_rgba(236,72,153,0.8)] relative overflow-hidden" style="width: 80%">
+                                <div class="absolute top-0 right-0 bottom-0 w-10 bg-gradient-to-l from-white/20 to-transparent animate-pulse"></div>
+                            </div>
+                        </div>
+                        <div class="flex justify-between mt-3 text-xs font-medium text-gray-500">
+                            <span>Thresholds tuned. Inline caching (IC) active.</span>
+                            <span class="text-pink-400/70">In Progress</span>
+                        </div>
+                    </div>
+
+                    <!-- Item 4 -->
+                    <div class="group">
+                        <div class="flex items-end justify-between mb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="p-2 rounded-lg bg-amber-500/10 text-amber-500 group-hover:bg-amber-500/20 transition-colors">
+                                    <i data-lucide="shield-check" class="w-5 h-5"></i>
+                                </div>
+                                <span class="text-lg font-bold text-gray-100">Security Sandbox</span>
+                            </div>
+                            <span class="text-2xl font-black text-amber-500 tracking-tighter">100%</span>
+                        </div>
+                        <div class="w-full bg-dark-900/50 rounded-full h-3 border border-white-[0.03] overflow-hidden drop-shadow-sm p-0.5">
+                            <div class="bg-gradient-to-r from-orange-600 to-amber-400 h-full rounded-full shadow-[0_0_12px_rgba(245,158,11,0.8)] relative overflow-hidden" style="width: 100%">
+                                <div class="absolute top-0 right-0 bottom-0 w-10 bg-gradient-to-l from-white/20 to-transparent"></div>
+                            </div>
+                        </div>
+                        <div class="flex justify-between mt-3 text-xs font-medium text-gray-500">
+                            <span>ResourceMonitor enforcing boundaries. ObjectTracker active.</span>
+                            <span class="text-amber-500/70">Production</span>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- Milestones -->
+            <section id="milestones" class="mb-24 animate-section scroll-mt-24">
+                <div class="flex items-center gap-4 mb-10">
+                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border border-emerald-500/30 flex items-center justify-center shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+                        <i data-lucide="git-commit" class="w-6 h-6 text-emerald-400"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-3xl font-bold tracking-tight">Key Milestones</h2>
+                        <span class="text-sm text-gray-400 font-medium">History of stabilized builds and engine phases.</span>
                     </div>
                 </div>
 
-                <div class="prose prose-invert prose-emerald max-w-none animate-fade-up">
+                <div class="relative pt-4 pl-0">
+                    <!-- Vertical Line -->
+                    <div class="absolute inset-y-0 left-[2.25rem] lg:left-1/2 w-0.5 bg-gradient-to-b from-emerald-500 via-emerald-500/20 to-transparent lg:-translate-x-px z-0"></div>
 
+                    <div class="space-y-12">
+                        
+                        <!-- Milestone 1 -->
+                        <div class="relative flex items-center group z-10">
+                            <!-- Dot -->
+                            <div class="absolute left-[2.25rem] lg:left-1/2 flex items-center justify-center w-12 h-12 rounded-full border-4 border-dark-900 bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.5)] text-white -translate-x-1/2 z-20 transition-transform group-hover:scale-110">
+                                <i data-lucide="check" class="w-6 h-6"></i>
+                            </div>
+                            <!-- Card Left -->
+                            <div class="w-full lg:w-1/2 pl-20 lg:pl-0 lg:pr-16 text-left lg:text-right lg:mr-auto">
+                                <div class="glass p-6 lg:p-8 rounded-2xl hover:bg-white/[0.03] transition-colors border-l-2 lg:border-l-0 lg:border-r-2 border-transparent hover:border-emerald-500/50">
+                                    <div class="inline-flex items-center gap-2 mb-3">
+                                        <span class="text-xs font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded">COMPLETED</span>
+                                        <span class="text-sm font-semibold text-gray-300">Phase 1-50</span>
+                                    </div>
+                                    <h3 class="font-bold text-white text-xl mb-2">Core Foundation</h3>
+                                    <p class="text-sm text-gray-400 leading-relaxed max-w-sm ml-auto">Value system, GC scaffolding, Interpreter, AST parsing, Bytecode generation. BigInt fully integrated.</p>
+                                </div>
+                            </div>
+                        </div>
 
+                        <!-- Milestone 2 -->
+                        <div class="relative flex items-center group z-10">
+                            <div class="absolute left-[2.25rem] lg:left-1/2 flex items-center justify-center w-12 h-12 rounded-full border-4 border-dark-900 bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.5)] text-white -translate-x-1/2 z-20 transition-transform group-hover:scale-110">
+                                <i data-lucide="check" class="w-6 h-6"></i>
+                            </div>
+                            <div class="w-full lg:w-1/2 pl-20 lg:pl-16 text-left lg:ml-auto">
+                                <div class="glass p-6 lg:p-8 rounded-2xl hover:bg-white/[0.03] transition-colors border-l-2 border-transparent hover:border-emerald-500/50">
+                                    <div class="inline-flex items-center gap-2 mb-3">
+                                        <span class="text-xs font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded">COMPLETED</span>
+                                        <span class="text-sm font-semibold text-gray-300">Phase 51-66</span>
+                                    </div>
+                                    <h3 class="font-bold text-white text-xl mb-2">ES2024 Hardening</h3>
+                                    <p class="text-sm text-gray-400 leading-relaxed max-w-sm">Promises, async queues, regex engine, opcodes robust processing, directory restructure (ZIR & ZOpt).</p>
+                                </div>
+                            </div>
+                        </div>
 
+                        <!-- Milestone 3 -->
+                        <div class="relative flex items-center group z-10">
+                            <div class="absolute left-[2.25rem] lg:left-1/2 flex items-center justify-center w-12 h-12 rounded-full border-4 border-dark-900 bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.5)] text-white -translate-x-1/2 z-20 transition-transform group-hover:scale-110">
+                                <i data-lucide="check" class="w-6 h-6"></i>
+                            </div>
+                            <div class="w-full lg:w-1/2 pl-20 lg:pl-0 lg:pr-16 text-left lg:text-right lg:mr-auto">
+                                <div class="glass p-6 lg:p-8 rounded-2xl hover:bg-white/[0.03] transition-colors border-l-2 lg:border-l-0 lg:border-r-2 border-transparent hover:border-emerald-500/50">
+                                    <div class="inline-flex items-center gap-2 mb-3">
+                                        <span class="text-xs font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded">COMPLETED</span>
+                                        <span class="text-sm font-semibold text-gray-300">Phase 67-72</span>
+                                    </div>
+                                    <h3 class="font-bold text-white text-xl mb-2">Sandbox & Integrations</h3>
+                                    <p class="text-sm text-gray-400 leading-relaxed max-w-sm ml-auto">Security Sandbox, Crash Handlers, advanced WASM logic, DOM Hooks, Background Tasks.</p>
+                                </div>
+                            </div>
+                        </div>
 
-<h1>ZebraScript v1.1 - Execution Engine Milestone</h1>
-<h2>Quick Start</h2>
-<pre><code class="language-bash">cmake -B build &amp;&amp; cmake --build build -j$(nproc)
-./build/bin/zepra-repl
-</code></pre>
-<h2>Dependencies: NONE (standard C++ only)</h2>
-<hr />
-<h1>VERIFIED WORKING ✓</h1>
-<h2>Control Flow</h2>
-<pre><code class="language-javascript">// if/else ✓
-let x = 5
-if (x &gt; 3) { x = x * 2 }  // x = 10
+                        <!-- Milestone 4 (In Progress) -->
+                        <div class="relative flex items-center group z-10">
+                            <div class="absolute left-[2.25rem] lg:left-1/2 flex items-center justify-center w-12 h-12 rounded-full border-4 border-dark-900 bg-dark-800 text-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.3)] -translate-x-1/2 z-20">
+                                <i data-lucide="loader" class="w-6 h-6 animate-spin-slow"></i>
+                            </div>
+                            <div class="w-full lg:w-1/2 pl-20 lg:pl-16 text-left lg:ml-auto">
+                                <div class="glass p-6 lg:p-8 rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-500/[0.02] to-transparent shadow-[0_8px_30px_rgba(245,158,11,0.1)] border-l-2 hover:border-amber-500/50 transition-colors">
+                                    <div class="inline-flex items-center gap-2 mb-3">
+                                        <span class="text-xs font-mono font-bold text-amber-400 bg-amber-500/10 px-2 py-1 rounded relative overflow-hidden">
+                                            IN PROGRESS
+                                            <div class="absolute inset-0 w-full translate-x-[-100%] bg-gradient-to-r from-transparent via-white/20 to-transparent animate-[shimmer_2s_infinite]"></div>
+                                        </span>
+                                        <span class="text-sm font-semibold text-gray-300">Phase 73-80</span>
+                                    </div>
+                                    <h3 class="font-bold text-amber-50 text-xl mb-2">GC & Stress Testing</h3>
+                                    <p class="text-sm text-gray-400 leading-relaxed max-w-sm">GC heavy expansion (80K lines tracking), Test262 compliance, Debugger stability, and extreme pipeline stress testing.</p>
+                                </div>
+                            </div>
+                        </div>
 
-// while loop ✓  
-let sum = 0; let i = 1
-while (i &lt;= 5) { sum = sum + i; i = i + 1 }  // sum = 15
-
-// for loop ✓
-let sum = 0
-for (let i = 1; i &lt;= 10; i = i + 1) { sum = sum + i }  // sum = 55
-</code></pre>
-<h2>User-Defined Functions (no params) ✓</h2>
-<pre><code class="language-javascript">function test() { return 42 }
-test()  // → 42
-</code></pre>
-<h2>Math Builtins ✓</h2>
-<pre><code class="language-javascript">Math.sqrt(144)  // → 12
-Math.pow(2, 10) // → 1024
-Math.max(1,5,3,9,2) // → 9
-Math.PI // → 3.14159
-</code></pre>
-<h2>Object Literals ✓</h2>
-<pre><code class="language-javascript">let o = { a: 1, b: 2 }
-o.a + o.b  // → 3
-</code></pre>
-<h2>Array Literals ✓</h2>
-<pre><code class="language-javascript">let arr = [1, 2, 3]
-arr[0] + arr[2]  // → 4
-</code></pre>
-<h2>Functions with Parameters</h2>
-<pre><code class="language-javascript">function add(a, b) { return a + b }
-add(3, 4)  // -&gt; 7
-
-function multiply(x, y) { return x * y }
-multiply(5, 6)  // -&gt; 30
-
-// Recursive functions work too!
-function fib(n) { if (n &lt;= 1) { return n } return fib(n-1) + fib(n-2) }
-fib(10)  // -&gt; 55
-</code></pre>
-<h2>Console API</h2>
-<pre><code class="language-javascript">console.log(&quot;Hello from Zepra!&quot;)  // prints: Hello from Zepra!
-console.log(1 + 2 + 3)  // prints: 6
-</code></pre>
-<h2>String Literals</h2>
-<pre><code class="language-javascript">&quot;Hello, World!&quot;  // -&gt; Hello, World!
-</code></pre>
-<h2>Try/Catch/Throw</h2>
-<pre><code class="language-javascript">try {
-  throw &quot;error&quot;
-} catch(e) {
-  console.log(e)  // prints: error
-}
-</code></pre>
-<h2>Array Methods</h2>
-<pre><code class="language-javascript">let arr = [1, 2, 3]
-arr.push(99)  // -&gt; 4 (new length)
-arr.pop()     // -&gt; 99 (popped value)
-arr[0] + arr[1]  // -&gt; 3
-</code></pre>
-<h2>JSON</h2>
-<pre><code class="language-javascript">let obj = JSON.parse('{&quot;name&quot;:&quot;Zepra&quot;,&quot;v&quot;:1.2}')
-obj.name     // -&gt; Zepra
-JSON.stringify({a:1, b:2})  // -&gt; {&quot;b&quot;:2,&quot;a&quot;:1}
-</code></pre>
-<h2>String Methods</h2>
-<pre><code class="language-javascript">&quot;hello&quot;.toUpperCase()  // -&gt; HELLO
-&quot;hello&quot;.slice(1, 3)    // -&gt; el
-&quot;  hi  &quot;.trim()        // -&gt; hi
-&quot;test&quot;.indexOf(&quot;e&quot;)    // -&gt; 1
-&quot;a b c&quot;.split(&quot; &quot;)     // -&gt; [a, b, c]
-</code></pre>
-<h2>Module Syntax</h2>
-<pre><code class="language-javascript">export function add(a, b) { return a + b }
-add(5, 3)  // -&gt; 8
-
-import { foo } from './module.js'  // parses (file loading stub)
-</code></pre>
-<hr />
-<h1>TODO</h1>
-<h2>v1.2 COMPLETE</h2>
-<ul>
-<li>[x] Array.prototype methods ✓</li>
-<li>[x] JSON.parse / JSON.stringify ✓</li>
-<li>[x] Module system syntax ✓</li>
-</ul>
-<h2>v1.3 COMPLETE</h2>
-<ul>
-<li>[x] Full module loader (file system) ✓</li>
-<li>ModuleLoader class with caching</li>
-<li>Path resolution (relative/absolute)</li>
-<li>File loading and compilation</li>
-</ul>
-<h2>Sprint 5 COMPLETE</h2>
-<ul>
-<li>[x] Performance optimizations ✓</li>
-<li>Peephole optimizer (0 bytes overhead)</li>
-<li>Inline caching (16KB max)</li>
-<li>JIT profiler (16KB max)</li>
-<li><strong>Total: ~32KB worst case</strong></li>
-</ul>
-<h2>v1.3 FUTURE</h2>
-<ul>
-<li>[ ] Garbage Collection (GenGC)</li>
-<li>[ ] JIT Compilation</li>
-<li>[ ] Async/await</li>
-<li>[ ] DOM APIs</li>
-</ul>
-<hr />
-<h1>File Locations</h1>
-<table>
-<thead>
-<tr>
-<th>Component</th>
-<th>Path</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>VM</td>
-<td>runtime/vm.cpp</td>
-</tr>
-<tr>
-<td>Bytecode Gen</td>
-<td>bytecode/bytecode_generator.cpp</td>
-</tr>
-<tr>
-<td>Parser</td>
-<td>frontend/parser.cpp</td>
-</tr>
-<tr>
-<td>AST</td>
-<td>frontend/ast.hpp</td>
-</tr>
-</tbody>
-</table>
-
-        
+                    </div>
                 </div>
-            </main>
-        </div>
-    </div>
+                <style>
+                    @keyframes shimmer {
+                        100% { transform: translateX(100%); }
+                    }
+                </style>
+            </section>
 
-    <!-- Footer -->
-    <footer class="bg-bg-secondary border-t border-white/5 py-12 mt-12">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <p class="text-gray-500 text-sm">© 2026 ZepraBrowser · Part of the NeolyxOS Project</p>
-        </div>
-    </footer>
+            <!-- Architecture Size Table -->
+            <section id="architecture" class="mb-10 animate-section scroll-mt-24">
+                <div class="flex items-center gap-4 mb-10">
+                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/30 flex items-center justify-center shadow-[0_0_15px_rgba(168,85,247,0.2)]">
+                        <i data-lucide="database" class="w-6 h-6 text-purple-400"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-3xl font-bold tracking-tight">Architecture Footprint</h2>
+                        <span class="text-sm text-gray-400 font-medium">Size tracking across critical performance modules.</span>
+                    </div>
+                </div>
+                
+                <div class="glass rounded-[2rem] overflow-hidden drop-shadow-2xl">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-dark-800/80 text-xs uppercase tracking-widest text-gray-400 border-b border-white/10">
+                                <th class="p-6 font-bold w-1/3">Subsystem</th>
+                                <th class="p-6 font-bold hidden md:table-cell">Status Map</th>
+                                <th class="p-6 font-bold text-right">Source Files</th>
+                                <th class="p-6 font-bold text-right">LOC</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-white/5 font-medium">
+                            <tr class="hover:bg-white/[0.04] transition-colors group">
+                                <td class="p-6 text-white flex items-center gap-4">
+                                    <div class="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg group-hover:scale-110 transition-transform"><i data-lucide="cpu" class="w-4 h-4"></i></div>
+                                    VM + Runtime
+                                </td>
+                                <td class="p-6 hidden md:table-cell">
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-emerald-500/10 text-emerald-400"><div class="w-1.5 h-1.5 rounded-full bg-emerald-400"></div> Production</span>
+                                </td>
+                                <td class="p-6 text-right font-mono text-gray-300">30+</td>
+                                <td class="p-6 text-right font-mono text-emerald-400 font-bold">15K+</td>
+                            </tr>
+                            <tr class="hover:bg-white/[0.04] transition-colors group">
+                                <td class="p-6 text-white flex items-center gap-4">
+                                    <div class="p-2 bg-amber-500/10 text-amber-500 rounded-lg group-hover:scale-110 transition-transform"><i data-lucide="trash-2" class="w-4 h-4"></i></div>
+                                    Garbage Collector
+                                </td>
+                                <td class="p-6 hidden md:table-cell">
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-amber-500/10 text-amber-500"><div class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></div> Expanding</span>
+                                </td>
+                                <td class="p-6 text-right font-mono text-gray-300">120+</td>
+                                <td class="p-6 text-right font-mono text-amber-400 font-bold">80K+</td>
+                            </tr>
+                            <tr class="hover:bg-white/[0.04] transition-colors group">
+                                <td class="p-6 text-white flex items-center gap-4">
+                                    <div class="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg group-hover:scale-110 transition-transform"><i data-lucide="code" class="w-4 h-4"></i></div>
+                                    Parser & Bytegen
+                                </td>
+                                <td class="p-6 hidden md:table-cell">
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-emerald-500/10 text-emerald-400"><div class="w-1.5 h-1.5 rounded-full bg-emerald-400"></div> Production</span>
+                                </td>
+                                <td class="p-6 text-right font-mono text-gray-300">6</td>
+                                <td class="p-6 text-right font-mono text-emerald-400 font-bold">8K+</td>
+                            </tr>
+                            <tr class="hover:bg-white/[0.04] transition-colors group">
+                                <td class="p-6 text-white flex items-center gap-4">
+                                    <div class="p-2 bg-purple-500/10 text-purple-400 rounded-lg group-hover:scale-110 transition-transform"><i data-lucide="zap" class="w-4 h-4"></i></div>
+                                    JIT (ZIR/ZOpt)
+                                </td>
+                                <td class="p-6 hidden md:table-cell">
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-purple-500/10 text-purple-400"><div class="w-1.5 h-1.5 rounded-full bg-purple-400"></div> Framework</span>
+                                </td>
+                                <td class="p-6 text-right font-mono text-gray-300">17</td>
+                                <td class="p-6 text-right font-mono text-purple-400 font-bold">5K+</td>
+                            </tr>
+                            <tr class="hover:bg-white/[0.04] transition-colors group">
+                                <td class="p-6 text-white flex items-center gap-4">
+                                    <div class="p-2 bg-purple-500/10 text-purple-400 rounded-lg group-hover:scale-110 transition-transform"><i data-lucide="binary" class="w-4 h-4"></i></div>
+                                    WebAssembly
+                                </td>
+                                <td class="p-6 hidden md:table-cell">
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-purple-500/10 text-purple-400"><div class="w-1.5 h-1.5 rounded-full bg-purple-400"></div> Framework</span>
+                                </td>
+                                <td class="p-6 text-right font-mono text-gray-300">50</td>
+                                <td class="p-6 text-right font-mono text-purple-400 font-bold">27K+</td>
+                            </tr>
+                            <tr class="hover:bg-white/[0.04] transition-colors group">
+                                <td class="p-6 text-white flex items-center gap-4">
+                                    <div class="p-2 bg-purple-500/10 text-purple-400 rounded-lg group-hover:scale-110 transition-transform"><i data-lucide="globe" class="w-4 h-4"></i></div>
+                                    Browser APIs
+                                </td>
+                                <td class="p-6 hidden md:table-cell">
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-purple-500/10 text-purple-400"><div class="w-1.5 h-1.5 rounded-full bg-purple-400"></div> Framework</span>
+                                </td>
+                                <td class="p-6 text-right font-mono text-gray-300">37</td>
+                                <td class="p-6 text-right font-mono text-purple-400 font-bold">11K+</td>
+                            </tr>
+                            <tr class="hover:bg-white/[0.04] transition-colors group">
+                                <td class="p-6 text-white flex items-center gap-4">
+                                    <div class="p-2 bg-indigo-500/10 text-indigo-400 rounded-lg group-hover:scale-110 transition-transform"><i data-lucide="bug" class="w-4 h-4"></i></div>
+                                    DevTools Trace
+                                </td>
+                                <td class="p-6 hidden md:table-cell">
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-indigo-500/10 text-indigo-400"><div class="w-1.5 h-1.5 rounded-full bg-indigo-400"></div> Stabilized</span>
+                                </td>
+                                <td class="p-6 text-right font-mono text-gray-300">8</td>
+                                <td class="p-6 text-right font-mono text-indigo-400 font-bold">2K+</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
 
-    <!-- Scripts -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-    <script src="../assets/js/docs.js" defer></script>
+        </div>
+    </main>
+
+    <script>
+        lucide.createIcons();
+        gsap.registerPlugin(ScrollTrigger);
+        
+        // Staggered header
+        gsap.from('.animate-header', { opacity: 0, y: 30, duration: 1, ease: 'power3.out' });
+        
+        // Enhanced section reveal
+        gsap.utils.toArray('.animate-section').forEach((section) => {
+            gsap.from(section, {
+                scrollTrigger: { 
+                    trigger: section, 
+                    start: 'top 85%',
+                    toggleActions: 'play none none reverse'
+                },
+                opacity: 0, 
+                y: 50, 
+                duration: 0.9, 
+                ease: 'power4.out'
+            });
+        });
+
+        // Smooth scroll spy and offset for fixed sidebar
+        document.querySelectorAll('.nav-link[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if(target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+    </script>
 </body>
 </html>

@@ -12,6 +12,7 @@
     
     <!-- Tailwind CSS with Typography Plugin -->
     <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -99,11 +100,11 @@
                 <span class="text-[10px] font-semibold uppercase tracking-wider text-gray-500 px-3">Quick Navigation</span>
                 <div class="mt-2 space-y-1">
                     <a href="index.html" class="nav-link flex items-center gap-3 px-3 py-2 text-sm text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all border-l-2 border-transparent">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                        <i data-lucide="home" class="w-4 h-4"></i>
                         Hub Home
                     </a>
                     <a href="zeprascript/index.html" class="nav-link flex items-center gap-3 px-3 py-2 text-sm text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all border-l-2 border-transparent">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                        <i data-lucide="code" class="w-4 h-4"></i>
                         ZepraScript Engine
                     </a>
                 </div>
@@ -125,7 +126,7 @@
 <!-- Page Header with Icon -->
                 <div class="flex items-center gap-4 mb-8 border-b border-white/10 pb-8 animate-fade-in">
                     <div class="w-16 h-16 rounded-2xl bg-bg-secondary border border-white/5 flex items-center justify-center shrink-0">
-                        <svg class="w-8 h-8 opacity-80 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        <i data-lucide="folder-tree" class="w-8 h-8 opacity-80 text-emerald-400"></i>
                     </div>
                     <div>
                         <h1 class="text-3xl sm:text-4xl font-bold text-white tracking-tight">FILETREE.md</h1>
@@ -148,44 +149,31 @@
 │
 ├── source/                                     # === NEW ARCHITECTURE ===
 │   │
-│   ├── zepraScript/                            # ⚠️ DO NOT MODIFY
-│   │   ├── frontend/                          # Lexer, parser, ast
-│   │   ├── bytecode/                          # Compiler, opcodes
-│   │   ├── runtime/                           # VM, value, object
-│   │   ├── heap/                              # Garbage collector
-│   │   ├── jit/                               # Baseline, osr, dfg
-│   │   ├── builtins/                          # Date, Math, Number
-│   │   ├── memory/                            # Allocators
-│   │   ├── debugger/                          # Devtools, inspector
-│   │   ├── modules/                           # ES modules, imports
-│   │   ├── wasm/                              # WebAssembly support
-│   │   ├── profiler/                          # CPU, heap profilers
-│   │   └── tests/                             # Unit + integration
-│   │
-│   ├── webCore/                               # Rendering Engine
-│   │   ├── include/webcore/
-│   │   │   ├── dom.hpp                        # DOM implementation
-│   │   │   ├── html_parser.hpp
-│   │   │   ├── css_parser.hpp
-│   │   │   ├── render_tree.hpp
-│   │   │   ├── paint_context.hpp
-│   │   │   └── layout_engine.hpp
-│   │   ├── src/
-│   │   │   ├── dom.cpp
-│   │   │   ├── render_tree.cpp
-│   │   │   └── paint_context.cpp
-│   │   └── CMakeLists.txt
-│   │
-│   ├── zepraEngine/                           # Browser Window/Shell
-│   │   ├── include/engine/
-│   │   │   └── browser_window.hpp
-│   │   ├── src/
-│   │   │   └── zepra_window_demo.cpp          # SDL2 browser UI
-│   │   └── CMakeLists.txt
-│   │
-│   ├── webGpu/                                # GPU Acceleration (TODO)
-│   │
-│   └── bin/                                   # Built executables
+│   ├── ThirdParty/                            # External dependencies
+│   ├── aiEngine/                              # AI integration & LLM APIs
+│   ├── bin/                                   # Built executables
+│   ├── devtools/                              # Developer tools, debugger GUI
+│   ├── extensions/                            # Extension system & sandbox
+│   ├── integration/                           # Service integrations
+│   ├── main.cpp                               # Application Entry
+│   ├── media/                                 # Audio/Video processing
+│   ├── networking/                            # Network stack, sockets
+│   ├── nxbase/                                # NeolyxOS Base components
+│   ├── nxcrypto/                              # Cryptography, TLS/SSL
+│   ├── nxhttp/                                # HTTP/HTTP2 parser & client
+│   ├── nxjson/                                # JSON parsing & generation
+│   ├── nxrender-cpp/                          # Core rendering logic (C++)
+│   ├── nxsvg_wrapper.cpp                      # SVG Rendering Support
+│   ├── nxxml/                                 # XML/DOM parsing
+│   ├── platform/                              # Cross-platform abstractions
+│   ├── privacy/                               # Privacy & tracking protection
+│   ├── sandbox/                               # IPC sandboxing model
+│   ├── storage/                               # LocalStorage, IndexedDB, Cache
+│   ├── webCore/                               # Core layout and rendering
+│   ├── webGpu/                                # WebGL & WebGPU implementation
+│   ├── webapp/                                # Progressive Web Apps (PWA)
+│   ├── zepraEngine/                           # Browser shell & core UI
+│   └── zepraScript/                           # ⚠️ JavaScript Engine Core
 │       └── zepra-browser
 │
 ├── include/                                   # === BROWSER HEADERS ===
@@ -280,10 +268,11 @@
 <h1>source/zepraScript/  : 392 files (JS Engine)</h1>
 <h1>source/webCore/      : 10 files  (Rendering)</h1>
 <h1>source/zepraEngine/  : 31 files  (Window)</h1>
+<h1>source/* (Other)     : 110+ files</h1>
 <h1>include/             : 30 files  (Headers)</h1>
 <h1>src/                 : 25 files  (Browser)</h1>
 <h1>-------------------------------------------</h1>
-<h1>TOTAL                : ~490 files</h1>
+<h1>TOTAL                : ~600+ files</h1>
 <h1>============================================</h1>
 
         
@@ -301,5 +290,11 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
     <script src="assets/js/docs.js" defer></script>
+    <script>
+        lucide.createIcons();
+        gsap.registerPlugin(ScrollTrigger);
+        gsap.from('.animate-fade-in', { opacity: 0, y: -20, duration: 1, ease: 'power3.out' });
+        gsap.from('.animate-fade-up', { opacity: 0, y: 30, duration: 1.2, ease: 'power3.out', delay: 0.2 });
+    </script>
 </body>
 </html>

@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zepra Sandbox</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        dark: { 900: '#0a0a0f', 800: '#12121a', 700: '#1a1a24', 600: '#24242f', 500: '#2d2d3a' },
+                        accent: { DEFAULT: '#dc2626', light: '#ef4444', dark: '#b91c1c' },
+                    },
+                    fontFamily: { sans: ['Inter', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #12121a; }
+        ::-webkit-scrollbar-thumb { background: #3f3f5a; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #dc2626; }
+        .gradient-text { background: linear-gradient(135deg, #dc2626 0%, #f59e0b 50%, #10b981 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .glass { background: rgba(26, 26, 36, 0.8); backdrop-filter: blur(20px); border: 1px solid rgba(220, 38, 38, 0.1); }
+        .glow { box-shadow: 0 0 60px rgba(220, 38, 38, 0.15); }
+        .nav-link.active { background: linear-gradient(90deg, rgba(220, 38, 38, 0.2) 0%, transparent 100%); border-left-color: #dc2626; }
+        .card-hover { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .card-hover:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4); border-color: rgba(220, 38, 38, 0.5); }
+    </style>
+</head>
+<body class="bg-dark-900 text-gray-100 font-sans antialiased">
+    <!-- Ambient Background -->
+    <div class="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <div class="absolute top-0 right-1/4 w-[600px] h-[600px] bg-accent/5 rounded-full blur-[150px]"></div>
+        <div class="absolute bottom-0 left-1/4 w-[500px] h-[500px] bg-orange-500/5 rounded-full blur-[150px]"></div>
+    </div>
+
+    <!-- Sidebar -->
+    <aside class="fixed left-0 top-0 w-72 h-screen bg-dark-800/90 backdrop-blur-xl border-r border-white/5 z-50 overflow-y-auto">
+        <div class="p-6 border-b border-white/5">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-accent to-orange-500 flex items-center justify-center glow">
+                    <i data-lucide="shield" class="w-6 h-6 text-white"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg">Sandbox</h1>
+                    <span class="text-xs text-gray-500">zeprabrowser/source/sandbox</span>
+                </div>
+            </div>
+        </div>
+        <nav class="p-4">
+            <div class="mb-6">
+                <span class="text-[10px] font-semibold uppercase tracking-wider text-gray-500 px-3">Documentation</span>
+                <div class="mt-2 space-y-1">
+                    <a href="../index.html" class="nav-link flex items-center gap-3 px-3 py-2 text-sm text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all border-l-2 border-transparent">
+                        <i data-lucide="layout-grid" class="w-4 h-4 text-purple-500"></i>
+                        Main Hub</a>
+                    <a href="index.html" class="nav-link active flex items-center gap-3 px-3 py-2 text-sm text-white rounded-lg border-l-2 border-accent">
+                        <i data-lucide="shield" class="w-4 h-4"></i>
+                        Overview</a>
+                </div>
+            </div>
+            <div class="mb-6">
+                <span class="text-[10px] font-semibold uppercase tracking-wider text-gray-500 px-3">This Page</span>
+                <div class="mt-2 space-y-1">
+                    <a href="#defense" class="nav-link flex items-center gap-3 px-3 py-2 text-sm text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all border-l-2 border-transparent pl-6">Defense Mechanisms</a>
+                    <a href="#ipc" class="nav-link flex items-center gap-3 px-3 py-2 text-sm text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all border-l-2 border-transparent pl-6">IPC Bridging</a>
+                </div>
+            </div>
+        </nav>
+    </aside>
+
+    <main class="ml-72 min-h-screen">
+        <div class="max-w-5xl mx-auto px-8 py-20 relative z-10">
+            <!-- Hero -->
+            <header class="mb-24 text-center animate-header">
+                <h1 class="text-6xl md:text-7xl font-extrabold mb-6">
+                    <span class="gradient-text">Sandbox Subsystem</span>
+                </h1>
+                <p class="text-xl text-gray-400 max-w-2xl mx-auto mb-10">Process isolation, privilege restriction mechanisms, and secure IPC tunnels enforced by the native OS kernel.</p>
+            </header>
+
+            <!-- Defenses -->
+            <section id="defense" class="mb-24 animate-section">
+                <h2 class="text-3xl font-bold text-center mb-8">Defense Mechanisms</h2>
+                <div class="grid md:grid-cols-2 gap-8">
+                    <div class="glass rounded-2xl p-8 card-hover">
+                        <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-red-500/20 to-orange-500/20 flex items-center justify-center mb-6">
+                            <i data-lucide="user-minus" class="w-7 h-7 text-red-500"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-2">Unprivileged Accounts</h3>
+                        <p class="text-gray-400 text-sm">Renderer and GPU processes are spawned under restricted alternate user IDs, entirely stripping them of administrative `root` or `sudo` capabilities at the POSIX layer.</p>
+                    </div>
+                    <div class="glass rounded-2xl p-8 card-hover">
+                        <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-orange-500/20 to-yellow-500/20 flex items-center justify-center mb-6">
+                            <i data-lucide="lock" class="w-7 h-7 text-orange-500"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-2">Chroot / Namespace Jails</h3>
+                        <p class="text-gray-400 text-sm">Mount, PID, Network, and IPC namespaces are decoupled. The renderer believes it is running in an empty filesystem with no visibility into true OS mounts or hardware abstractions.</p>
+                    </div>
+                    <div class="glass rounded-2xl p-8 card-hover">
+                        <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-amber-500/20 to-emerald-500/20 flex items-center justify-center mb-6">
+                            <i data-lucide="shield-alert" class="w-7 h-7 text-amber-500"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-2">Seccomp-BPF Filtering</h3>
+                        <p class="text-gray-400 text-sm">Strict system call whitelisting. A compromised renderer process cannot invoke dangerous syscalls (like `execve` or `ptrace`). The kernel will terminate the process instantly upon violation.</p>
+                    </div>
+                    <div class="glass rounded-2xl p-8 card-hover">
+                        <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 flex items-center justify-center mb-6">
+                            <i data-lucide="file-off" class="w-7 h-7 text-emerald-500"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-2">Capabilities Dropping</h3>
+                        <p class="text-gray-400 text-sm">POSIX capabilities like `CAP_SYS_ADMIN` and `CAP_NET_RAW` are completely dropped from child threads, removing access to raw sockets or administrative commands.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- IPC -->
+            <section id="ipc" class="mb-24 animate-section">
+                <div class="flex items-center gap-4 mb-8">
+                    <h2 class="text-3xl font-bold">Secure IPC Bridging</h2>
+                    <div class="h-px bg-white/10 flex-1"></div>
+                </div>
+                <div class="glass rounded-2xl p-8 glow">
+                    <pre class="text-xs md:text-sm font-mono text-gray-400 overflow-x-auto leading-relaxed">
+<span class="text-rose-400">Compromised Web Content (RCE in V8/WebCore)</span>
+         <span class="text-gray-600">│</span>
+         <span class="text-gray-600">▼</span>
+<span class="text-gray-600">┌────────────────────────────────────────────────────────┐</span>
+<span class="text-gray-600">│</span>                  <span class="text-accent">Renderer Process</span>                      <span class="text-gray-600">│</span>
+<span class="text-gray-600">│</span>  <span class="text-gray-500">[Namespace Jail] [Seccomp-BPF] [Dropped Caps]</span>         <span class="text-gray-600">│</span>
+<span class="text-gray-600">└───────────────────────────┬────────────────────────────┘</span>
+                            <span class="text-gray-600">│</span>
+<span class="text-gray-600">┌───────────────────────────▼────────────────────────────┐</span>
+<span class="text-gray-600">│</span>                    <span class="text-amber-400">IPC Broker</span>                          <span class="text-gray-600">│</span>
+<span class="text-gray-600">│</span>  <span class="text-gray-500">Validates all requests:</span>                               <span class="text-gray-600">│</span>
+<span class="text-gray-600">│</span>  <span class="text-emerald-400">1. Does this origin have camera permissions?</span>          <span class="text-gray-600">│</span>
+<span class="text-gray-600">│</span>  <span class="text-emerald-400">2. Is this network request allowed by CSP/CORS?</span>       <span class="text-gray-600">│</span>
+<span class="text-gray-600">│</span>  <span class="text-red-400">3. Reject arbitrary file read (`/etc/passwd`)!</span>        <span class="text-gray-600">│</span>
+<span class="text-gray-600">└───────────────────────────┬────────────────────────────┘</span>
+                            <span class="text-gray-600">│</span>
+<span class="text-gray-600">┌───────────────────────────▼────────────────────────────┐</span>
+<span class="text-gray-600">│</span>            <span class="text-cyan-400">Browser Process (Privileged)</span>                <span class="text-gray-600">│</span>
+<span class="text-gray-600">│</span> <span class="text-gray-500">Executes safe requests via Native OS API</span>               <span class="text-gray-600">│</span>
+<span class="text-gray-600">└────────────────────────────────────────────────────────┘</span>
+                    </pre>
+                </div>
+            </section>
+        </div>
+
+        <footer class="py-12 border-t border-white/5 text-center mt-auto">
+            <div class="text-xs text-gray-500 font-mono flex items-center justify-center gap-2">
+                <span>ZepraBrowser Sandbox Subsystem</span>
+                <span class="w-1 h-1 rounded-full bg-gray-600"></span>
+                <span>&copy; 2026 KetiveeAI</span>
+            </div>
+        </footer>
+    </main>
+
+    <script>
+        lucide.createIcons();
+        gsap.registerPlugin(ScrollTrigger);
+        gsap.from('.animate-header', { opacity: 0, y: 50, duration: 1, ease: 'power3.out' });
+        gsap.utils.toArray('.animate-section').forEach((section, i) => {
+            gsap.from(section, {
+                scrollTrigger: { trigger: section, start: 'top 85%' },
+                opacity: 0, y: 50, duration: 0.8, ease: 'power3.out', delay: i * 0.1
+            });
+        });
+    </script>
+</body>
+</html>

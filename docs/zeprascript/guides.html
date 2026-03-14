@@ -56,9 +56,17 @@
             <div class="mb-6">
                 <span class="text-[10px] font-semibold uppercase tracking-wider text-gray-500 px-3">Documentation</span>
                 <div class="mt-2 space-y-1">
+                    <a href="../index.html" class="nav-link flex items-center gap-3 px-3 py-2 text-sm text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all border-l-2 border-transparent">
+                        <svg class="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+                        Main Hub
+                    </a>
                     <a href="index.html" class="nav-link flex items-center gap-3 px-3 py-2 text-sm text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all border-l-2 border-transparent">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
                         Home
+                    </a>
+                    <a href="architecture.html" class="nav-link flex items-center gap-3 px-3 py-2 text-sm text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all border-l-2 border-transparent">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path></svg>
+                        Architecture
                     </a>
                     <a href="api.html" class="nav-link flex items-center gap-3 px-3 py-2 text-sm text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all border-l-2 border-transparent">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
@@ -314,13 +322,23 @@ Value result = instance-><span class="text-accent">call</span>(<span class="text
                 </div>
             </section>
 
-            <footer class="pt-12 border-t border-white/5">
-                <div class="flex items-center justify-between">
-                    <div class="text-sm text-gray-500">ZepraScript v1.0.0</div>
-                    <div class="flex gap-4">
-                        <a href="api.html" class="text-sm text-gray-400 hover:text-accent transition-colors">← API Reference</a>
-                        <a href="todo.html" class="text-sm text-gray-400 hover:text-accent transition-colors">Roadmap →</a>
-                    </div>
+            <footer class="mt-20 pt-8 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-4 animate-section transform-gpu">
+                <div class="text-xs text-gray-500 font-mono flex items-center gap-2">
+                    <span>ZepraScript v1.0.0</span>
+                    <span class="w-1 h-1 rounded-full bg-gray-600"></span>
+                    <span>ZepraBrowser</span>
+                    <span class="w-1 h-1 rounded-full bg-gray-600"></span>
+                    <span>&copy; 2026 KetiveeAI</span>
+                </div>
+                <div class="flex items-center gap-4">
+                    <a href="api.html" class="text-sm font-medium text-gray-400 hover:text-emerald-400 transition-colors flex items-center gap-1 group">
+                        <svg class="w-4 h-4 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                        Prev: API
+                    </a>
+                    <a href="todo.html" class="text-sm font-medium text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1 group">
+                        Next: Roadmap
+                        <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                    </a>
                 </div>
             </footer>
         </div>

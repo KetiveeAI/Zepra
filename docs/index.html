@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <script>
         tailwind.config = {
@@ -60,10 +61,10 @@
                 <span class="text-[10px] font-semibold uppercase tracking-wider text-gray-500 px-3">Navigation</span>
                 <div class="mt-2 space-y-1">
                     <a href="#home" class="nav-link active flex items-center gap-3 px-3 py-2 text-sm text-white rounded-lg border-l-2 border-emerald-500">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                        <i data-lucide="home" class="w-4 h-4"></i>
                         Hub Home</a>
                     <a href="zeprascript/index.html" class="nav-link flex items-center gap-3 px-3 py-2 text-sm text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all border-l-2 border-transparent">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                        <i data-lucide="code" class="w-4 h-4"></i>
                         ZepraScript Docs</a>
                 </div>
             </div>
@@ -73,6 +74,7 @@
                     <a href="#architecture" class="nav-link flex items-center gap-3 px-3 py-2 text-sm text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all border-l-2 border-transparent pl-6">Core & Architecture</a>
                     <a href="#dev-tools" class="nav-link flex items-center gap-3 px-3 py-2 text-sm text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all border-l-2 border-transparent pl-6 text-emerald-400">Debuggers / Dev Tools</a>
                     <a href="#rendering" class="nav-link flex items-center gap-3 px-3 py-2 text-sm text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all border-l-2 border-transparent pl-6">Rendering & WebGL</a>
+                    <a href="#subsystems" class="nav-link flex items-center gap-3 px-3 py-2 text-sm text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all border-l-2 border-transparent pl-6">Engine Subsystems</a>
                     <a href="#api" class="nav-link flex items-center gap-3 px-3 py-2 text-sm text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all border-l-2 border-transparent pl-6">API & Integrations</a>
                     <a href="#security" class="nav-link flex items-center gap-3 px-3 py-2 text-sm text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all border-l-2 border-transparent pl-6">Security & Policy</a>
                 </div>
@@ -108,7 +110,7 @@
             <section id="dev-tools" class="mb-24 animate-section">
                 <div class="flex items-center justify-between mb-8 border-b border-white/10 pb-4">
                     <h2 class="text-3xl font-bold flex items-center gap-3">
-                        <svg class="w-8 h-8 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><circle cx="12" cy="12" r="3"></circle></svg> Developers & Debuggers
+                        <i data-lucide="wrench" class="w-8 h-8 text-emerald-400"></i> Developers & Debuggers
                     </h2>
                     <span class="text-xs font-mono bg-emerald-500/10 text-emerald-400 px-3 py-1 rounded-full border border-emerald-500/20">@category:debuggers</span>
                 </div>
@@ -150,7 +152,7 @@
             <section id="architecture" class="mb-24 animate-section">
                 <div class="flex items-center justify-between mb-8 border-b border-white/10 pb-4">
                     <h2 class="text-3xl font-bold flex items-center gap-3">
-                        <svg class="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg> Core & Architecture
+                        <i data-lucide="cpu" class="w-8 h-8 text-blue-400"></i> Core & Architecture
                     </h2>
                 </div>
                 <div class="grid md:grid-cols-2 gap-6">
@@ -179,7 +181,7 @@
             <section id="rendering" class="mb-24 animate-section">
                 <div class="flex items-center justify-between mb-8 border-b border-white/10 pb-4">
                     <h2 class="text-3xl font-bold flex items-center gap-3">
-                        <svg class="w-8 h-8 text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"></path></svg> Rendering & WebGL
+                        <i data-lucide="monitor-play" class="w-8 h-8 text-pink-400"></i> Rendering & WebGL
                     </h2>
                 </div>
                 <div class="grid md:grid-cols-3 gap-6">
@@ -202,11 +204,76 @@
                 </div>
             </section>
 
+            <!-- Engine Subsystems -->
+            <section id="subsystems" class="mb-24 animate-section">
+                <div class="flex items-center justify-between mb-8 border-b border-white/10 pb-4">
+                    <h2 class="text-3xl font-bold flex items-center gap-3">
+                        <i data-lucide="layers" class="w-8 h-8 text-fuchsia-400"></i> Engine Subsystems
+                    </h2>
+                </div>
+                <!-- Row 1: Networking, Media, AI Engine -->
+                <div class="grid md:grid-cols-3 gap-6 mb-6">
+                    <a href="networking/index.html" class="glass rounded-2xl p-6 card-hover block group">
+                        <h3 class="text-xl font-semibold mb-2 group-hover:text-fuchsia-400 transition-colors">Networking Stack</h3>
+                        <p class="text-gray-400 text-sm">HTTP/WebSocket communication, resource loader, and security models.</p>
+                    </a>
+                    <a href="media/index.html" class="glass rounded-2xl p-6 card-hover block group">
+                        <h3 class="text-xl font-semibold mb-2 group-hover:text-fuchsia-400 transition-colors">Media Support</h3>
+                        <p class="text-gray-400 text-sm">GPU-accelerated video/audio decoding and WebRTC integrations.</p>
+                    </a>
+                    <a href="aiEngine/index.html" class="glass rounded-2xl p-6 card-hover block group">
+                        <h3 class="text-xl font-semibold mb-2 group-hover:text-fuchsia-400 transition-colors">AI Engine</h3>
+                        <p class="text-gray-400 text-sm">Neural reasoning, intent analysis, and automated accessibility.</p>
+                    </a>
+                </div>
+                <!-- Row 2: nxaudio, webCore, webGpu -->
+                <div class="grid md:grid-cols-3 gap-6 mb-6">
+                    <a href="nxaudio/index.html" class="glass rounded-2xl p-6 card-hover block group">
+                        <h3 class="text-xl font-semibold mb-2 group-hover:text-fuchsia-400 transition-colors">nxaudio Engine</h3>
+                        <p class="text-gray-400 text-sm">Low-latency precision audio mixing, spatial processing, and rendering stack.</p>
+                    </a>
+                    <a href="webCore/index.html" class="glass rounded-2xl p-6 card-hover block group">
+                        <h3 class="text-xl font-semibold mb-2 group-hover:text-fuchsia-400 transition-colors">webCore</h3>
+                        <p class="text-gray-400 text-sm">HTML parsing, DOM tree construction, CSS calculations, and layout models.</p>
+                    </a>
+                    <a href="webGpu/index.html" class="glass rounded-2xl p-6 card-hover block group">
+                        <h3 class="text-xl font-semibold mb-2 group-hover:text-fuchsia-400 transition-colors">webGpu Subsystem</h3>
+                        <p class="text-gray-400 text-sm">Low-level GPU acceleration mapping WebGL and WebGPU contexts natively.</p>
+                    </a>
+                </div>
+                <!-- Row 3: zepraEngine, Storage, Sandbox -->
+                <div class="grid md:grid-cols-3 gap-6 mb-6">
+                    <a href="zepraEngine/index.html" class="glass rounded-2xl p-6 card-hover block group">
+                        <h3 class="text-xl font-semibold mb-2 group-hover:text-fuchsia-400 transition-colors">zepraEngine</h3>
+                        <p class="text-gray-400 text-sm">High-level Browser Window and UI Integration layer, tab manager, and IPC.</p>
+                    </a>
+                    <a href="storage/index.html" class="glass rounded-2xl p-6 card-hover block group">
+                        <h3 class="text-xl font-semibold mb-2 group-hover:text-fuchsia-400 transition-colors">Storage</h3>
+                        <p class="text-gray-400 text-sm">Persistent data management for cookies, LocalStorage, IndexedDB, and cache.</p>
+                    </a>
+                    <a href="sandbox/index.html" class="glass rounded-2xl p-6 card-hover block group">
+                        <h3 class="text-xl font-semibold mb-2 group-hover:text-fuchsia-400 transition-colors">Sandbox</h3>
+                        <p class="text-gray-400 text-sm">Process isolation, privilege restrictions, namespaces, and secure IPC tunnels.</p>
+                    </a>
+                </div>
+                <!-- Row 4: Extensions, Platform -->
+                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <a href="extensions/index.html" class="glass rounded-2xl p-6 card-hover block group">
+                        <h3 class="text-xl font-semibold mb-2 group-hover:text-fuchsia-400 transition-colors">Extensions</h3>
+                        <p class="text-gray-400 text-sm">Cross-browser extension runtime, Manifest V3 parsing, and message passing.</p>
+                    </a>
+                    <a href="platform/index.html" class="glass rounded-2xl p-6 card-hover block group">
+                        <h3 class="text-xl font-semibold mb-2 group-hover:text-fuchsia-400 transition-colors">Platform</h3>
+                        <p class="text-gray-400 text-sm">Lowest-level system abstraction layer bridging the C++ codebase to the OS kernel.</p>
+                    </a>
+                </div>
+            </section>
+
             <!-- API & Integrations -->
             <section id="api" class="mb-24 animate-section">
                 <div class="flex items-center justify-between mb-8 border-b border-white/10 pb-4">
                     <h2 class="text-3xl font-bold flex items-center gap-3">
-                        <svg class="w-8 h-8 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg> API & Integrations
+                        <i data-lucide="blocks" class="w-8 h-8 text-purple-400"></i> API & Integrations
                     </h2>
                 </div>
                 <div class="grid md:grid-cols-3 gap-6">
@@ -245,7 +312,7 @@
             <section id="security" class="mb-24 animate-section">
                 <div class="flex items-center justify-between mb-8 border-b border-white/10 pb-4">
                     <h2 class="text-3xl font-bold flex items-center gap-3">
-                        <svg class="w-8 h-8 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg> Security & Policy
+                        <i data-lucide="shield" class="w-8 h-8 text-amber-400"></i> Security & Policy
                     </h2>
                 </div>
                 <div class="grid md:grid-cols-3 gap-6">
@@ -294,6 +361,9 @@
                 });
             });
         });
+
+        // Initialize Lucide icons
+        lucide.createIcons();
     </script>
 </body>
 </html>

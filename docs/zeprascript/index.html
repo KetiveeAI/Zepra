@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <script>
         tailwind.config = {
@@ -47,7 +48,7 @@
         <div class="p-6 border-b border-white/5">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-accent to-purple-500 flex items-center justify-center glow">
-                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    <i data-lucide="blocks" class="w-6 h-6 text-white"></i>
                 </div>
                 <div>
                     <h1 class="font-bold text-lg">ZepraScript</h1>
@@ -59,17 +60,23 @@
             <div class="mb-6">
                 <span class="text-[10px] font-semibold uppercase tracking-wider text-gray-500 px-3">Documentation</span>
                 <div class="mt-2 space-y-1">
+                    <a href="../index.html" class="nav-link flex items-center gap-3 px-3 py-2 text-sm text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all border-l-2 border-transparent">
+                        <i data-lucide="layout-grid" class="w-4 h-4 text-purple-500"></i>
+                        Main Hub</a>
                     <a href="index.html" class="nav-link active flex items-center gap-3 px-3 py-2 text-sm text-white rounded-lg border-l-2 border-accent">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                        <i data-lucide="home" class="w-4 h-4"></i>
                         Home</a>
+                    <a href="architecture.html" class="nav-link flex items-center gap-3 px-3 py-2 text-sm text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all border-l-2 border-transparent">
+                        <i data-lucide="cpu" class="w-4 h-4"></i>
+                        Architecture</a>
                     <a href="api.html" class="nav-link flex items-center gap-3 px-3 py-2 text-sm text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all border-l-2 border-transparent">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+                        <i data-lucide="book-open" class="w-4 h-4"></i>
                         API Reference</a>
                     <a href="guides.html" class="nav-link flex items-center gap-3 px-3 py-2 text-sm text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all border-l-2 border-transparent">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                        <i data-lucide="book-text" class="w-4 h-4"></i>
                         Integration Guide</a>
                     <a href="todo.html" class="nav-link flex items-center gap-3 px-3 py-2 text-sm text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all border-l-2 border-transparent">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                        <i data-lucide="map" class="w-4 h-4"></i>
                         Roadmap</a>
                 </div>
             </div>
@@ -134,7 +141,7 @@
                 <div class="grid md:grid-cols-3 gap-6">
                     <a href="api.html" class="glass rounded-2xl p-8 card-hover block animate-section">
                         <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-accent/20 to-purple-500/20 flex items-center justify-center mb-6">
-                            <svg class="w-7 h-7 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+                            <i data-lucide="book-open" class="w-7 h-7 text-accent"></i>
                         </div>
                         <h3 class="text-xl font-semibold mb-2">API Reference</h3>
                         <p class="text-gray-400 text-sm mb-4">Complete docs for all APIs, classes, and functions.</p>
@@ -142,7 +149,7 @@
                     </a>
                     <a href="guides.html" class="glass rounded-2xl p-8 card-hover block animate-section">
                         <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 flex items-center justify-center mb-6">
-                            <svg class="w-7 h-7 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                            <i data-lucide="book-text" class="w-7 h-7 text-emerald-400"></i>
                         </div>
                         <h3 class="text-xl font-semibold mb-2">Integration Guide</h3>
                         <p class="text-gray-400 text-sm mb-4">Step-by-step guide to embed ZepraScript.</p>
@@ -150,7 +157,7 @@
                     </a>
                     <a href="todo.html" class="glass rounded-2xl p-8 card-hover block animate-section">
                         <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center mb-6">
-                            <svg class="w-7 h-7 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                            <i data-lucide="map" class="w-7 h-7 text-amber-400"></i>
                         </div>
                         <h3 class="text-xl font-semibold mb-2">Roadmap</h3>
                         <p class="text-gray-400 text-sm mb-4">52 active TODOs and development plans.</p>
@@ -191,19 +198,23 @@
             <section id="modules" class="mb-24 animate-section">
                 <h2 class="text-3xl font-bold text-center mb-8">Module Structure</h2>
                 <div class="glass rounded-2xl p-8">
-                    <div class="grid md:grid-cols-2 gap-x-12 gap-y-2 font-mono text-sm">
-                        <div class="flex items-center gap-3 text-gray-400"><span class="text-accent">📁</span> api/ <span class="text-gray-600 text-xs ml-auto">13 files</span></div>
-                        <div class="flex items-center gap-3 text-gray-400"><span class="text-purple-400">📁</span> b3/ <span class="text-gray-600 text-xs ml-auto">11 files</span></div>
-                        <div class="flex items-center gap-3 text-gray-400"><span class="text-pink-400">📁</span> browser/ <span class="text-gray-600 text-xs ml-auto">20 files</span></div>
-                        <div class="flex items-center gap-3 text-gray-400"><span class="text-emerald-400">📁</span> builtins/ <span class="text-gray-600 text-xs ml-auto">20 files</span></div>
-                        <div class="flex items-center gap-3 text-gray-400"><span class="text-amber-400">📁</span> bytecode/ <span class="text-gray-600 text-xs ml-auto">6 files</span></div>
-                        <div class="flex items-center gap-3 text-gray-400"><span class="text-red-400">📁</span> debug/ <span class="text-gray-600 text-xs ml-auto">10 files</span></div>
-                        <div class="flex items-center gap-3 text-gray-400"><span class="text-cyan-400">📁</span> dfg/ <span class="text-gray-600 text-xs ml-auto">15 files</span></div>
-                        <div class="flex items-center gap-3 text-gray-400"><span class="text-teal-400">📁</span> frontend/ <span class="text-gray-600 text-xs ml-auto">9 files</span></div>
-                        <div class="flex items-center gap-3 text-gray-400"><span class="text-orange-400">📁</span> gc/ <span class="text-gray-600 text-xs ml-auto">10 files</span></div>
-                        <div class="flex items-center gap-3 text-gray-400"><span class="text-yellow-400">📁</span> jit/ <span class="text-gray-600 text-xs ml-auto">17 files</span></div>
-                        <div class="flex items-center gap-3 text-gray-400"><span class="text-lime-400">📁</span> runtime/ <span class="text-gray-600 text-xs ml-auto">105 files</span></div>
-                        <div class="flex items-center gap-3 text-gray-400"><span class="text-blue-400">📁</span> wasm/ <span class="text-gray-600 text-xs ml-auto">43 files</span></div>
+                    <div class="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-8 gap-y-4 font-mono text-sm">
+                        <div class="flex items-center gap-3 text-gray-400"><i data-lucide="folder" class="w-4 h-4 text-accent"></i> api/</div>
+                        <div class="flex items-center gap-3 text-gray-400"><i data-lucide="folder" class="w-4 h-4 text-pink-400"></i> browser/</div>
+                        <div class="flex items-center gap-3 text-gray-400"><i data-lucide="folder" class="w-4 h-4 text-emerald-400"></i> builtins/</div>
+                        <div class="flex items-center gap-3 text-gray-400"><i data-lucide="folder" class="w-4 h-4 text-amber-400"></i> bytecode/</div>
+                        <div class="flex items-center gap-3 text-gray-400"><i data-lucide="folder" class="w-4 h-4 text-cyan-400"></i> core/</div>
+                        <div class="flex items-center gap-3 text-gray-400"><i data-lucide="folder" class="w-4 h-4 text-red-400"></i> debugger/</div>
+                        <div class="flex items-center gap-3 text-gray-400"><i data-lucide="folder" class="w-4 h-4 text-teal-400"></i> frontend/</div>
+                        <div class="flex items-center gap-3 text-gray-400"><i data-lucide="folder" class="w-4 h-4 text-orange-400"></i> heap/</div>
+                        <div class="flex items-center gap-3 text-gray-400"><i data-lucide="folder" class="w-4 h-4 text-indigo-400"></i> interpreter/</div>
+                        <div class="flex items-center gap-3 text-gray-400"><i data-lucide="folder" class="w-4 h-4 text-yellow-400"></i> jit/</div>
+                        <div class="flex items-center gap-3 text-gray-400"><i data-lucide="folder" class="w-4 h-4 text-purple-400"></i> modules/</div>
+                        <div class="flex items-center gap-3 text-gray-400"><i data-lucide="folder" class="w-4 h-4 text-fuchsia-400"></i> optimization/</div>
+                        <div class="flex items-center gap-3 text-gray-400"><i data-lucide="folder" class="w-4 h-4 text-lime-400"></i> runtime/</div>
+                        <div class="flex items-center gap-3 text-gray-400"><i data-lucide="folder" class="w-4 h-4 text-blue-400"></i> wasm/</div>
+                        <div class="flex items-center gap-3 text-gray-400"><i data-lucide="folder" class="w-4 h-4 text-rose-400"></i> zir/</div>
+                        <div class="flex items-center gap-3 text-gray-400"><i data-lucide="folder" class="w-4 h-4 text-sky-400"></i> zopt/</div>
                     </div>
                 </div>
             </section>
@@ -215,6 +226,7 @@
     </main>
 
     <script>
+        lucide.createIcons();
         gsap.registerPlugin(ScrollTrigger);
         gsap.from('.animate-header', { opacity: 0, y: 50, duration: 1, ease: 'power3.out' });
         gsap.utils.toArray('.animate-section').forEach((section, i) => {

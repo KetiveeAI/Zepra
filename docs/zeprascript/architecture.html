@@ -3,150 +3,112 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>architecture.md</title>
-    
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    
-    <!-- Tailwind CSS with Typography Plugin -->
-    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    <title>ZepraScript Architecture</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        bg: {
-                            primary: '#0a0a0f',
-                            secondary: '#12121a',
-                            tertiary: '#1a1a24'
-                        },
-                        accent: {
-                            DEFAULT: '#10b981',
-                            light: '#34d399',
-                            dark: '#059669',
-                            glow: 'rgba(16, 185, 129, 0.3)'
-                        }
+                        dark: { 900: '#0a0a0f', 800: '#12121a', 700: '#1a1a24', 600: '#24242f' },
+                        accent: { DEFAULT: '#fbbf24', light: '#fcd34d' }, // Amber accent for architecture
                     },
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                        mono: ['JetBrains Mono', 'monospace'],
-                    },
-                    typography: (theme) => ({
-                        DEFAULT: {
-                            css: {
-                                color: theme('colors.gray.300'),
-                                a: {
-                                    color: theme('colors.emerald.400'),
-                                    '&:hover': {
-                                        color: theme('colors.emerald.300'),
-                                    },
-                                },
-                                h1: { color: theme('colors.white') },
-                                h2: { color: theme('colors.white') },
-                                h3: { color: theme('colors.white') },
-                                h4: { color: theme('colors.gray.100') },
-                                code: { color: theme('colors.pink.400') },
-                                'code::before': { content: '""' },
-                                'code::after': { content: '""' },
-                                pre: {
-                                    backgroundColor: theme('colors.bg.tertiary'),
-                                    color: theme('colors.gray.200'),
-                                },
-                                blockquote: {
-                                    color: theme('colors.gray.400'),
-                                    borderLeftColor: theme('colors.emerald.500'),
-                                },
-                            },
-                        },
-                    }),
+                    fontFamily: { sans: ['Inter', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] }
                 }
             }
         }
     </script>
-
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="../assets/css/docs.css">
+    <style>
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #12121a; }
+        ::-webkit-scrollbar-thumb { background: #3f3f5a; border-radius: 4px; }
+        .gradient-text { background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .hero-gradient { background: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(251, 191, 36, 0.15), transparent); }
+        .glass { background: rgba(26, 26, 36, 0.8); backdrop-filter: blur(20px); border: 1px solid rgba(251, 191, 36, 0.1); }
+        .glow { box-shadow: 0 0 80px rgba(251, 191, 36, 0.2); }
+        .nav-link.active { background: linear-gradient(90deg, rgba(251, 191, 36, 0.2) 0%, transparent 100%); border-left-color: #fbbf24; }
+        .card-hover { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .card-hover:hover { transform: translateY(-8px) scale(1.02); box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5); border-color: rgba(251, 191, 36, 0.5); }
+        .float { animation: float 6s ease-in-out infinite; }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
+        /* Markdown Overrides */
+        h1, h2, h3, h4 { color: white; margin-top: 2rem; margin-bottom: 1rem; font-weight: 700; }
+        h1 { font-size: 2.5rem; text-align: center; }
+        h2 { font-size: 1.8rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem;}
+        h3 { font-size: 1.4rem; color: #fbbf24; }
+        p, ul, li { color: #9ca3af; margin-bottom: 1rem; line-height: 1.6; }
+        ul { list-style-type: disc; padding-left: 1.5rem; }
+        pre, code { font-family: 'JetBrains Mono', monospace; background: rgba(0,0,0,0.4); }
+        pre { padding: 1.5rem; border-radius: 0.75rem; border: 1px solid rgba(255,255,255,0.05); overflow-x: auto; margin-bottom: 2rem; color: #d1d5db; font-size: 0.875rem;}
+        code { color: #f472b6; padding: 0.1rem 0.3rem; border-radius: 0.25rem; font-size: 0.85em; }
+        pre code { color: inherit; padding: 0; background: transparent; }
+    </style>
 </head>
-<body class="antialiased min-h-screen relative selection:bg-emerald-500/30 selection:text-emerald-200">
+<body class="bg-dark-900 text-gray-100 font-sans antialiased">
+    <div class="fixed inset-0 pointer-events-none hero-gradient"></div>
 
-    <!-- Background Elements -->
-    <div class="bg-grid"></div>
-    <div class="glow-orb orb-1"></div>
-    <div class="glow-orb orb-2"></div>
-
-    <!-- Navigation -->
-    <nav class="fixed top-0 w-full z-50 bg-bg-primary/80 backdrop-blur-md border-b border-white/5">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16">
-                <!-- Logo -->
-                <div class="flex items-center gap-3">
-                    <a href="../index.html" class="flex items-center gap-3">
-                        <svg class="w-8 h-8 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="10"/>
-                            <path d="M12 6v6l4 2"/>
-                        </svg>
-                        <span class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-blue-500">
-                            ZepraBrowser
-                        </span>
-                    </a>
+    <aside class="fixed left-0 top-0 w-72 h-screen bg-dark-800/90 backdrop-blur-xl border-r border-white/5 z-50 overflow-y-auto">
+        <div class="p-6 border-b border-white/5">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center glow">
+                    <i data-lucide="cpu" class="w-6 h-6 text-white"></i>
                 </div>
-
-                <!-- Desktop Menu -->
-                <div class="hidden md:block">
-                    <div class="flex items-center gap-8">
-                        <a href="../index.html#modules" class="nav-link text-sm font-medium text-gray-400 hover:text-white transition-colors">Modules</a>
-                        <a href="../index.html#index" class="nav-link text-sm font-medium text-gray-400 hover:text-white transition-colors">Docs Index</a>
-                        <a href="../index.html" class="nav-link text-sm font-medium text-gray-400 hover:text-white transition-colors">ZepraScript</a>
-                    </div>
+                <div>
+                    <h1 class="font-bold text-lg">ZepraScript</h1>
+                    <span class="text-xs text-gray-500">Architecture v1.0</span>
                 </div>
             </div>
         </div>
-    </nav>
+        <nav class="p-4">
+            <div class="mb-6">
+                <span class="text-[10px] font-semibold uppercase tracking-wider text-gray-500 px-3">Documentation</span>
+                <div class="mt-2 space-y-1">
+                    <a href="../index.html" class="nav-link flex items-center gap-3 px-3 py-2 text-sm text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all border-l-2 border-transparent">
+                        <i data-lucide="layout-grid" class="w-4 h-4 text-purple-500"></i>
+                        Main Hub</a>
+                    <a href="index.html" class="nav-link flex items-center gap-3 px-3 py-2 text-sm text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all border-l-2 border-transparent">
+                        <i data-lucide="home" class="w-4 h-4"></i>
+                        Home</a>
+                    <a href="architecture.html" class="nav-link active flex items-center gap-3 px-3 py-2 text-sm text-white rounded-lg border-l-2 border-accent">
+                        <i data-lucide="cpu" class="w-4 h-4 text-accent"></i>
+                        Architecture</a>
+                    <a href="api.html" class="nav-link flex items-center gap-3 px-3 py-2 text-sm text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all border-l-2 border-transparent">
+                        <i data-lucide="book-open" class="w-4 h-4"></i>
+                        API Reference</a>
+                    <a href="guides.html" class="nav-link flex items-center gap-3 px-3 py-2 text-sm text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all border-l-2 border-transparent">
+                        <i data-lucide="book-text" class="w-4 h-4"></i>
+                        Integration Guide</a>
+                    <a href="todo.html" class="nav-link flex items-center gap-3 px-3 py-2 text-sm text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all border-l-2 border-transparent">
+                        <i data-lucide="map" class="w-4 h-4"></i>
+                        Roadmap</a>
+                </div>
+            </div>
+            <div class="mb-6">
+                <span class="text-[10px] font-semibold uppercase tracking-wider text-gray-500 px-3">This Page</span>
+                <div class="mt-2 space-y-1">
+                    <a href="#" class="nav-link flex items-center gap-3 px-3 py-2 text-sm text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all border-l-2 border-transparent pl-6">Core Principle</a>
+                    <a href="#" class="nav-link flex items-center gap-3 px-3 py-2 text-sm text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all border-l-2 border-transparent pl-6">Project Structure</a>
+                    <a href="#" class="nav-link flex items-center gap-3 px-3 py-2 text-sm text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all border-l-2 border-transparent pl-6">Native Scaffold</a>
+                    <a href="#" class="nav-link flex items-center gap-3 px-3 py-2 text-sm text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all border-l-2 border-transparent pl-6">DevTools UI</a>
+                </div>
+            </div>
+        </nav>
+    </aside>
 
-    <!-- Main Content Layout -->
-    <div class="pt-24 pb-12 sm:pt-32 sm:pb-16 lg:pb-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex flex-col lg:flex-row gap-12">
+    <main class="ml-72 min-h-screen">
+        <div class="max-w-4xl mx-auto px-8 py-20 relative z-10">
+            <header class="mb-16 text-center">
+                <h1 class="text-5xl md:text-6xl font-extrabold mb-6">
+                    <span class="gradient-text">ZepraScript Architecture</span>
+                </h1>
+                <p class="text-xl text-gray-400">Complete Architecture with Modular Inspector and DevTools integration.</p>
+            </header>
             
-            <!-- Sidebar (Desktop) -->
-            <aside class="hidden lg:block w-64 shrink-0">
-                <div class="sticky top-32 space-y-8">
-                    <div class="space-y-4">
-                        <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider">On This Page</h3>
-                        <!-- TOC injected by JS or simple placeholder for now -->
-                         <nav id="toc" class="text-sm text-gray-400 space-y-2 border-l border-white/10 pl-4">
-                            <!-- TOC links will be populated here -->
-                             <a href="#" class="block hover:text-white">Top</a>
-                        </nav>
-                    </div>
-                    
-                     <div class="space-y-4">
-                        <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider">Quick Links</h3>
-                        <nav class="text-sm text-gray-400 space-y-2">
-                            <a href="../index.html" class="block hover:text-emerald-400 transition-colors">Home</a>
-                            <a href="../architecture.html" class="block hover:text-emerald-400 transition-colors">Architecture</a>
-                            <a href="../security-model.html" class="block hover:text-emerald-400 transition-colors">Security</a>
-                            <a href="../ai.html" class="block hover:text-emerald-400 transition-colors">AI System</a>
-                        </nav>
-                    </div>
-                </div>
-            </aside>
-
-            <!-- Content Area -->
-            <main class="flex-1 min-w-0">
-                <!-- Page Header with Icon -->
-                <div class="flex items-center gap-4 mb-8 border-b border-white/10 pb-8 animate-fade-in">
-                    <div class="w-16 h-16 rounded-2xl bg-bg-secondary border border-white/5 flex items-center justify-center shrink-0">
-                        <img src="../../../assets/icons/layout.svg" alt="Icon" class="w-8 h-8 opacity-80">
-                    </div>
-                    <div>
-                        <h1 class="text-3xl sm:text-4xl font-bold text-white tracking-tight">architecture.md</h1>
-                        <p class="text-gray-400 mt-1 text-sm font-mono">architecture.html</p>
-                    </div>
-                </div>
-
-                <div class="prose prose-invert prose-emerald max-w-none animate-fade-up">
+            <div class="glass p-8 rounded-2xl">
 
 
 
@@ -534,21 +496,18 @@ find_package(nlohmann_json REQUIRED)</p>
 <h1>If deleted, engine and Zepra DevTools continue working perfectly</h1>
 
         
-                </div>
-            </main>
+            </div>
         </div>
-    </div>
-
-    <!-- Footer -->
-    <footer class="bg-bg-secondary border-t border-white/5 py-12 mt-12">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <p class="text-gray-500 text-sm">© 2026 ZepraBrowser · Part of the NeolyxOS Project</p>
-        </div>
-    </footer>
-
-    <!-- Scripts -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-    <script src="../assets/js/docs.js" defer></script>
+        <footer class="py-12 border-t border-white/5 text-center mt-12 mb-0">
+            <div class="text-xs text-gray-500 font-mono flex items-center justify-center gap-2">
+                <span>ZepraScript Architecture</span>
+                <span class="w-1 h-1 rounded-full bg-gray-600"></span>
+                <span>&copy; 2026 KetiveeAI</span>
+            </div>
+        </footer>
+    </main>
+    <script>
+        lucide.createIcons();
+    </script>
 </body>
 </html>

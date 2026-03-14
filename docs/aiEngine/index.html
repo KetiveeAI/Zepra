@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zepra AI Engine</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        dark: { 900: '#0a0a0f', 800: '#12121a', 700: '#1a1a24', 600: '#24242f', 500: '#2d2d3a' },
+                        accent: { DEFAULT: '#f59e0b', light: '#fbbf24', dark: '#d97706' },
+                    },
+                    fontFamily: { sans: ['Inter', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #12121a; }
+        ::-webkit-scrollbar-thumb { background: #3f3f5a; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #f59e0b; }
+        .gradient-text { background: linear-gradient(135deg, #f59e0b 0%, #ef4444 50%, #8b5cf6 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .glass { background: rgba(26, 26, 36, 0.8); backdrop-filter: blur(20px); border: 1px solid rgba(245, 158, 11, 0.1); }
+        .glow { box-shadow: 0 0 60px rgba(245, 158, 11, 0.15); }
+        .nav-link.active { background: linear-gradient(90deg, rgba(245, 158, 11, 0.2) 0%, transparent 100%); border-left-color: #f59e0b; }
+        .card-hover { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .card-hover:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4); border-color: rgba(245, 158, 11, 0.5); }
+    </style>
+</head>
+<body class="bg-dark-900 text-gray-100 font-sans antialiased">
+    <!-- Ambient Background -->
+    <div class="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <div class="absolute top-0 right-1/4 w-[600px] h-[600px] bg-accent/5 rounded-full blur-[150px]"></div>
+        <div class="absolute bottom-0 left-1/4 w-[500px] h-[500px] bg-rose-500/5 rounded-full blur-[150px]"></div>
+    </div>
+
+    <!-- Sidebar -->
+    <aside class="fixed left-0 top-0 w-72 h-screen bg-dark-800/90 backdrop-blur-xl border-r border-white/5 z-50 overflow-y-auto">
+        <div class="p-6 border-b border-white/5">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-accent to-rose-500 flex items-center justify-center glow">
+                    <i data-lucide="brain-circuit" class="w-6 h-6 text-white"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg">AI Engine</h1>
+                    <span class="text-xs text-gray-500">zeprabrowser/source/engine</span>
+                </div>
+            </div>
+        </div>
+        <nav class="p-4">
+            <div class="mb-6">
+                <span class="text-[10px] font-semibold uppercase tracking-wider text-gray-500 px-3">Documentation</span>
+                <div class="mt-2 space-y-1">
+                    <a href="../index.html" class="nav-link flex items-center gap-3 px-3 py-2 text-sm text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all border-l-2 border-transparent">
+                        <i data-lucide="layout-grid" class="w-4 h-4 text-purple-500"></i>
+                        Main Hub</a>
+                    <a href="index.html" class="nav-link active flex items-center gap-3 px-3 py-2 text-sm text-white rounded-lg border-l-2 border-accent">
+                        <i data-lucide="brain-circuit" class="w-4 h-4"></i>
+                        Overview</a>
+                </div>
+            </div>
+            <div class="mb-6">
+                <span class="text-[10px] font-semibold uppercase tracking-wider text-gray-500 px-3">This Page</span>
+                <div class="mt-2 space-y-1">
+                    <a href="#features" class="nav-link flex items-center gap-3 px-3 py-2 text-sm text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all border-l-2 border-transparent pl-6">Core Features</a>
+                    <a href="#components" class="nav-link flex items-center gap-3 px-3 py-2 text-sm text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all border-l-2 border-transparent pl-6">Core Headers</a>
+                    <a href="#integration" class="nav-link flex items-center gap-3 px-3 py-2 text-sm text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all border-l-2 border-transparent pl-6">Extensibility</a>
+                </div>
+            </div>
+        </nav>
+    </aside>
+
+    <main class="ml-72 min-h-screen">
+        <div class="max-w-5xl mx-auto px-8 py-20 relative z-10">
+            <!-- Hero -->
+            <header class="mb-24 text-center animate-header">
+                <div class="inline-flex items-center gap-2 px-4 py-2 glass rounded-full mb-8">
+                    <span class="w-2 h-2 rounded-full bg-accent animate-pulse"></span>
+                    <span class="text-sm text-gray-400">Experimental Subsystem</span>
+                </div>
+                <h1 class="text-6xl md:text-7xl font-extrabold mb-6">
+                    <span class="gradient-text">Zepra AI Engine</span>
+                </h1>
+                <p class="text-xl text-gray-400 max-w-2xl mx-auto mb-10">Bringing deep neural reasoning, intent analysis, and automated accessibility right into the browser's application layer.</p>
+            </header>
+
+            <!-- Features -->
+            <section id="features" class="mb-24 animate-section">
+                <h2 class="text-3xl font-bold text-center mb-8">Core Intelligence</h2>
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="glass rounded-2xl p-8 card-hover relative overflow-hidden group">
+                        <div class="absolute inset-0 bg-accent/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                        <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-accent/20 to-orange-500/20 flex items-center justify-center mb-6 relative z-10">
+                            <i data-lucide="cpu" class="w-7 h-7 text-accent"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-2 relative z-10">Agentic Management</h3>
+                        <p class="text-gray-400 text-sm relative z-10">Controls local inference processing and routes data to RipkaAI / VedAI subsystems for advanced computational operations when required.</p>
+                    </div>
+                    <div class="glass rounded-2xl p-8 card-hover relative overflow-hidden group">
+                        <div class="absolute inset-0 bg-rose-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                        <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-rose-500/20 to-pink-500/20 flex items-center justify-center mb-6 relative z-10">
+                            <i data-lucide="eye" class="w-7 h-7 text-rose-400"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-2 relative z-10">Attention Manager</h3>
+                        <p class="text-gray-400 text-sm relative z-10">Monitors user intent through DOM interactions, passively computing likely next steps and aggressively pre-rendering related components or fetching resources.</p>
+                    </div>
+                    <div class="glass rounded-2xl p-8 card-hover relative overflow-hidden group">
+                        <div class="absolute inset-0 bg-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                        <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500/20 to-indigo-500/20 flex items-center justify-center mb-6 relative z-10">
+                            <i data-lucide="pencil-ruler" class="w-7 h-7 text-purple-400"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-2 relative z-10">Auto-Fill Intelligence</h3>
+                        <p class="text-gray-400 text-sm relative z-10">Replaces simple regex-based form fillers with semantic-aware NLP reasoning to populate highly complicated, multi-step checkout processes locally.</p>
+                    </div>
+                    <div class="glass rounded-2xl p-8 card-hover relative overflow-hidden group">
+                        <div class="absolute inset-0 bg-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                        <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 flex items-center justify-center mb-6 relative z-10">
+                            <i data-lucide="link" class="w-7 h-7 text-emerald-400"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-2 relative z-10">Browser Integration</h3>
+                        <p class="text-gray-400 text-sm relative z-10">The engine is heavily hooked into the Zepra WebCore APIs, enabling it to intelligently rewrite DOM trees internally and offer UI enhancements instantly.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Components -->
+            <section id="components" class="mb-24 animate-section">
+                <div class="flex items-center gap-4 mb-8">
+                    <h2 class="text-3xl font-bold">Key API Integrations</h2>
+                    <div class="h-px bg-white/10 flex-1"></div>
+                </div>
+                <div class="glass rounded-2xl p-8">
+                    <div class="space-y-4">
+                        <div class="flex flex-col md:flex-row gap-4 p-4 bg-dark-700/50 rounded-xl">
+                            <div class="flex gap-2 font-mono text-accent whitespace-nowrap"><i data-lucide="file-code" class="w-5 h-5"></i> ai_engine.h</div>
+                            <div class="text-sm text-gray-400">Main hub structure defining the interfaces that external scripts or WebCore subsystems will instantiate to perform neural computations. This abstracts whether the AI is handled natively or forwarded to a cloud endpoint.</div>
+                        </div>
+                        <div class="flex flex-col md:flex-row gap-4 p-4 bg-dark-700/50 rounded-xl">
+                            <div class="flex gap-2 font-mono text-accent whitespace-nowrap"><i data-lucide="file-code" class="w-5 h-5"></i> ai_manager.h</div>
+                            <div class="text-sm text-gray-400">Global singleton managing life cycles of different ML models securely in a dedicated low-priority background process. Controls resource quotas for RAM and GPU.</div>
+                        </div>
+                        <div class="flex flex-col md:flex-row gap-4 p-4 bg-dark-700/50 rounded-xl">
+                            <div class="flex gap-2 font-mono text-accent whitespace-nowrap"><i data-lucide="file-code" class="w-5 h-5"></i> attention_manager.h</div>
+                            <div class="text-sm text-gray-400">Subsystem that records micro-metrics of user behaviour locally, feeding anonymized heatmaps to an LSTM network to predict next navigation targets.</div>
+                        </div>
+                        <div class="flex flex-col md:flex-row gap-4 p-4 bg-dark-700/50 rounded-xl">
+                            <div class="flex gap-2 font-mono text-accent whitespace-nowrap"><i data-lucide="file-code" class="w-5 h-5"></i> auto_fill_manager.h</div>
+                            <div class="text-sm text-gray-400">Translates standard web form labels using localized NLP and fetches corresponding credentials/profiles accurately in any language.</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <footer class="py-12 border-t border-white/5 text-center mt-auto">
+            <div class="text-xs text-gray-500 font-mono flex items-center justify-center gap-2">
+                <span>ZepraBrowser Core Engineering</span>
+                <span class="w-1 h-1 rounded-full bg-gray-600"></span>
+                <span>&copy; 2026 KetiveeAI</span>
+            </div>
+        </footer>
+    </main>
+
+    <script>
+        lucide.createIcons();
+        gsap.registerPlugin(ScrollTrigger);
+        gsap.from('.animate-header', { opacity: 0, y: 50, duration: 1, ease: 'power3.out' });
+        gsap.utils.toArray('.animate-section').forEach((section, i) => {
+            gsap.from(section, {
+                scrollTrigger: { trigger: section, start: 'top 85%' },
+                opacity: 0, y: 50, duration: 0.8, ease: 'power3.out', delay: i * 0.1
+            });
+        });
+
+        const sections = document.querySelectorAll('section[id]');
+        const navLinks = document.querySelectorAll('.nav-link[href^="#"]');
+        
+        window.addEventListener('scroll', () => {
+            let current = '';
+            sections.forEach(section => {
+                const top = section.offsetTop - 120;
+                if (scrollY >= top) current = section.id;
+            });
+            navLinks.forEach(link => {
+                link.classList.remove('text-accent', 'font-bold');
+                link.classList.add('text-gray-400');
+                if (link.getAttribute('href') === '#' + current) {
+                    link.classList.remove('text-gray-400');
+                    link.classList.add('text-accent', 'font-bold');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
