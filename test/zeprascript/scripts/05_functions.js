@@ -1,22 +1,25 @@
-// Minimal diagnostic — isolate which function feature fails
-// Test each feature separately and store pass/fail flags
+// Functions
 
-// 1. Basic function declaration + call
-function add(a, b) { return a + b; }
-var t1 = (add(3, 4) === 7) ? 1 : 0;
+// Declaration
+function add(a, b) {
+    return a + b;
+}
+var addResult = add(3, 4); // 7
 
-// 2. Function expression
-var mul = function(a, b) { return a * b; };
-var t2 = (mul(6, 7) === 42) ? 1 : 0;
+// Expression
+var multiply = function(a, b) {
+    return a * b;
+};
+var mulResult = multiply(6, 7); // 42
 
-// 3. Recursion
+// Recursion — factorial
 function factorial(n) {
     if (n <= 1) return 1;
     return n * factorial(n - 1);
 }
-var t3 = (factorial(5) === 120) ? 1 : 0;
+var fact5 = factorial(5); // 120
 
-// 4. Closure
+// Closure
 function makeCounter() {
     var count = 0;
     return function() {
@@ -25,20 +28,30 @@ function makeCounter() {
     };
 }
 var counter = makeCounter();
-var c1 = counter();
-var c2 = counter();
-var t4 = (c1 === 1 && c2 === 2) ? 1 : 0;
+var c1 = counter(); // 1
+var c2 = counter(); // 2
+var c3 = counter(); // 3
 
-// 5. Nested closure
+// Nested closure
 function outer(x) {
-    return function(y) { return x + y; };
+    return function(y) {
+        return x + y;
+    };
 }
-var t5 = (outer(5)(10) === 15) ? 1 : 0;
+var addFive = outer(5);
+var closureResult = addFive(10); // 15
 
-// 6. Default return
-function noReturn() { var x = 1; }
-var t6 = (noReturn() === undefined) ? 1 : 0;
+// Default return (undefined)
+function noReturn() {
+    var x = 1;
+}
+var noReturnResult = noReturn();
 
-// Encode which tests pass as a bitmask
-__result = t1 * 1 + t2 * 2 + t3 * 4 + t4 * 8 + t5 * 16 + t6 * 32;
-// Full pass = 63 (0b111111)
+// Multiple returns
+function abs(n) {
+    if (n < 0) return -n;
+    return n;
+}
+var absResult = abs(-42); // 42
+
+__result = (addResult === 7 && mulResult === 42 && fact5 === 120 && c1 === 1 && c2 === 2 && c3 === 3 && closureResult === 15 && noReturnResult === undefined && absResult === 42) ? 1 : 0;

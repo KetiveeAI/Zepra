@@ -1,21 +1,36 @@
-// Minimal diagnostic — isolate which object feature fails
+// Objects
 
-// 1. Object literal + property access
+// Object literal
 var obj = { x: 10, y: 20 };
-var t1 = (obj.x === 10 && obj.y === 20) ? 1 : 0;
+var objX = obj.x;
+var objY = obj.y;
 
-// 2. Property assignment
+// Property assignment
 obj.z = 30;
-var t2 = (obj.z === 30) ? 1 : 0;
+var objZ = obj.z;
 
-// 3. Nested object
-var nested = { inner: { value: 42 } };
-var t3 = (nested.inner.value === 42) ? 1 : 0;
-
-// 4. Bracket access
+// Bracket access
 var key = 'x';
-var t4 = (obj[key] === 10) ? 1 : 0;
+var bracketAccess = obj[key];
 
-// Encode results
-__result = t1 * 1 + t2 * 2 + t3 * 4 + t4 * 8;
-// Full pass = 15
+// Nested objects
+var nested = { inner: { value: 42 } };
+var nestedVal = nested.inner.value;
+
+// Object methods
+var calc = {
+    value: 0,
+    add: function(n) {
+        this.value = this.value + n;
+        return this;
+    },
+    get: function() {
+        return this.value;
+    }
+};
+
+calc.add(10);
+calc.add(20);
+var calcResult = calc.get(); // 30
+
+__result = (objX === 10 && objY === 20 && objZ === 30 && bracketAccess === 10 && nestedVal === 42 && calcResult === 30) ? 1 : 0;

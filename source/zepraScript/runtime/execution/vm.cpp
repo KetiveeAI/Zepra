@@ -44,6 +44,11 @@ thread_local VM* VM::currentVM_ = nullptr;
 VM::VM(Context* context) : context_(context), jit_(this) {
     stack_.reserve(ZEPRA_MAX_CALL_STACK_DEPTH * 256);
     heapStack_.reserve(HEAP_STACK_PREALLOC);
+    
+    // Register JS spec globals so they're always available
+    setGlobal("undefined", Value::undefined());
+    setGlobal("NaN", Value::number(std::nan("")));
+    setGlobal("Infinity", Value::number(std::numeric_limits<double>::infinity()));
 }
 
 VM::~VM() = default;
@@ -875,6 +880,8 @@ void VM::dispatch(Opcode op) {
                     frame.savedChunk = chunk_;
                     pushCallFrame(frame);
                 
+                    // Slot 0 = 'this' (undefined for normal calls, object for 'new')
+                    push(Value::undefined());
                     for (const auto& arg : args) {
                         push(arg);
                     }
@@ -898,6 +905,7 @@ void VM::dispatch(Opcode op) {
                 // Check for callback sentinel - SIZE_MAX means exit run()
                 if (frame.returnAddress == SIZE_MAX) {
                     // Callback return - push result and terminate
+                    closeUpvalues(&stack_[frame.slotBase]);
                     while (stack_.size() > frame.slotBase) {
                         pop();
                     }
@@ -906,9 +914,21 @@ void VM::dispatch(Opcode op) {
                     break;
                 }
                 
+                // Close upvalues that reference this frame's locals
+                // MUST happen before popping locals, otherwise upvalue
+                // pointers become dangling
+                closeUpvalues(&stack_[frame.slotBase]);
+                
                 // Pop locals for this frame
                 while (stack_.size() > frame.slotBase) {
                     pop();
+                }
+                
+                // Constructor semantics: if this was a 'new' call
+                // (frame.thisValue is an object) and the constructor
+                // didn't explicitly return an object, return 'this'
+                if (frame.thisValue.isObject() && !result.isObject()) {
+                    result = frame.thisValue;
                 }
                 
                 // Push the return value

@@ -430,6 +430,14 @@ void BytecodeGenerator::compileFunctionDeclaration(const Frontend::FunctionDecl*
     
     // Add parameters as locals at depth 0 (function's base scope)
     // They are already on the stack when the function is called
+    // Reserve slot 0 for 'this' — matches OP_CALL/OP_NEW stack layout
+    Local thisLocal;
+    thisLocal.name = "this";
+    thisLocal.depth = 0;
+    thisLocal.isCaptured = false;
+    thisLocal.isConst = true;
+    current_->locals.push_back(thisLocal);
+    
     int paramCount = 0;
     for (const auto& param : decl->params()) {
         const auto* id = static_cast<const Frontend::IdentifierExpr*>(param.pattern.get());
@@ -1198,7 +1206,15 @@ void BytecodeGenerator::compileFunctionExpression(const Frontend::FunctionExpr* 
     fnState.functionName = expr->name().empty() ? "<anonymous>" : expr->name();
     current_ = &fnState;
     
-    // Add parameters as locals
+    // Reserve slot 0 for 'this' — matches OP_CALL/OP_NEW stack layout
+    Local thisLocal;
+    thisLocal.name = "this";
+    thisLocal.depth = 0;
+    thisLocal.isCaptured = false;
+    thisLocal.isConst = true;
+    current_->locals.push_back(thisLocal);
+    
+    // Add parameters as locals (starting at slot 1)
     for (const auto& param : expr->params()) {
         const auto* id = static_cast<const Frontend::IdentifierExpr*>(param.pattern.get());
         Local local;
