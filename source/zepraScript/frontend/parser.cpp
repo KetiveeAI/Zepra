@@ -201,15 +201,21 @@ StmtPtr Parser::parseVariableDeclaration() {
     std::vector<VariableDeclarator> declarators;
     
     do {
-        Token name = consume(TokenType::Identifier, "Expected variable name");
-        
-        ExprPtr id = std::make_unique<IdentifierExpr>(name.value, name.start);
+        ExprPtr id;
+
+        // Destructuring pattern or identifier
+        if (check(TokenType::LeftBrace) || check(TokenType::LeftBracket)) {
+            id = parseBindingPattern();
+        } else {
+            Token name = consume(TokenType::Identifier, "Expected variable name or destructuring pattern");
+            id = std::make_unique<IdentifierExpr>(name.value, name.start);
+        }
+
         ExprPtr init = nullptr;
-        
         if (match(TokenType::Assign)) {
             init = parseAssignmentExpression();
         }
-        
+
         declarators.push_back({std::move(id), std::move(init)});
     } while (match(TokenType::Comma));
     
@@ -292,21 +298,25 @@ std::vector<FunctionParam> Parser::parseParameters() {
     if (!check(TokenType::RightParen)) {
         do {
             bool rest = match(TokenType::DotDotDot);
-            Token name = consume(TokenType::Identifier, "Expected parameter name");
-            
-            ExprPtr defaultValue = nullptr;
-            if (match(TokenType::Assign)) {
-                defaultValue = parseAssignmentExpression();
-            }
-            
+
             FunctionParam param;
-            param.pattern = std::make_unique<IdentifierExpr>(name.value, name.start);
-            param.defaultValue = std::move(defaultValue);
             param.rest = rest;
-            
+
+            if (check(TokenType::LeftBrace) || check(TokenType::LeftBracket)) {
+                // Destructured parameter: function f({a, b}, [x, y]) {}
+                param.pattern = parseBindingPattern();
+            } else {
+                Token name = consume(TokenType::Identifier, "Expected parameter name");
+                param.pattern = std::make_unique<IdentifierExpr>(name.value, name.start);
+            }
+
+            if (match(TokenType::Assign)) {
+                param.defaultValue = parseAssignmentExpression();
+            }
+
             params.push_back(std::move(param));
             
-            if (rest) break; // Rest parameter must be last
+            if (rest) break;
         } while (match(TokenType::Comma));
     }
     
@@ -417,10 +427,13 @@ StmtPtr Parser::parseDoWhileStatement() {
 }
 
 StmtPtr Parser::parseForStatement() {
+    // for await (...of...) — detect await before '('
+    bool isAwait = match(TokenType::Await);
     consume(TokenType::LeftParen, "Expected '(' after 'for'");
     
     // Check for for...of or for...in patterns
     // for (let/const/var x of iterable) or for (x of iterable)
+    // Also supports destructuring: for (const {a, b} of iterable)
     
     ASTNodePtr init = nullptr;
     bool isForOf = false;
@@ -429,13 +442,20 @@ StmtPtr Parser::parseForStatement() {
         // No initializer - regular for loop
     } else if (match({TokenType::Var, TokenType::Let, TokenType::Const})) {
         TokenType declType = previousToken_.type;
-        Token varName = consume(TokenType::Identifier, "Expected variable name");
+
+        // Check for destructuring pattern in for loop
+        ExprPtr loopVarId;
+        if (check(TokenType::LeftBrace) || check(TokenType::LeftBracket)) {
+            loopVarId = parseBindingPattern();
+        } else {
+            Token varName = consume(TokenType::Identifier, "Expected variable name or pattern");
+            loopVarId = std::make_unique<IdentifierExpr>(varName.value, varName.start);
+        }
         
         // Check if this is for...of or for...in
         if (match(TokenType::Of) || match(TokenType::In)) {
             bool isIn = (previousToken_.type == TokenType::In);
             
-            // Parse the iterable/object expression
             ExprPtr iterable = parseAssignmentExpression();
             consume(TokenType::RightParen, isIn ? "Expected ')' after for...in" : "Expected ')' after for...of");
             
@@ -444,30 +464,27 @@ StmtPtr Parser::parseForStatement() {
             StmtPtr body = parseStatement();
             inLoop_ = prevInLoop;
             
-            // Create variable declaration for the loop variable
             VariableDecl::Kind kind;
             if (declType == TokenType::Var) kind = VariableDecl::Kind::Var;
             else if (declType == TokenType::Let) kind = VariableDecl::Kind::Let;
             else kind = VariableDecl::Kind::Const;
             
             std::vector<VariableDeclarator> declarators;
-            ExprPtr id = std::make_unique<IdentifierExpr>(varName.value, varName.start);
-            declarators.push_back({std::move(id), nullptr});
+            declarators.push_back({std::move(loopVarId), nullptr});
             auto varDecl = std::make_unique<VariableDecl>(kind, std::move(declarators));
             
             if (isIn) {
                 return std::make_unique<ForInStmt>(std::move(varDecl), std::move(iterable), std::move(body));
             }
-            return std::make_unique<ForOfStmt>(std::move(varDecl), std::move(iterable), std::move(body));
+            return std::make_unique<ForOfStmt>(std::move(varDecl), std::move(iterable), std::move(body), isAwait);
         }
         
-        // Regular variable declaration
-        ExprPtr id = std::make_unique<IdentifierExpr>(varName.value, varName.start);
+        // Regular for loop with initializer
         ExprPtr initValue = nullptr;
-        
         if (match(TokenType::Assign)) {
             initValue = parseAssignmentExpression();
         }
+        ExprPtr id = std::move(loopVarId);
         
         std::vector<VariableDeclarator> declarators;
         declarators.push_back({std::move(id), std::move(initValue)});
@@ -755,7 +772,12 @@ ExprPtr Parser::parseAssignmentExpression() {
     
     if (match({TokenType::Assign, TokenType::PlusAssign, TokenType::MinusAssign,
                TokenType::StarAssign, TokenType::SlashAssign, TokenType::PercentAssign,
-               TokenType::AmpersandAssign, TokenType::PipeAssign, TokenType::CaretAssign})) {
+               TokenType::StarStarAssign,
+               TokenType::AmpersandAssign, TokenType::PipeAssign, TokenType::CaretAssign,
+               TokenType::LeftShiftAssign, TokenType::RightShiftAssign,
+               TokenType::UnsignedRightShiftAssign,
+               TokenType::AndAssign, TokenType::OrAssign,
+               TokenType::QuestionQuestionAssign})) {
         TokenType op = previousToken_.type;
         ExprPtr right = parseAssignmentExpression();
         return std::make_unique<AssignmentExpr>(op, std::move(left), std::move(right));
@@ -988,11 +1010,17 @@ ExprPtr Parser::parseLeftHandSideExpression() {
             expr = std::make_unique<MemberExpr>(std::move(expr), std::move(property), true);
         } else if (match(TokenType::QuestionDot)) {
             if (match(TokenType::LeftParen)) {
+                // Optional call: obj?.(args)
                 std::vector<ExprPtr> args = parseArguments();
                 consume(TokenType::RightParen, "Expected ')' after arguments");
                 expr = std::make_unique<CallExpr>(std::move(expr), std::move(args), true);
+            } else if (match(TokenType::LeftBracket)) {
+                // Optional computed access: obj?.[expr]
+                ExprPtr property = parseExpression();
+                consume(TokenType::RightBracket, "Expected ']' after computed property");
+                expr = std::make_unique<MemberExpr>(std::move(expr), std::move(property), true, true);
             } else {
-                // Allow keywords as property names for optional chaining
+                // Optional property access: obj?.prop
                 if (!isPropertyName(currentToken_.type)) {
                     error(currentToken_, "Expected property name");
                 }
@@ -1003,6 +1031,13 @@ ExprPtr Parser::parseLeftHandSideExpression() {
                     false, true
                 );
             }
+        } else if (check(TokenType::Template)) {
+            // Tagged template: tag`string` or tag`${expr}`
+            advance(); // consume template token
+            auto templateExpr = parseTemplateLiteral();
+            std::vector<ExprPtr> args;
+            args.push_back(std::move(templateExpr));
+            expr = std::make_unique<CallExpr>(std::move(expr), std::move(args));
         } else {
             break;
         }
@@ -1460,6 +1495,146 @@ StmtPtr Parser::parseExportDeclaration() {
     
     error("Expected export declaration");
     return nullptr;
+}
+
+} // namespace Zepra::Frontend
+
+// =============================================================================
+// Destructuring pattern parsing
+// =============================================================================
+
+namespace Zepra::Frontend {
+
+ExprPtr Parser::parseBindingPattern() {
+    if (match(TokenType::LeftBrace)) {
+        return parseObjectPattern();
+    }
+    if (match(TokenType::LeftBracket)) {
+        return parseArrayPattern();
+    }
+    // Single identifier (fallback)
+    Token name = consume(TokenType::Identifier, "Expected identifier or pattern");
+    return std::make_unique<IdentifierExpr>(name.value, name.start);
+}
+
+ExprPtr Parser::parseObjectPattern() {
+    // Already consumed '{'
+    std::vector<PatternProperty> properties;
+    ExprPtr rest = nullptr;
+
+    while (!check(TokenType::RightBrace) && !isAtEnd()) {
+        // Rest element: {...rest}
+        if (match(TokenType::DotDotDot)) {
+            Token name = consume(TokenType::Identifier, "Expected identifier after '...'");
+            rest = std::make_unique<IdentifierExpr>(name.value, name.start);
+            break;
+        }
+
+        PatternProperty prop;
+
+        // Computed key: {[expr]: value}
+        if (match(TokenType::LeftBracket)) {
+            prop.key = parseAssignmentExpression();
+            consume(TokenType::RightBracket, "Expected ']'");
+            prop.computed = true;
+            consume(TokenType::Colon, "Expected ':' after computed key");
+            // Value: identifier, nested pattern, or pattern with default
+            if (check(TokenType::LeftBrace) || check(TokenType::LeftBracket)) {
+                prop.value = parseBindingPattern();
+            } else {
+                Token valName = consume(TokenType::Identifier, "Expected identifier");
+                prop.value = std::make_unique<IdentifierExpr>(valName.value, valName.start);
+            }
+            if (match(TokenType::Assign)) {
+                ExprPtr def = parseAssignmentExpression();
+                prop.value = std::make_unique<AssignmentPatternExpr>(std::move(prop.value), std::move(def));
+            }
+        } else {
+            // Regular key: identifier or string
+            Token keyToken = consume(TokenType::Identifier, "Expected property name");
+            prop.key = std::make_unique<IdentifierExpr>(keyToken.value, keyToken.start);
+
+            if (match(TokenType::Colon)) {
+                // {key: target}
+                prop.shorthand = false;
+                if (check(TokenType::LeftBrace) || check(TokenType::LeftBracket)) {
+                    prop.value = parseBindingPattern();
+                } else {
+                    Token valName = consume(TokenType::Identifier, "Expected identifier");
+                    prop.value = std::make_unique<IdentifierExpr>(valName.value, valName.start);
+                }
+                if (match(TokenType::Assign)) {
+                    ExprPtr def = parseAssignmentExpression();
+                    prop.value = std::make_unique<AssignmentPatternExpr>(std::move(prop.value), std::move(def));
+                }
+            } else {
+                // Shorthand: {key} or {key = default}
+                prop.shorthand = true;
+                prop.value = std::make_unique<IdentifierExpr>(keyToken.value, keyToken.start);
+                if (match(TokenType::Assign)) {
+                    ExprPtr def = parseAssignmentExpression();
+                    prop.value = std::make_unique<AssignmentPatternExpr>(std::move(prop.value), std::move(def));
+                }
+            }
+        }
+
+        properties.push_back(std::move(prop));
+
+        if (!check(TokenType::RightBrace)) {
+            if (!match(TokenType::Comma)) break;
+        }
+    }
+
+    consume(TokenType::RightBrace, "Expected '}' after object pattern");
+    return std::make_unique<ObjectPatternExpr>(std::move(properties), std::move(rest));
+}
+
+ExprPtr Parser::parseArrayPattern() {
+    // Already consumed '['
+    std::vector<ExprPtr> elements;
+    ExprPtr rest = nullptr;
+
+    while (!check(TokenType::RightBracket) && !isAtEnd()) {
+        // Elision: [, , x]
+        if (match(TokenType::Comma)) {
+            elements.push_back(nullptr);
+            continue;
+        }
+
+        // Rest element: [...rest]
+        if (match(TokenType::DotDotDot)) {
+            if (check(TokenType::LeftBrace) || check(TokenType::LeftBracket)) {
+                rest = parseBindingPattern();
+            } else {
+                Token name = consume(TokenType::Identifier, "Expected identifier after '...'");
+                rest = std::make_unique<IdentifierExpr>(name.value, name.start);
+            }
+            break;
+        }
+
+        // Element: identifier, nested pattern, or pattern with default
+        ExprPtr elem;
+        if (check(TokenType::LeftBrace) || check(TokenType::LeftBracket)) {
+            elem = parseBindingPattern();
+        } else {
+            Token name = consume(TokenType::Identifier, "Expected identifier or pattern");
+            elem = std::make_unique<IdentifierExpr>(name.value, name.start);
+        }
+
+        if (match(TokenType::Assign)) {
+            ExprPtr def = parseAssignmentExpression();
+            elem = std::make_unique<AssignmentPatternExpr>(std::move(elem), std::move(def));
+        }
+
+        elements.push_back(std::move(elem));
+
+        if (!check(TokenType::RightBracket)) {
+            if (!match(TokenType::Comma)) break;
+        }
+    }
+
+    consume(TokenType::RightBracket, "Expected ']' after array pattern");
+    return std::make_unique<ArrayPatternExpr>(std::move(elements), std::move(rest));
 }
 
 } // namespace Zepra::Frontend

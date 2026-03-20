@@ -148,6 +148,10 @@ private:
     void compileYieldExpression(const Frontend::YieldExpr* expr);
     void compileSpreadElement(const Frontend::SpreadExpr* expr);
     void compileRestElement(const Frontend::RestElem* expr);
+
+    // Destructuring pattern emission — emits code to extract bindings from
+    // a value already on the stack. isConst controls variable mutability.
+    void emitBindingPattern(const Frontend::Expression* pattern, bool isConst);
     
     // Helpers
     void emit(uint8_t byte);

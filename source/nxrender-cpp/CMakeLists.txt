@@ -42,6 +42,10 @@ set(NXRENDER_SOURCES
     # platform
     platform/linux_x11.cpp
     
+    # web layer
+    web/dom_renderer.cpp
+    web/style_resolver.cpp
+    
     # bridge to libnxrender.a (C library) - DISABLED: requires external nxgfx C lib
     # nxrender_c_bridge.cpp
     
@@ -83,7 +87,6 @@ install(TARGETS nxrender
 )
 
 install(DIRECTORY animation core input layout nxgfx platform theme web widgets
-    DESTINATION include
     DESTINATION include
     FILES_MATCHING PATTERN "*.h"
 )

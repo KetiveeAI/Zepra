@@ -404,18 +404,31 @@ void BytecodeGenerator::compileVariableDeclaration(const Frontend::VariableDecl*
     bool isConstVar = decl->kind() == Frontend::VariableDecl::Kind::Const;
     
     for (const auto& declarator : decl->declarators()) {
-        const auto* id = static_cast<const Frontend::IdentifierExpr*>(declarator.id.get());
-        std::string varName = id->name();
+        const auto* idExpr = declarator.id.get();
         
-        declareVariable(varName, isConstVar);
-        
-        if (declarator.init) {
-            compileExpression(declarator.init.get());
+        if (idExpr->type() == Frontend::NodeType::Identifier) {
+            // Simple variable: let x = ...
+            const auto* id = static_cast<const Frontend::IdentifierExpr*>(idExpr);
+            std::string varName = id->name();
+            declareVariable(varName, isConstVar);
+            if (declarator.init) {
+                compileExpression(declarator.init.get());
+            } else {
+                emit(Opcode::OP_NIL);
+            }
+            defineVariable(varName);
+        } else if (idExpr->type() == Frontend::NodeType::ObjectPattern ||
+                   idExpr->type() == Frontend::NodeType::ArrayPattern) {
+            // Destructuring: let {a, b} = ... or let [x, y] = ...
+            if (declarator.init) {
+                compileExpression(declarator.init.get());
+            } else {
+                emit(Opcode::OP_NIL);
+            }
+            emitBindingPattern(idExpr, isConstVar);
         } else {
-            emit(Opcode::OP_NIL);
+            error("Unsupported variable declarator type");
         }
-        
-        defineVariable(varName);
     }
 }
 
@@ -894,6 +907,12 @@ void BytecodeGenerator::compileExpression(const Frontend::Expression* expr) {
         case Frontend::NodeType::RestElement:
             compileRestElement(static_cast<const Frontend::RestElem*>(expr));
             break;
+        case Frontend::NodeType::ObjectPattern:
+        case Frontend::NodeType::ArrayPattern:
+        case Frontend::NodeType::AssignmentPattern:
+            // Pattern nodes are handled by emitBindingPattern, not compileExpression
+            error(expr, "Pattern node used in expression context");
+            break;
         default:
             error("Unknown expression type");
             break;
@@ -1041,7 +1060,17 @@ void BytecodeGenerator::compileAssignmentExpression(const Frontend::AssignmentEx
         case Frontend::TokenType::StarAssign: emit(Opcode::OP_MULTIPLY); break;
         case Frontend::TokenType::SlashAssign: emit(Opcode::OP_DIVIDE); break;
         case Frontend::TokenType::PercentAssign: emit(Opcode::OP_MODULO); break;
-        case Frontend::TokenType::Assign: break; // No operation needed
+        case Frontend::TokenType::StarStarAssign: emit(Opcode::OP_POWER); break;
+        case Frontend::TokenType::AmpersandAssign: emit(Opcode::OP_BITWISE_AND); break;
+        case Frontend::TokenType::PipeAssign: emit(Opcode::OP_BITWISE_OR); break;
+        case Frontend::TokenType::CaretAssign: emit(Opcode::OP_BITWISE_XOR); break;
+        case Frontend::TokenType::LeftShiftAssign: emit(Opcode::OP_LEFT_SHIFT); break;
+        case Frontend::TokenType::RightShiftAssign: emit(Opcode::OP_RIGHT_SHIFT); break;
+        case Frontend::TokenType::UnsignedRightShiftAssign: emit(Opcode::OP_UNSIGNED_RIGHT_SHIFT); break;
+        case Frontend::TokenType::AndAssign: emit(Opcode::OP_AND); break;
+        case Frontend::TokenType::OrAssign: emit(Opcode::OP_OR); break;
+        case Frontend::TokenType::QuestionQuestionAssign: emit(Opcode::OP_NULLISH); break;
+        case Frontend::TokenType::Assign: break;
         default: break;
     }
     
@@ -1126,14 +1155,40 @@ void BytecodeGenerator::compileCallExpression(const Frontend::CallExpr* expr) {
 void BytecodeGenerator::compileMemberExpression(const Frontend::MemberExpr* expr) {
     compileExpression(expr->object());
     
-    if (expr->isComputed()) {
-        compileExpression(expr->property());
-        emit(Opcode::OP_GET_ELEMENT);
+    if (expr->isOptional()) {
+        // Optional chaining: obj?.prop or obj?.[expr]
+        // If object is null/undefined, short-circuit to undefined
+        emit(Opcode::OP_DUP);
+        size_t nilJump = emitJump(Opcode::OP_JUMP_IF_NIL);
+        
+        // Not nil — do the property access
+        if (expr->isComputed()) {
+            compileExpression(expr->property());
+            emit(Opcode::OP_GET_ELEMENT);
+        } else {
+            const auto* prop = static_cast<const Frontend::IdentifierExpr*>(expr->property());
+            size_t constant = makeConstant(Runtime::Value::string(new Runtime::String(prop->name())));
+            emit(Opcode::OP_GET_PROPERTY);
+            emit(static_cast<uint8_t>(constant));
+        }
+        size_t doneJump = emitJump(Opcode::OP_JUMP);
+        
+        // Nil path — pop the nil object, push undefined
+        patchJump(nilJump);
+        emit(Opcode::OP_POP);
+        emit(Opcode::OP_NIL);
+        
+        patchJump(doneJump);
     } else {
-        const auto* prop = static_cast<const Frontend::IdentifierExpr*>(expr->property());
-        size_t constant = makeConstant(Runtime::Value::string(new Runtime::String(prop->name())));
-        emit(Opcode::OP_GET_PROPERTY);
-        emit(static_cast<uint8_t>(constant));
+        if (expr->isComputed()) {
+            compileExpression(expr->property());
+            emit(Opcode::OP_GET_ELEMENT);
+        } else {
+            const auto* prop = static_cast<const Frontend::IdentifierExpr*>(expr->property());
+            size_t constant = makeConstant(Runtime::Value::string(new Runtime::String(prop->name())));
+            emit(Opcode::OP_GET_PROPERTY);
+            emit(static_cast<uint8_t>(constant));
+        }
     }
 }
 
@@ -1829,11 +1884,18 @@ void BytecodeGenerator::compileForOfStatement(const Frontend::ForOfStmt* stmt) {
     if (left->type() == Frontend::NodeType::VariableDeclaration) {
         const auto* varDecl = static_cast<const Frontend::VariableDecl*>(left);
         if (!varDecl->declarators().empty()) {
-            const auto* id = static_cast<const Frontend::IdentifierExpr*>(
-                varDecl->declarators()[0].id.get());
+            const auto* idExpr = varDecl->declarators()[0].id.get();
             bool isConst = varDecl->kind() == Frontend::VariableDecl::Kind::Const;
-            declareVariable(id->name(), isConst);
-            defineVariable(id->name());
+            
+            if (idExpr->type() == Frontend::NodeType::ObjectPattern ||
+                idExpr->type() == Frontend::NodeType::ArrayPattern) {
+                // Destructuring: for (const {a, b} of items)
+                emitBindingPattern(idExpr, isConst);
+            } else {
+                const auto* id = static_cast<const Frontend::IdentifierExpr*>(idExpr);
+                declareVariable(id->name(), isConst);
+                defineVariable(id->name());
+            }
         }
     } else if (left->type() == Frontend::NodeType::Identifier) {
         const auto* id = static_cast<const Frontend::IdentifierExpr*>(left);
@@ -2051,6 +2113,160 @@ void BytecodeGenerator::compileRestElement(const Frontend::RestElem* expr) {
     // outside of destructuring patterns or function parameters.
     // However, if compiled directly, emit undefined.
     emit(Opcode::OP_NIL);
+}
+
+} // namespace Zepra::Bytecode
+
+// =============================================================================
+// Destructuring pattern bytecode emission
+// =============================================================================
+
+namespace Zepra::Bytecode {
+
+void BytecodeGenerator::emitBindingPattern(const Frontend::Expression* pattern, bool isConst) {
+    // The source value is already on the stack
+
+    if (pattern->type() == Frontend::NodeType::ObjectPattern) {
+        const auto* objPat = static_cast<const Frontend::ObjectPatternExpr*>(pattern);
+
+        for (const auto& prop : objPat->properties()) {
+            // Dup the source object for each property extraction
+            emit(Opcode::OP_DUP);
+
+            // Get the property value from the source
+            if (prop.computed) {
+                compileExpression(prop.key.get());
+                emit(Opcode::OP_GET_ELEMENT);
+            } else {
+                const auto* keyId = static_cast<const Frontend::IdentifierExpr*>(prop.key.get());
+                size_t nameConst = makeConstant(
+                    Runtime::Value::string(new Runtime::String(keyId->name())));
+                emit(Opcode::OP_GET_PROPERTY);
+                emit(static_cast<uint8_t>(nameConst));
+            }
+
+            // Handle the value binding target
+            const auto* target = prop.value.get();
+
+            if (target->type() == Frontend::NodeType::AssignmentPattern) {
+                // Default value: {key = default}
+                const auto* assign = static_cast<const Frontend::AssignmentPatternExpr*>(target);
+                const auto* binding = assign->left();
+
+                // If extracted value is undefined, use default
+                emit(Opcode::OP_DUP);
+                size_t nilJump = emitJump(Opcode::OP_JUMP_IF_NIL);
+                size_t doneJump = emitJump(Opcode::OP_JUMP);
+
+                patchJump(nilJump);
+                emit(Opcode::OP_POP); // pop the dup'd undefined
+                emit(Opcode::OP_POP); // pop the undefined value
+                compileExpression(assign->right()); // push default
+
+                patchJump(doneJump);
+
+                if (binding->type() == Frontend::NodeType::Identifier) {
+                    const auto* id = static_cast<const Frontend::IdentifierExpr*>(binding);
+                    declareVariable(id->name(), isConst);
+                    defineVariable(id->name());
+                } else {
+                    emitBindingPattern(binding, isConst);
+                }
+            } else if (target->type() == Frontend::NodeType::Identifier) {
+                const auto* id = static_cast<const Frontend::IdentifierExpr*>(target);
+                declareVariable(id->name(), isConst);
+                defineVariable(id->name());
+            } else {
+                // Nested pattern
+                emitBindingPattern(target, isConst);
+            }
+        }
+
+        // Handle rest: {...rest}
+        if (objPat->rest()) {
+            // For simplicity, rest in object patterns pushes undefined for now
+            // Full implementation requires creating a new object minus extracted keys
+            emit(Opcode::OP_NIL);
+            const auto* restId = static_cast<const Frontend::IdentifierExpr*>(objPat->rest());
+            declareVariable(restId->name(), isConst);
+            defineVariable(restId->name());
+        }
+
+        // Pop the source object
+        emit(Opcode::OP_POP);
+
+    } else if (pattern->type() == Frontend::NodeType::ArrayPattern) {
+        const auto* arrPat = static_cast<const Frontend::ArrayPatternExpr*>(pattern);
+
+        for (size_t i = 0; i < arrPat->elements().size(); i++) {
+            const auto& elem = arrPat->elements()[i];
+
+            if (!elem) {
+                // Elision — skip this index
+                continue;
+            }
+
+            // Dup the source array
+            emit(Opcode::OP_DUP);
+
+            // Get element at index i
+            emitConstant(Runtime::Value::number(static_cast<double>(i)));
+            emit(Opcode::OP_GET_ELEMENT);
+
+            const auto* target = elem.get();
+
+            if (target->type() == Frontend::NodeType::AssignmentPattern) {
+                // Default value: [x = default]
+                const auto* assign = static_cast<const Frontend::AssignmentPatternExpr*>(target);
+                const auto* binding = assign->left();
+
+                emit(Opcode::OP_DUP);
+                size_t nilJump = emitJump(Opcode::OP_JUMP_IF_NIL);
+                size_t doneJump = emitJump(Opcode::OP_JUMP);
+
+                patchJump(nilJump);
+                emit(Opcode::OP_POP);
+                emit(Opcode::OP_POP);
+                compileExpression(assign->right());
+
+                patchJump(doneJump);
+
+                if (binding->type() == Frontend::NodeType::Identifier) {
+                    const auto* id = static_cast<const Frontend::IdentifierExpr*>(binding);
+                    declareVariable(id->name(), isConst);
+                    defineVariable(id->name());
+                } else {
+                    emitBindingPattern(binding, isConst);
+                }
+            } else if (target->type() == Frontend::NodeType::Identifier) {
+                const auto* id = static_cast<const Frontend::IdentifierExpr*>(target);
+                declareVariable(id->name(), isConst);
+                defineVariable(id->name());
+            } else {
+                // Nested pattern
+                emitBindingPattern(target, isConst);
+            }
+        }
+
+        // Handle rest: [...rest] — collects remaining elements
+        if (arrPat->rest()) {
+            // Simplified: push undefined for rest (full impl needs slice)
+            emit(Opcode::OP_NIL);
+            const auto* restId = static_cast<const Frontend::IdentifierExpr*>(arrPat->rest());
+            declareVariable(restId->name(), isConst);
+            defineVariable(restId->name());
+        }
+
+        // Pop the source array
+        emit(Opcode::OP_POP);
+
+    } else if (pattern->type() == Frontend::NodeType::Identifier) {
+        const auto* id = static_cast<const Frontend::IdentifierExpr*>(pattern);
+        declareVariable(id->name(), isConst);
+        defineVariable(id->name());
+    } else {
+        error(pattern, "Unsupported pattern type in destructuring");
+    }
 }
 
 } // namespace Zepra::Bytecode

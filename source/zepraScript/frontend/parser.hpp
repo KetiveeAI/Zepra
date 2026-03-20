@@ -116,6 +116,11 @@ private:
     ExprPtr parseClassExpression();
     ExprPtr parseTemplateLiteral();
 
+    // Destructuring patterns
+    ExprPtr parseBindingPattern();
+    ExprPtr parseObjectPattern();
+    ExprPtr parseArrayPattern();
+
     
     // Helpers
     std::vector<FunctionParam> parseParameters();

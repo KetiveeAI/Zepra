@@ -14,6 +14,15 @@
 namespace NXRender {
 
 /**
+ * @brief HSL color model
+ */
+struct HSL {
+    float h = 0;  // Hue: 0-360
+    float s = 0;  // Saturation: 0-1
+    float l = 0;  // Lightness: 0-1
+};
+
+/**
  * @brief RGBA Color
  */
 struct Color {
@@ -94,6 +103,20 @@ struct Color {
         return Color(r, g, b, newAlpha);
     }
     
+    // HSL conversion
+    HSL toHSL() const;
+    static Color fromHSL(float h, float s, float l, uint8_t a = 255);
+    
+    // Premultiplied alpha (for correct compositing)
+    Color premultiply() const;
+    Color unpremultiply() const;
+    
+    // Whether color is fully transparent
+    constexpr bool isTransparent() const { return a == 0; }
+    
+    // Whether color is fully opaque
+    constexpr bool isOpaque() const { return a == 255; }
+    
     // Common colors
     static constexpr Color black() { return Color(0, 0, 0); }
     static constexpr Color white() { return Color(255, 255, 255); }
@@ -102,7 +125,7 @@ struct Color {
     static constexpr Color blue() { return Color(0, 0, 255); }
     static constexpr Color transparent() { return Color(0, 0, 0, 0); }
     
-    // Parse from string (#RGB, #RRGGBB, #AARRGGBB, rgb(...), rgba(...))
+    // Parse from string (#RGB, #RRGGBB, #AARRGGBB, rgb(...), rgba(...), hsl(...), hsla(...), named)
     static Color parse(const std::string& str);
 };
 

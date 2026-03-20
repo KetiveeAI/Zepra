@@ -1,16 +1,17 @@
 /**
- * @file nxrender.h
+ * @file nxrender_cpp.h
  * @brief NXRender - C++ Rendering Framework for ZepraBrowser
- * 
+ *
  * Main header that includes all NXRender components.
- * Based on Firefox Gecko rendering model but no code tacken from there files.
- * 
- * @copyright 2024 KetiveeAI
+ *
+ * @copyright 2024-2025 KetiveeAI
  */
 
 #pragma once
 
 #include <functional>
+#include <string>
+#include <cstdint>
 
 // Core types
 #include "nxgfx/color.h"
@@ -46,18 +47,81 @@
 
 namespace NXRender {
 
+// =========================================================================
+// Init Options
+// =========================================================================
+
+struct InitOptions {
+    int width = 1280;
+    int height = 720;
+    const char* title = "Zepra Browser";
+    bool vsync = true;
+    bool debugOverlay = false;
+    float dpiScale = 1.0f;
+    bool hardwareAccel = true;
+};
+
+// =========================================================================
+// Frame Statistics
+// =========================================================================
+
+struct FrameStats {
+    uint64_t frameCount = 0;
+    float frameTimeMs = 0.0f;
+    float avgFps = 0.0f;
+    float minFrameTimeMs = 999.0f;
+    float maxFrameTimeMs = 0.0f;
+    uint32_t drawCalls = 0;
+    uint32_t layerCount = 0;
+    uint32_t widgetCount = 0;
+};
+
+// =========================================================================
+// Framework API
+// =========================================================================
+
 /**
- * @brief Initialize NXRender framework
- * @param width Window width
- * @param height Window height
- * @return true if initialization successful
+ * @brief Initialize NXRender with default options
  */
 bool init(int width, int height);
 
 /**
- * @brief Shutdown NXRender and release resources
+ * @brief Initialize NXRender with full options
+ */
+bool initWithOptions(const InitOptions& options);
+
+/**
+ * @brief Whether the framework is initialized and running
+ */
+bool isInitialized();
+
+/**
+ * @brief Shutdown NXRender and release all resources
  */
 void shutdown();
+
+/**
+ * @brief Resize the viewport (propagates to GPU context + compositor)
+ */
+void resize(int width, int height);
+
+/**
+ * @brief Current viewport dimensions
+ */
+int viewportWidth();
+int viewportHeight();
+
+/**
+ * @brief DPI scale factor (1.0 = standard, 2.0 = Retina/HiDPI)
+ */
+float dpiScale();
+void setDpiScale(float scale);
+
+/**
+ * @brief Physical pixel dimensions (viewport * dpiScale)
+ */
+int physicalWidth();
+int physicalHeight();
 
 /**
  * @brief Get the main compositor
@@ -70,38 +134,63 @@ Compositor* compositor();
 Theme* theme();
 
 /**
- * @brief Event callback type
+ * @brief Get the GPU context
  */
+GpuContext* gpuContext();
+
+// =========================================================================
+// Event / Render Callbacks
+// =========================================================================
+
 using EventCallback = std::function<void(const Event&)>;
-
-/**
- * @brief Set the main event handler
- */
-void setEventHandler(EventCallback handler);
-
-/**
- * @brief Render callback type
- */
 using RenderCallback = std::function<void()>;
+using ResizeCallback = std::function<void(int width, int height)>;
 
-/**
- * @brief Set the main render callback
- */
+void setEventHandler(EventCallback handler);
 void setRenderCallback(RenderCallback callback);
+void setResizeCallback(ResizeCallback callback);
+
+// =========================================================================
+// Frame Control
+// =========================================================================
 
 /**
- * @brief Process pending events
+ * @brief Process pending platform events
  */
 void processEvents();
 
 /**
- * @brief Render one frame
+ * @brief Render one frame (beginFrame → render → user callback → endFrame → swap)
  */
 void render();
 
 /**
- * @brief Run the main loop (blocking)
+ * @brief Run the main loop (blocking). Calls processEvents + render each iteration.
  */
 void run();
+
+/**
+ * @brief Signal the main loop to stop
+ */
+void requestQuit();
+
+/**
+ * @brief Whether a quit has been requested
+ */
+bool shouldQuit();
+
+// =========================================================================
+// Debug Overlay
+// =========================================================================
+
+void setDebugOverlay(bool enabled);
+bool debugOverlayEnabled();
+
+// =========================================================================
+// Frame Stats
+// =========================================================================
+
+const FrameStats& frameStats();
+void resetFrameStats();
 
 } // namespace NXRender

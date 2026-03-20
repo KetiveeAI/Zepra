@@ -709,6 +709,68 @@ private:
 };
 
 /**
+ * @brief Object destructuring pattern: {a, b: c, d = 5}
+ */
+struct PatternProperty {
+    ExprPtr key;
+    ExprPtr value;     // Binding target (Identifier, nested pattern, or AssignmentPattern)
+    bool computed = false;
+    bool shorthand = false;
+};
+
+class ObjectPatternExpr : public Expression {
+public:
+    ObjectPatternExpr(std::vector<PatternProperty> properties,
+                      ExprPtr rest = nullptr, SourceLocation loc = {})
+        : Expression(NodeType::ObjectPattern, loc)
+        , properties_(std::move(properties))
+        , rest_(std::move(rest)) {}
+
+    const std::vector<PatternProperty>& properties() const { return properties_; }
+    Expression* rest() const { return rest_.get(); }
+
+private:
+    std::vector<PatternProperty> properties_;
+    ExprPtr rest_;
+};
+
+/**
+ * @brief Array destructuring pattern: [a, , b, ...rest]
+ */
+class ArrayPatternExpr : public Expression {
+public:
+    ArrayPatternExpr(std::vector<ExprPtr> elements,
+                     ExprPtr rest = nullptr, SourceLocation loc = {})
+        : Expression(NodeType::ArrayPattern, loc)
+        , elements_(std::move(elements))
+        , rest_(std::move(rest)) {}
+
+    const std::vector<ExprPtr>& elements() const { return elements_; }
+    Expression* rest() const { return rest_.get(); }
+
+private:
+    std::vector<ExprPtr> elements_;
+    ExprPtr rest_;
+};
+
+/**
+ * @brief Assignment pattern: target = defaultValue (for destructuring defaults)
+ */
+class AssignmentPatternExpr : public Expression {
+public:
+    AssignmentPatternExpr(ExprPtr left, ExprPtr right, SourceLocation loc = {})
+        : Expression(NodeType::AssignmentPattern, loc)
+        , left_(std::move(left)), right_(std::move(right)) {}
+
+    Expression* left() const { return left_.get(); }
+    Expression* right() const { return right_.get(); }
+
+private:
+    ExprPtr left_;
+    ExprPtr right_;
+};
+
+/**
  * @brief Throw statement
  */
 class ThrowStmt : public Statement {

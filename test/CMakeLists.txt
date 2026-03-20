@@ -113,6 +113,43 @@ target_link_libraries(nxcrypto_tests nxcrypto GTest::gtest GTest::gtest_main pth
 add_test(NAME NxCryptoTests COMMAND nxcrypto_tests)
 
 # =============================================================================
+# NXRender-cpp Tests
+# =============================================================================
+add_executable(nxrender_tests nxrender_tests.cpp)
+target_include_directories(nxrender_tests PRIVATE
+    ${PROJECT_SOURCE_DIR}/source/nxrender-cpp
+)
+target_link_libraries(nxrender_tests
+    nxrender
+    GTest::gtest
+    GTest::gtest_main
+    pthread
+    GL
+    X11
+    Freetype::Freetype
+)
+add_test(NAME NxRenderTests COMMAND nxrender_tests)
+
+# =============================================================================
+# ZepraEngine Tests
+# =============================================================================
+add_executable(zepra_engine_tests
+    zepra_engine_tests.cpp
+    ${PROJECT_SOURCE_DIR}/source/zepraEngine/engine/html_parser_stub.cpp
+)
+target_include_directories(zepra_engine_tests PRIVATE
+    ${PROJECT_SOURCE_DIR}/source/zepraEngine
+    ${PROJECT_SOURCE_DIR}/source/integration/include
+    ${PROJECT_SOURCE_DIR}/source/integration
+)
+target_link_libraries(zepra_engine_tests
+    GTest::gtest
+    GTest::gtest_main
+    pthread
+)
+add_test(NAME ZepraEngineTests COMMAND zepra_engine_tests)
+
+# =============================================================================
 # ZepraScript Tests
 # =============================================================================
 add_subdirectory(zeprascript)

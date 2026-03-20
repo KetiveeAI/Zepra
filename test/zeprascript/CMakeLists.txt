@@ -45,6 +45,7 @@ set(ZEPRASCRIPT_UNIT_TEST_SOURCES
     unit/vm_stress_test.cpp
     unit/gc_concurrent_stress_test.cpp
     unit/jit_stress_test.cpp
+    unit/syntax_p0_tests.cpp
 )
 
 add_executable(zeprascript-unit-tests ${ZEPRASCRIPT_UNIT_TEST_SOURCES})

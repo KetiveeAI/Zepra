@@ -169,19 +169,19 @@ if(USE_NXRENDER)
     set(SOURCES
         source/main.cpp
         source/integration/zepra_browser.cpp
-        source/zepraEngine/src/engine/dev_tools.cpp
-        source/zepraEngine/src/engine/html_parser_stub.cpp
-        source/zepraEngine/src/engine/audio_stub.cpp
-        source/zepraEngine/src/engine/avmedia_stub.cpp
-        source/zepraEngine/src/engine/console_log.cpp
-        source/zepraEngine/src/engine/download_manager.cpp
+        source/zepraEngine/engine/dev_tools.cpp
+        source/zepraEngine/engine/html_parser_stub.cpp
+        source/zepraEngine/media/audio_stub.cpp
+        source/zepraEngine/media/avmedia_stub.cpp
+        source/zepraEngine/engine/console_log.cpp
+        source/zepraEngine/engine/download_manager.cpp
         source/aiEngine/src/search/ketivee_search.cpp
-        source/zepraEngine/src/ui/window.cpp
-        source/zepraEngine/src/ui/tab_manager.cpp
-        source/zepraEngine/src/ui/dev_tools_ui.cpp
+        UI/browser/window.cpp
+        UI/browser/tab_manager.cpp
+        UI/devtools/dev_tools_ui.cpp
         source/platform/src/auth/zepra_auth.cpp
-        source/zepraEngine/src/ui/auth_ui.cpp
-        source/zepraEngine/src/ui/settings_ui.cpp
+        UI/settings/auth_ui.cpp
+        UI/settings/settings_ui.cpp
         source/sandbox/src/sandbox_manager.cpp
         source/platform/src/config/config_manager.cpp
         source/networking/remote/zep_remote.cpp
@@ -215,17 +215,17 @@ if(USE_NXRENDER)
 elseif(USE_UNIFIED_SYSTEM)
     set(SOURCES
         source/main.cpp
-        source/zepraEngine/src/core/zepra_core.cpp
-        source/zepraEngine/src/core/ui_elements.cpp
-        source/zepraEngine/src/engine/dev_tools.cpp
-        source/zepraEngine/src/engine/download_manager.cpp
+        source/zepraEngine/core/zepra_core.cpp
+        source/zepraEngine/core/ui_elements.cpp
+        source/zepraEngine/engine/dev_tools.cpp
+        source/zepraEngine/engine/download_manager.cpp
         source/aiEngine/src/search/ketivee_search.cpp
-        source/zepraEngine/src/ui/window.cpp
-        source/zepraEngine/src/ui/tab_manager.cpp
-        source/zepraEngine/src/ui/dev_tools_ui.cpp
+        UI/browser/window.cpp
+        UI/browser/tab_manager.cpp
+        UI/devtools/dev_tools_ui.cpp
         source/platform/src/auth/zepra_auth.cpp
-        source/zepraEngine/src/ui/auth_ui.cpp
-        source/zepraEngine/src/ui/settings_ui.cpp
+        UI/settings/auth_ui.cpp
+        UI/settings/settings_ui.cpp
         source/sandbox/src/sandbox_manager.cpp
         source/platform/src/config/config_manager.cpp
         source/platform/src/platform_infrastructure.cpp
@@ -235,18 +235,18 @@ else()
     set(SOURCES
         source/main.cpp
         source/integration/zepra_browser.cpp
-        source/zepraEngine/src/engine/dev_tools.cpp
-        source/zepraEngine/src/engine/audio_stub.cpp
-        source/zepraEngine/src/engine/avmedia_stub.cpp
-        source/zepraEngine/src/engine/html_parser_stub.cpp
-        source/zepraEngine/src/engine/download_manager.cpp
+        source/zepraEngine/engine/dev_tools.cpp
+        source/zepraEngine/media/audio_stub.cpp
+        source/zepraEngine/media/avmedia_stub.cpp
+        source/zepraEngine/engine/html_parser_stub.cpp
+        source/zepraEngine/engine/download_manager.cpp
         source/aiEngine/src/search/ketivee_search.cpp
-        source/zepraEngine/src/ui/window.cpp
-        source/zepraEngine/src/ui/tab_manager.cpp
-        source/zepraEngine/src/ui/dev_tools_ui.cpp
+        UI/browser/window.cpp
+        UI/browser/tab_manager.cpp
+        UI/devtools/dev_tools_ui.cpp
         source/platform/src/auth/zepra_auth.cpp
-        source/zepraEngine/src/ui/auth_ui.cpp
-        source/zepraEngine/src/ui/settings_ui.cpp
+        UI/settings/auth_ui.cpp
+        UI/settings/settings_ui.cpp
         source/sandbox/src/sandbox_manager.cpp
         source/platform/src/config/config_manager.cpp
         source/networking/network/network_monitor.cpp
@@ -265,17 +265,17 @@ endif()
 set(HEADERS
     source/integration/common/types.h
     source/integration/common/constants.h
-    source/zepraEngine/include/engine/core/zepra_core.h
-    source/zepraEngine/include/engine/html_parser.h
-    source/zepraEngine/include/engine/dev_tools.h
-    source/zepraEngine/include/engine/download_manager.h
+    source/zepraEngine/core/zepra_core.h
+    source/zepraEngine/engine/html_parser.h
+    source/zepraEngine/engine/dev_tools.h
+    source/zepraEngine/engine/download_manager.h
     source/aiEngine/include/search/ketivee_search.h
-    source/zepraEngine/include/engine/ui/window.h
-    source/zepraEngine/include/engine/ui/tab_manager.h
-    source/zepraEngine/include/engine/ui/dev_tools_ui.h
+    UI/browser/window.h
+    UI/browser/tab_manager.h
+    UI/devtools/dev_tools_ui.h
     source/platform/include/auth/zepra_auth.h
-    source/zepraEngine/include/engine/ui/auth_ui.h
-    source/zepraEngine/include/engine/ui/settings_ui.h
+    UI/settings/auth_ui.h
+    UI/settings/settings_ui.h
     source/networking/http.h
     source/sandbox/include/sandbox/sandbox_manager.h
     source/platform/include/config/dual_config.h
