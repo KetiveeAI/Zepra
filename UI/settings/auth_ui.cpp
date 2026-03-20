@@ -5,7 +5,7 @@
  * @brief Authentication UI stub implementations
  */
 
-#include "ui/auth_ui.h"
+#include "settings/auth_ui.h"
 
 namespace ZepraUI {
 

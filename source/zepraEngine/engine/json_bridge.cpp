@@ -1,6 +1,6 @@
 // Copyright (c) 2025 KetiveeAI. All rights reserved.
 // Licensed under KPL-2.0. See LICENSE file for details.
-#include "../../source/zepraEngine/include/engine/json_bridge.h"
+#include "engine/json_bridge.h"
 #include <iostream>
 
 namespace zepra {

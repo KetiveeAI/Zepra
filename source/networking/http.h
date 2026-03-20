@@ -2,7 +2,7 @@
 // Licensed under KPL-2.0. See LICENSE file for details.
 #pragma once
 
-#include "../common/types.h"
+#include "common/types.h"
 #include <string>
 #include <vector>
 #include <map>

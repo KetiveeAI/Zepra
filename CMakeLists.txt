@@ -157,8 +157,10 @@ include_directories(${CMAKE_SOURCE_DIR}/source/media/nxaudio/include)
     add_subdirectory(source/nxxml)
     add_subdirectory(source/nxcrypto)
     
-    include_directories(${CMAKE_SOURCE_DIR}/source/nxbase/include)
+    include_directories(${CMAKE_SOURCE_DIR}/source/nxbase/include
+                        ${CMAKE_SOURCE_DIR}/source/nxbase)
     include_directories(${CMAKE_SOURCE_DIR}/source/nxjson/include)
+    include_directories(${CMAKE_SOURCE_DIR}/source/nxjson)
     include_directories(${CMAKE_SOURCE_DIR}/source/nxhttp/include)
     include_directories(${CMAKE_SOURCE_DIR}/source/nxxml/include)
     include_directories(${CMAKE_SOURCE_DIR}/source/nxcrypto/include)
@@ -209,6 +211,7 @@ if(USE_NXRENDER)
         # Stubs for missing WebCore symbols (WebGL, etc.)
         source/integration/stubs/webgl_stubs.cpp
         source/integration/stubs/tab_suspender_stubs.cpp
+        source/integration/stubs/link_stubs.cpp
     )
     set(EXECUTABLE_NAME "zepra_browser")
     # NXRender-cpp is built as subdirectory, no external lib path needed
@@ -310,6 +313,7 @@ if(USE_NXRENDER)
         nxcrypto
         nxjson
         nxxml
+        SDL2
     )
     target_include_directories(${EXECUTABLE_NAME} PRIVATE 
         ${CMAKE_SOURCE_DIR}/source/integration/include
@@ -318,6 +322,14 @@ if(USE_NXRENDER)
         ${CMAKE_SOURCE_DIR}/source/platform/include/input
         ${CMAKE_SOURCE_DIR}/source/aiEngine/include
         ${CMAKE_SOURCE_DIR}/source/nxrender-cpp/include
+        ${CMAKE_SOURCE_DIR}/source/zepraEngine
+        ${CMAKE_SOURCE_DIR}/source/webCore/html
+        ${CMAKE_SOURCE_DIR}/source/webCore
+        ${CMAKE_SOURCE_DIR}/source/platform/include
+        ${CMAKE_SOURCE_DIR}/source/sandbox/include
+        ${CMAKE_SOURCE_DIR}/source/storage/include
+        ${CMAKE_SOURCE_DIR}/source/networking
+        ${CMAKE_SOURCE_DIR}/UI
         ${X11_INCLUDE_DIR}
         ${FREETYPE_INCLUDE_DIRS}
         ${CMAKE_SOURCE_DIR}/../../REOX/reolab/runtime

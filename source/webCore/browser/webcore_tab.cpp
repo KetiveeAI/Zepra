@@ -11,7 +11,7 @@
 
 #ifdef USE_WEBCORE
 #include "html/html_parser.hpp"
-#include "webcore/browser/dom.hpp"
+#include "browser/dom.hpp"
 #include "css/css_engine.hpp"
 #include "css/css_computed_style.hpp"
 #include "scripting/script_context.hpp"

@@ -10,6 +10,10 @@ set(NXBASE_SOURCES
     string.cpp
     allocator.cpp
     log.cpp
+    hashmap.cpp
+    timer.cpp
+    file_io.cpp
+    arena.cpp
 )
 
 # Create library
@@ -17,6 +21,7 @@ add_library(nxbase STATIC ${NXBASE_SOURCES})
 
 target_include_directories(nxbase PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 # Compiler warnings

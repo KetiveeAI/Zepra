@@ -22,6 +22,7 @@ add_library(nxhttp STATIC ${NXHTTP_SOURCES})
 target_include_directories(nxhttp PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/../networking/include  # For SSL context
+    ${CMAKE_CURRENT_SOURCE_DIR}/../networking  # ssl_context.hpp lives here
 )
 
 # Platform-specific socket libraries

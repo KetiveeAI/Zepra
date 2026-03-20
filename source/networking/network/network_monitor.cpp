@@ -5,7 +5,7 @@
  * @brief Network monitor implementation for ZepraWebView
  */
 
-#include "network/network_monitor.h"
+#include "network_monitor.h"
 #include <algorithm>
 #include <sstream>
 #include <iomanip>

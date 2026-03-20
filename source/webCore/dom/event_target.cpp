@@ -5,8 +5,8 @@
  * @brief EventTarget implementation stub
  */
 
-#include "webcore/browser/event_target.hpp"
-#include "webcore/browser/dom.hpp"
+#include "browser/event_target.hpp"
+#include "browser/dom.hpp"
 
 namespace Zepra::WebCore {
 

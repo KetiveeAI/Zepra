@@ -10,8 +10,8 @@
 
 #pragma once
 
-#include "webcore/browser/dom.hpp"
-#include "webcore/browser/event.hpp"
+#include "browser/dom.hpp"
+#include "browser/event.hpp"
 #include <string>
 #include <functional>
 

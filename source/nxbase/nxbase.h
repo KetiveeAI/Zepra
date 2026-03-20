@@ -122,6 +122,67 @@ void nx_log(NxLogLevel level, const char* file, int line, const char* fmt, ...);
 #define NX_ERROR(...) nx_log(NX_LOG_ERROR, __FILE__, __LINE__, __VA_ARGS__)
 #define NX_FATAL(...) nx_log(NX_LOG_FATAL, __FILE__, __LINE__, __VA_ARGS__)
 
+// ============================================================================
+// Hash Map - Open-addressing, string-keyed
+// ============================================================================
+
+typedef struct NxHashMap NxHashMap;
+typedef void (*NxFreeFunc)(void* ptr);
+typedef bool (*NxHashMapIterFunc)(const char* key, void* value, void* ctx);
+
+NxHashMap* nx_hashmap_create(size_t initial_capacity, NxFreeFunc value_free);
+void nx_hashmap_destroy(NxHashMap* m);
+NxResult nx_hashmap_set(NxHashMap* m, const char* key, void* value);
+void* nx_hashmap_get(const NxHashMap* m, const char* key);
+bool nx_hashmap_has(const NxHashMap* m, const char* key);
+bool nx_hashmap_remove(NxHashMap* m, const char* key);
+size_t nx_hashmap_count(const NxHashMap* m);
+void nx_hashmap_clear(NxHashMap* m);
+NxResult nx_hashmap_iterate(const NxHashMap* m, NxHashMapIterFunc fn, void* ctx);
+
+// ============================================================================
+// Timer - Monotonic clock
+// ============================================================================
+
+typedef struct NxTimer NxTimer;
+
+NxTimer* nx_timer_create(void);
+void nx_timer_destroy(NxTimer* t);
+void nx_timer_start(NxTimer* t);
+void nx_timer_stop(NxTimer* t);
+void nx_timer_reset(NxTimer* t);
+uint64_t nx_timer_elapsed_us(const NxTimer* t);
+uint64_t nx_timer_elapsed_ms(const NxTimer* t);
+uint64_t nx_timer_lap_us(NxTimer* t);  // Elapsed since last lap, resets lap
+uint64_t nx_monotonic_us(void);
+uint64_t nx_monotonic_ms(void);
+
+// ============================================================================
+// File I/O - Buffer-based synchronous operations
+// ============================================================================
+
+NxResult nx_file_read_all(const char* path, NxBuffer* out);
+NxResult nx_file_write(const char* path, const void* data, size_t len);
+NxResult nx_file_write_string(const char* path, const char* str);
+NxResult nx_file_append(const char* path, const void* data, size_t len);
+bool nx_file_exists(const char* path);
+int64_t nx_file_size(const char* path);
+NxResult nx_file_remove(const char* path);
+
+// ============================================================================
+// Arena Allocator - Bump allocator for parser temporaries
+// ============================================================================
+
+typedef struct NxArena NxArena;
+
+NxArena* nx_arena_create(void);
+void nx_arena_destroy(NxArena* a);
+void* nx_arena_alloc(NxArena* a, size_t size);
+char* nx_arena_strdup(NxArena* a, const char* str);
+char* nx_arena_strndup(NxArena* a, const char* str, size_t len);
+void nx_arena_reset(NxArena* a);       // Reset without freeing (reuse blocks)
+size_t nx_arena_total(const NxArena* a);
+
 #ifdef __cplusplus
 }
 #endif

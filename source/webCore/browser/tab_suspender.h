@@ -11,8 +11,13 @@
 
 namespace ZepraBrowser {
 
-// Forward declaration - full definition in src/browser/tab_manager.h
-struct Tab;
+// Use the actual Tab class from zepra namespace
+}
+
+#include "browser/tab_manager.h"
+
+namespace ZepraBrowser {
+using Tab = zepra::Tab;
 
 /**
  * Tab Suspension State Machine

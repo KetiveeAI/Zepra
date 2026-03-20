@@ -19,7 +19,7 @@
 #include <vector>
 #include <functional>
 #include "engine/console_log.h"
-#include "network/network_monitor.h"
+#include "network_monitor.h"
 #include "security/security_checker.h"
 
 namespace zepra {

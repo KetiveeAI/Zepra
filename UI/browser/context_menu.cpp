@@ -5,7 +5,7 @@
  * @brief Context menu implementation (pure C++, no SDL)
  */
 
-#include "../../source/zepraEngine/include/engine/ui/context_menu.h"
+#include "browser/context_menu.h"
 
 namespace zepra {
 namespace ui {

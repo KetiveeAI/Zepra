@@ -5,7 +5,7 @@
  * @brief HTML parsing and DOM construction
  */
 
-#include "webcore/browser/dom.hpp"
+#include "browser/dom.hpp"
 #include <string>
 #include <stack>
 #include <memory>

@@ -1,7 +1,7 @@
 // Copyright (c) 2025 KetiveeAI. All rights reserved.
 // Licensed under KPL-2.0. See LICENSE file for details.
 #pragma once
-#include "../../source/integration/include/common/types.h"
+#include "common/types.h"
 #include <string>
 #include <unordered_map>
 #include <vector>

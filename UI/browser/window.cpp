@@ -1,8 +1,8 @@
 // Copyright (c) 2025 KetiveeAI. All rights reserved.
 // Licensed under KPL-2.0. See LICENSE file for details.
-#include "../../source/zepraEngine/include/engine/ui/window.h"
-#include "../../source/zepraEngine/include/engine/ui/tab_manager.h"
-#include "../../source/integration/include/common/constants.h"
+#include "browser/window.h"
+#include "browser/tab_manager.h"
+#include "common/constants.h"
 #include <iostream>
 #include <algorithm>
 #include <SDL2/SDL.h>

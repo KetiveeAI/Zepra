@@ -8,7 +8,7 @@
 #include "css/css_engine.hpp"
 #include "css/css_computed_style.hpp"
 #include "rendering/render_tree.hpp"
-#include "webcore/browser/dom.hpp"
+#include "browser/dom.hpp"
 
 namespace Zepra::WebCore {
 

@@ -6,7 +6,7 @@
 #include <memory>
 #include <functional>
 #include <chrono>
-#include "../network/network_monitor.h"  // NetworkRequest, NetworkResponse defined here
+#include "network_monitor.h"  // NetworkRequest, NetworkResponse defined here
 
 namespace zepra {
 
@@ -38,9 +38,6 @@ struct DevToolsDOMNode {
     int nodeId = 0;
     String tagName;
     std::vector<std::shared_ptr<DevToolsDOMNode>> children;
-};
-
-    String name;
 };
 
 struct PerformanceMetrics {

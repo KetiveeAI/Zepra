@@ -9,7 +9,7 @@
 
 #pragma once
 
-#include "webcore/browser/event_target.hpp"
+#include "event_target.hpp"
 #include "browser/location.hpp"
 #include "browser/navigator.hpp"
 #include <string>

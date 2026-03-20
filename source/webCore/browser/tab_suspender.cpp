@@ -9,7 +9,7 @@
  */
 
 #include "browser/tab_suspender.h"
-#include "../../source/zepraEngine/include/engine/ui/tab_manager.h"  // Use the real Tab from zepra namespace
+#include "browser/tab_manager.h"  // Use the real Tab from zepra namespace
 #include <iostream>
 #include <zlib.h>
 #include <cstring>
@@ -57,12 +57,12 @@ void TabSuspender::transitionToSleep(Tab* tab) {
     
     // SLEEP: Reduce resources, keep DOM in memory
     tab->setSuspended(true);
-    setState(tab->id, TabSuspendState::SLEEP);
+    setState(tab->getId(), TabSuspendState::SLEEP);
     
     stats_.sleep_tabs++;
     stats_.total_suspensions++;
     
-    std::cout << "[TabSuspender] Tab " << tab->id << " entered SLEEP (resources reduced)" << std::endl;
+    std::cout << "[TabSuspender] Tab " << tab->getId() << " entered SLEEP (resources reduced)" << std::endl;
 }
 
 void TabSuspender::transitionToLightSleep(Tab* tab) {
@@ -70,18 +70,18 @@ void TabSuspender::transitionToLightSleep(Tab* tab) {
     
     // LIGHT_SLEEP: Minimal resources, prepare snapshot
     TabSnapshot snapshot = createSnapshot(tab);
-    snapshots_[tab->id] = snapshot;
+    snapshots_[tab->getId()] = snapshot;
     
     // Clear some page content but keep basic state
     tab->pageContent.clear();
     tab->pageContent.shrink_to_fit();
     
-    setState(tab->id, TabSuspendState::LIGHT_SLEEP);
+    setState(tab->getId(), TabSuspendState::LIGHT_SLEEP);
     
     stats_.light_sleep_tabs++;
     stats_.total_memory_saved += snapshot.memory_freed;
     
-    std::cout << "[TabSuspender] Tab " << tab->id << " entered LIGHT_SLEEP (saved " 
+    std::cout << "[TabSuspender] Tab " << tab->getId() << " entered LIGHT_SLEEP (saved " 
               << snapshot.memory_freed / 1024 << "KB)" << std::endl;
 }
 
@@ -89,40 +89,40 @@ void TabSuspender::transitionToDeepSleep(Tab* tab) {
     if (!tab) return;
     
     // DEEP_SLEEP: Only snapshot, all resources freed
-    if (!hasSnapshot(tab->id)) {
+    if (!hasSnapshot(tab->getId())) {
         TabSnapshot snapshot = createSnapshot(tab);
-        snapshots_[tab->id] = snapshot;
+        snapshots_[tab->getId()] = snapshot;
     }
     
     // Clear everything
     tab->pageContent.clear();
     tab->pageContent.shrink_to_fit();
     
-    setState(tab->id, TabSuspendState::DEEP_SLEEP);
+    setState(tab->getId(), TabSuspendState::DEEP_SLEEP);
     
     stats_.deep_sleep_tabs++;
     
-    std::cout << "[TabSuspender] Tab " << tab->id << " entered DEEP_SLEEP (full hibernation)" << std::endl;
+    std::cout << "[TabSuspender] Tab " << tab->getId() << " entered DEEP_SLEEP (full hibernation)" << std::endl;
 }
 
 void TabSuspender::restore(Tab* tab) {
     if (!tab) return;
     
-    setState(tab->id, TabSuspendState::RESTORING);
+    setState(tab->getId(), TabSuspendState::RESTORING);
     
     // Restore from snapshot if available
-    if (auto* snapshot = getSnapshot(tab->id)) {
+    if (auto* snapshot = getSnapshot(tab->getId())) {
         applySnapshot(tab, *snapshot);
-        clearSnapshot(tab->id);
+        clearSnapshot(tab->getId());
     }
     
     tab->setSuspended(false);
-    setState(tab->id, TabSuspendState::ACTIVE);
+    setState(tab->getId(), TabSuspendState::ACTIVE);
     
     stats_.total_restorations++;
     updateStats();
     
-    std::cout << "[TabSuspender] Tab " << tab->id << " RESTORED to ACTIVE" << std::endl;
+    std::cout << "[TabSuspender] Tab " << tab->getId() << " RESTORED to ACTIVE" << std::endl;
 }
 
 // === Check Logic ===
@@ -130,7 +130,7 @@ void TabSuspender::restore(Tab* tab) {
 void TabSuspender::checkTab(Tab* tab) {
     if (!enabled_ || !tab) return;
     
-    TabSuspendState currentState = getState(tab->id);
+    TabSuspendState currentState = getState(tab->getId());
     
     // Never suspend active tab
     if (tab->isActive()) {
@@ -141,19 +141,19 @@ void TabSuspender::checkTab(Tab* tab) {
     }
     
     // Check content type - downloads never suspend
-    TabContentType type = getContentType(tab->id);
+    TabContentType type = getContentType(tab->getId());
     if (type == TabContentType::DOWNLOAD_ACTIVE) return;
     
     // State transitions based on current state
     switch (currentState) {
         case TabSuspendState::ACTIVE:
-            if (shouldTransition(tab->id, TabSuspendState::ACTIVE, TabSuspendState::SLEEP)) {
+            if (shouldTransition(tab->getId(), TabSuspendState::ACTIVE, TabSuspendState::SLEEP)) {
                 transitionToSleep(tab);
             }
             break;
             
         case TabSuspendState::SLEEP:
-            if (shouldTransition(tab->id, TabSuspendState::SLEEP, TabSuspendState::LIGHT_SLEEP)) {
+            if (shouldTransition(tab->getId(), TabSuspendState::SLEEP, TabSuspendState::LIGHT_SLEEP)) {
                 transitionToLightSleep(tab);
             }
             break;
@@ -161,7 +161,7 @@ void TabSuspender::checkTab(Tab* tab) {
         case TabSuspendState::LIGHT_SLEEP:
             // Only go to DEEP_SLEEP on memory pressure or host idle
             if ((memoryPressure_ || hostIdle_) && 
-                shouldTransition(tab->id, TabSuspendState::LIGHT_SLEEP, TabSuspendState::DEEP_SLEEP)) {
+                shouldTransition(tab->getId(), TabSuspendState::LIGHT_SLEEP, TabSuspendState::DEEP_SLEEP)) {
                 transitionToDeepSleep(tab);
             }
             break;
@@ -187,9 +187,9 @@ void TabSuspender::checkAllTabs(const std::vector<Tab*>& tabs, int activeTabId) 
     
     for (Tab* tab : tabs) {
         if (!tab) continue;
-        if (tab->id == activeTabId) {
+        if (tab->getId() == activeTabId) {
             // Ensure active tab is ACTIVE
-            if (getState(tab->id) != TabSuspendState::ACTIVE) {
+            if (getState(tab->getId()) != TabSuspendState::ACTIVE) {
                 restore(tab);
             }
             continue;
@@ -317,7 +317,7 @@ TabSnapshot TabSuspender::createSnapshot(Tab* tab) {
     
     snapshot.url = tab->getCurrentUrl();
     snapshot.title = tab->getTitle();
-    snapshot.previous_state = getState(tab->id);
+    snapshot.previous_state = getState(tab->getId());
     snapshot.suspended_at = std::chrono::system_clock::now();
     
     // Compress DOM
@@ -331,7 +331,7 @@ TabSnapshot TabSuspender::createSnapshot(Tab* tab) {
     memcpy(snapshot.scroll_pos.data(), &tab->scrollY, 4);
     
     // Check media state
-    TabContentType type = getContentType(tab->id);
+    TabContentType type = getContentType(tab->getId());
     snapshot.was_playing_video = (type == TabContentType::VIDEO_PLAYING);
     snapshot.was_playing_audio = (type == TabContentType::AUDIO_PLAYING);
     

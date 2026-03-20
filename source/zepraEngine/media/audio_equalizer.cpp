@@ -12,7 +12,7 @@
  * - Pitch/tempo manipulation
  */
 
-#include "engine/audio_equalizer.h"
+#include "media/audio_equalizer.h"
 #include <cmath>
 #include <algorithm>
 #include <unordered_map>

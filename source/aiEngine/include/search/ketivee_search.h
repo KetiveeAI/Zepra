@@ -2,8 +2,8 @@
 // Licensed under KPL-2.0. See LICENSE file for details.
 #pragma once
 
-#include "../common/types.h"
-#include "../common/constants.h"
+#include "common/types.h"
+#include "common/constants.h"
 #include <string>
 #include <vector>
 #include <memory>

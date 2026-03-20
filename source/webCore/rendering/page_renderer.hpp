@@ -5,10 +5,10 @@
 
 #pragma once
 
-#include "webcore/rendering/compositor.hpp"
+#include "rendering/compositor.hpp"
 #include "rendering/layout_engine.hpp"
 #include "css/css_engine.hpp"
-#include "webcore/browser/dom.hpp"
+#include "browser/dom.hpp"
 #include "rendering/render_tree.hpp"
 #include <memory>
 #include <functional>

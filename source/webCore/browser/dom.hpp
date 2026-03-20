@@ -11,7 +11,7 @@
 #include <memory>
 #include <unordered_map>
 #include <functional>
-#include "webcore/browser/event_target.hpp"
+#include "event_target.hpp"
 
 namespace Zepra::WebCore {
 

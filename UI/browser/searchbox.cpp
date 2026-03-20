@@ -5,7 +5,7 @@
  * @brief Search/Address bar implementation
  */
 
-#include "../../source/zepraEngine/include/engine/ui/searchbox.h"
+#include "browser/searchbox.h"
 #include <algorithm>
 #include <regex>
 #include <cctype>

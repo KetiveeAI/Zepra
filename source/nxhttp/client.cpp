@@ -20,7 +20,7 @@
 #include <chrono>
 
 // SSL/TLS Support via networking library
-#include "networking/ssl_context.hpp"
+#include "ssl_context.hpp"
 
 #ifdef _WIN32
 #include <winsock2.h>

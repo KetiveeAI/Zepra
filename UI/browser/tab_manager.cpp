@@ -1,7 +1,7 @@
 // Copyright (c) 2025 KetiveeAI. All rights reserved.
 // Licensed under KPL-2.0. See LICENSE file for details.
-#include "../../source/zepraEngine/include/engine/ui/tab_manager.h"
-#include "../../source/zepraEngine/include/engine/webkit_engine.h"
+#include "browser/tab_manager.h"
+#include "engine/browser_connector.h"
 #include <algorithm>
 #include <iostream>
 #include <memory>
@@ -27,7 +27,7 @@ Tab::Tab()
 }
 
 Tab::~Tab() {
-    state.engine.reset();
+    
 }
 
 void Tab::setUrl(const String& newUrl) {
@@ -88,25 +88,25 @@ bool Tab::canGoForward() const {
 void Tab::goBack() {
     if (!canGoBack()) return;
     --currentHistoryIndex;
-    state.engine->navigateBack();
+    
 }
 
 void Tab::goForward() {
     if (!canGoForward()) return;
     ++currentHistoryIndex;
-    state.engine->navigateForward();
+    
 }
 
 void Tab::reload() {
-    state.engine->reload();
+    state.reload();
 }
 
 void Tab::stop() {
-    state.engine->stopLoading();
+    
 }
 
 void Tab::navigate(const String& targetUrl) {
-    state.engine->loadURL(targetUrl);
+    state.navigate(targetUrl);
     setUrl(targetUrl);
 }
 
@@ -254,9 +254,7 @@ bool TabManager::navigateActiveTab(const String& url) {
     if (!tab) return false;
     
     tab->url = url;
-    if (tab->engine) {
-        tab->engine->loadURL(url);
-    }
+    tab->navigate(url);
     return true;
 }
 
@@ -279,9 +277,7 @@ bool TabManager::reloadTab(const String& tabId) {
     auto entry = getTabById(tabId);
     if (!entry) return false;
 
-    if (entry->engine) {
-        entry->engine->reload();
-    }
+    entry->reload();
     entry->isLoading = true;
     std::cout << "Reloaded tab: " << tabId << std::endl;
     return true;

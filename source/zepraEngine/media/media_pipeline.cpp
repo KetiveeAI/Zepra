@@ -8,10 +8,10 @@
  * audio decoding to NXAudio output.
  */
 
-#include "engine/media_pipeline.h"
-#include "engine/video_processor.h"
-#include "engine/audio_equalizer.h"
-#include "engine/browser_audio.h"
+#include "media/media_pipeline.h"
+#include "media/video_processor.h"
+#include "media/audio_equalizer.h"
+#include "media/browser_audio.h"
 
 #include <SDL2/SDL.h>
 #include <GL/gl.h>

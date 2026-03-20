@@ -7,10 +7,10 @@
  * Connects HTML5 <video> API to browser MediaPipeline.
  */
 
-#include "engine/html_video_element.h"
-#include "engine/media_pipeline.h"
-#include "engine/video_processor.h"
-#include "engine/browser_audio.h"
+#include "media/html_video_element.h"
+#include "media/media_pipeline.h"
+#include "media/video_processor.h"
+#include "media/browser_audio.h"
 
 #include <iostream>
 

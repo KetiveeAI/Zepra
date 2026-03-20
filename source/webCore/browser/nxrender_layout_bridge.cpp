@@ -5,7 +5,7 @@
  * @brief Implementation of NXRender layout bridge
  */
 
-#include "../../integration/include/nxrender_layout_bridge.h"
+#include "nxrender_layout_bridge.h"
 #include "layout_engine.h"
 
 // NXRender C++ headers

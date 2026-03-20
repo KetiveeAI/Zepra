@@ -15,10 +15,10 @@
 
 // Forward declarations for ZepraScript runtime types
 // We need full definition of Value for vector instantiation usually
-#include "zeprascript/runtime/value.hpp"
+#include "runtime/objects/value.hpp"
 // Check if header is available or forward declare if possible
 // The error was "invalid use of incomplete type 'class Zepra::Runtime::Value'" in vector
-// So we need #include "zeprascript/runtime/value.hpp"
+// So we need #include "runtime/objects/value.hpp"
 
 namespace Zepra::Runtime {
     class Object;

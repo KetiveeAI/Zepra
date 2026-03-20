@@ -9,7 +9,7 @@
 #include "nxgfx/color.h"
 
 #ifdef USE_WEBCORE
-#include "webcore/css/css_types.hpp"
+#include "css/css_types.hpp"
 #endif
 
 namespace NXRender::Web {

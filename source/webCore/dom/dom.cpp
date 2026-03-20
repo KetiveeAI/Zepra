@@ -5,7 +5,7 @@
  * @brief DOM Node implementation stubs
  */
 
-#include "webcore/browser/dom.hpp"
+#include "browser/dom.hpp"
 
 namespace Zepra::WebCore {
 

@@ -5,12 +5,12 @@
  * @brief AI sidebar implementation using ZepraSearch
  */
 
-#include "ai/ai_sidebar.h"
+#include "ai_sidebar.h"
 #include <iostream>
 #include <sstream>
 #include <chrono>
 #include <nxhttp.h>
-#include <nxjson.h>
+#include "nxjson.h"
 
 namespace ZepraBrowser {
 

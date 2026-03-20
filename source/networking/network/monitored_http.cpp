@@ -5,7 +5,7 @@
  * @brief Implementation of MonitoredHttpClient
  */
 
-#include "network/monitored_http.h"
+#include "monitored_http.h"
 #include <chrono>
 
 namespace zepra {

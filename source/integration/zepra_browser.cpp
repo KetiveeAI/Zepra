@@ -57,9 +57,9 @@
 // ===========================================================================
 #ifdef USE_WEBCORE
 #include "html_parser.hpp"
-#include "dom.hpp"
+#include "browser/dom.hpp"
 #include "css/css_engine.hpp"
-#include "script_context.hpp"
+#include "scripting/script_context.hpp"
 using namespace Zepra::WebCore;
 
 extern "C" {
@@ -76,8 +76,8 @@ extern "C" {
 // Group: All network I/O, request/response handling
 // ===========================================================================
 #include "nxhttp.h"
-#include "networking/http_client.hpp"
-#include "network/network_monitor.h"
+#include "http_client.hpp"
+#include "network_monitor.h"
 
 // ===========================================================================
 // SECTION 5: BROWSER CORE COMPONENTS
@@ -104,14 +104,14 @@ using ZepraBrowser::stripOuterTags;
 // Group: Tab manager, DevTools panel, WebView
 // Location: include/ui/, src/ui/
 // ===========================================================================
-#include "ui/tab_manager.h"
-#include "ui/zepra_webview_panel.h"
+#include "browser/tab_manager.h"
+#include "panels/zepra_webview_panel.h"
 
 // ===========================================================================
 // SECTION 7: ENGINE SERVICES
 // Group: Download manager, base utilities, image loading
 // ===========================================================================
-#include "source/zepraEngine/include/engine/download_manager.h"
+#include "engine/download_manager.h"
 #include "nxbase.h"
 
 #define STB_IMAGE_IMPLEMENTATION

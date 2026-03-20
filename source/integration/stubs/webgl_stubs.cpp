@@ -4,9 +4,9 @@
 // These files (webgl_bindings.cpp, webgl_context.cpp) are missing from the source
 // but the pre-built libwebcore.a references their symbols
 
-#include "webgl_bindings.hpp"
-#include "webgl_context.hpp"
-#include "dom.hpp"
+#include "graphics/webgl_bindings.hpp"
+#include "graphics/webgl_context.hpp"
+#include "browser/dom.hpp"
 
 namespace Zepra::WebCore {
 
@@ -38,11 +38,6 @@ WebGLRenderingContext* WebGLBindings::getContext(uint32_t handle) {
 
 void WebGLBindings::destroyContext(uint32_t handle) {
     contexts_.erase(handle);
-}
-
-    (void)vm;
-    (void)handle;
-    return nullptr;
 }
 
 void WebGLBindings::registerNativeFunctions(Runtime::VM* vm) {

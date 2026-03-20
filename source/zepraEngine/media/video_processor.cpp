@@ -7,7 +7,7 @@
  * Hardware decode detection, video enhancement, and AI placeholders.
  */
 
-#include "engine/video_processor.h"
+#include "media/video_processor.h"
 #include <cstring>
 #include <algorithm>
 #include <cmath>

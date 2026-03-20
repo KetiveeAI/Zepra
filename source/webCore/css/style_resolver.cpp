@@ -12,7 +12,7 @@
  */
 
 #include "css/css_engine.hpp"
-#include "webcore/browser/dom.hpp"
+#include "browser/dom.hpp"
 #include <algorithm>
 #include <iostream>
 #include <cmath>

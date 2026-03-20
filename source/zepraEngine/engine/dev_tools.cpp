@@ -145,12 +145,6 @@ void DeveloperTools::executeJavaScriptAsync(const String& script) {
     // TODO: Implement async JavaScript execution
 }
 
-    return jsContexts;
-}
-
-    jsContexts.push_back(context);
-    std::cout << "📜 Added JS Context: " << context.name << std::endl;
-}
 
 // Performance Monitoring
 void DeveloperTools::startPerformanceMonitoring() {

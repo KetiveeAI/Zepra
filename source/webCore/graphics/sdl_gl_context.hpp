@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "webcore/rendering/gl_render_backend.hpp"
+#include "rendering/gl_render_backend.hpp"
 #include "rendering/paint_context.hpp"
 #include <SDL2/SDL.h>
 

@@ -6,7 +6,7 @@
  * @note Real implementation would use hardware decode APIs. This stub allows build.
  */
 
-#include "engine/video_processor.h"
+#include "media/video_processor.h"
 
 namespace zepra {
 namespace video {

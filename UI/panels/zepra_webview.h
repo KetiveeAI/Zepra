@@ -11,7 +11,7 @@
 
 #pragma once
 
-#include "../common/types.h"
+#include "common/types.h"
 #include "../engine/dev_tools.h"
 #include <memory>
 #include <functional>

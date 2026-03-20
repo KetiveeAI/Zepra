@@ -11,7 +11,7 @@
 #ifndef MONITORED_HTTP_H
 #define MONITORED_HTTP_H
 
-#include "network/network_monitor.h"
+#include "network_monitor.h"
 
 // Include NxHTTP if USE_ZEPRA_STACK is enabled
 #ifdef USE_ZEPRA_STACK

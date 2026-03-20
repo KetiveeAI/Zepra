@@ -5,7 +5,7 @@
  * @brief Navigation bar implementation
  */
 
-#include "../../source/zepraEngine/include/engine/ui/navbar.h"
+#include "browser/navbar.h"
 
 namespace zepra {
 namespace ui {

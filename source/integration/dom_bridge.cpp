@@ -6,8 +6,8 @@
  */
 
 #include "integration/dom_bridge.hpp"
-#include "dom.hpp"
-#include "page_renderer.hpp"
+#include "browser/dom.hpp"
+#include "rendering/page_renderer.hpp"
 #include <memory>
 
 namespace Zepra::Integration {

@@ -2,8 +2,8 @@
 // Licensed under KPL-2.0. See LICENSE file for details.
 #pragma once
 
-#include "../common/types.h"
-#include "../engine/dev_tools.h"
+#include "common/types.h"
+#include "engine/dev_tools.h"
 #include <memory>
 #include <functional>
 #include <vector>

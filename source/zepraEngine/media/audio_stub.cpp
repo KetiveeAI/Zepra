@@ -7,8 +7,8 @@
  *       but have external dependencies. These stubs allow build without those deps.
  */
 
-#include "engine/audio_equalizer.h"
-#include "engine/browser_audio.h"
+#include "media/audio_equalizer.h"
+#include "media/browser_audio.h"
 
 namespace zepra {
 namespace audio {

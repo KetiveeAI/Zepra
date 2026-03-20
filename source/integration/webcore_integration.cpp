@@ -10,10 +10,10 @@
  */
 
 #include "html_parser.hpp"
-#include "dom.hpp"
+#include "browser/dom.hpp"
 #include "css/css_engine.hpp"
-#include "script_context.hpp"
-#include "render_tree.hpp"
+#include "scripting/script_context.hpp"
+#include "rendering/render_tree.hpp"
 
 #include <iostream>
 #include <vector>

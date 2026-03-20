@@ -6,7 +6,7 @@
  */
 
 #include "integration/browser_context.hpp"
-#include "zeprascript/script_engine.hpp"
+#include "script_engine.hpp"
 #include <algorithm>
 
 namespace Zepra::Integration {

@@ -2,12 +2,12 @@
 // Licensed under KPL-2.0. See LICENSE file for details.
 #pragma once
 
-#include "../common/types.h"
-#include "../common/constants.h"
+#include "common/types.h"
+#include "common/constants.h"
 #include <SDL2/SDL.h>
 #include <memory>
 #include <functional>
-#include "../ui/settings_ui.h" // Include the new settings UI header
+#include "settings/settings_ui.h" // Include the new settings UI header
 
 namespace zepra {
 

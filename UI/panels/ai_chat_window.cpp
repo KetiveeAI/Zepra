@@ -5,7 +5,7 @@
  * @brief AI chat window implementation (pure C++, no SDL)
  */
 
-#include "../../source/zepraEngine/include/engine/ui/ai_chat_window.h"
+#include "panels/ai_chat_window.h"
 #include <chrono>
 
 namespace zepra {

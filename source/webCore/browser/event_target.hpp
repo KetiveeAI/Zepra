@@ -1,6 +1,6 @@
 #pragma once
 
-#include "webcore/browser/event.hpp"
+#include "event.hpp"
 #include <vector>
 #include <unordered_map>
 #include <functional>

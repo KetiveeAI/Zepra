@@ -2,13 +2,13 @@
 // Licensed under KPL-2.0. See LICENSE file for details.
 #pragma once
 
-#include "../common/types.h"
+#include "common/types.h"
 #include <vector>
 #include <memory>
 #include <functional>
 #include <SDL2/SDL.h>
-#include "../engine/webkit_engine.h"
-#include "../network/network_monitor.h"  // Per-tab network isolation
+#include "engine/browser_connector.h"
+#include "network_monitor.h"  // Per-tab network isolation
 
 namespace zepra {
 

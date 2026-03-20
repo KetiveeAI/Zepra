@@ -8,7 +8,7 @@
  * power-efficient processing, and platform-specific SIMD.
  */
 
-#include "engine/browser_audio.h"
+#include "media/browser_audio.h"
 #include <unordered_map>
 #include <mutex>
 #include <cstring>

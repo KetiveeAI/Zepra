@@ -28,6 +28,10 @@ set(NXRENDER_SOURCES
     
     # layout
     layout/flexbox.cpp
+    layout/block_layout.cpp
+    layout/inline_layout.cpp
+    layout/positioned_layout.cpp
+    layout/grid.cpp
     
     # theme
     theme/theme.cpp

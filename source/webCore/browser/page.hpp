@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "webcore/browser/dom.hpp"
+#include "dom.hpp"
 #include "html/html_parser.hpp"
 #include "css/css_engine.hpp" // Use new engine
 #include "rendering/render_tree.hpp"

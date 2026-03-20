@@ -9,17 +9,17 @@
  * can be connected to ImGui, SDL, or Qt.
  */
 
-#include "ui/settings_ui.h"
+#include "settings/settings_ui.h"
 
 // Include ZebraScript secure storage integration
 // Adjust path based on your build setup
-#include "zeprascript/browser/password_vault.hpp"
-#include "zeprascript/browser/secure_storage.hpp"
+#include "browser/password_vault.hpp"
+#include "browser/secure_storage.hpp"
 
 // Browser audio integration
-#include "engine/browser_audio.h"
-#include "engine/audio_equalizer.h"
-#include "engine/video_processor.h"
+#include "media/browser_audio.h"
+#include "media/audio_equalizer.h"
+#include "media/video_processor.h"
 
 #include <iostream>
 #include <algorithm>

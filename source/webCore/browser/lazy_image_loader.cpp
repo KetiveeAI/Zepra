@@ -12,7 +12,7 @@
 #include <cstring>
 #include <algorithm>
 // HTTP client for fetching images
-#include "networking/http_client.hpp"
+#include "http_client.hpp"
 
 // Image decoding (stb_image is already included in main file, just declare here)
 extern "C" {

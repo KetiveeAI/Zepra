@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "webcore/browser/dom.hpp"
+#include "browser/dom.hpp"
 #include "browser/resource_loader.hpp"
 #include <string>
 #include <vector>

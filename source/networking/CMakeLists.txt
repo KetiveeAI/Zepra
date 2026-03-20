@@ -23,17 +23,21 @@ add_library(networking STATIC ${NETWORKING_SOURCES})
 
 target_include_directories(networking PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 # Dependencies
 find_package(OpenSSL REQUIRED)
 find_package(Threads REQUIRED)
 
+find_package(CURL REQUIRED)
+
 target_link_libraries(networking 
     PUBLIC 
         OpenSSL::SSL 
         OpenSSL::Crypto
         Threads::Threads
+        CURL::libcurl
 )
 
 # Compiler flags

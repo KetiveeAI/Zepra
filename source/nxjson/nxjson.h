@@ -156,6 +156,32 @@ char* nx_json_stringify(const NxJsonValue* value, const NxJsonWriteOptions* opti
  */
 char* nx_json_to_string(const NxJsonValue* value);
 
+// ============================================================================
+// JSON Pointer (RFC 6901)
+// ============================================================================
+
+/**
+ * Access nested value by JSON Pointer path.
+ * @param root    Root value to query
+ * @param pointer Path string, e.g. "/user/settings/theme"
+ * @return Value at path, or NULL if not found. Not owned by caller.
+ */
+NxJsonValue* nx_json_pointer_get(const NxJsonValue* root, const char* pointer);
+
+// ============================================================================
+// Deep Copy & Comparison
+// ============================================================================
+
+NxJsonValue* nx_json_clone(const NxJsonValue* value);
+bool nx_json_equal(const NxJsonValue* a, const NxJsonValue* b);
+
+// ============================================================================
+// Extended Mutation
+// ============================================================================
+
+NxJsonValue* nx_json_array_pop(NxJsonValue* array);
+size_t nx_json_object_keys(const NxJsonValue* obj, const char** keys, size_t max_keys);
+
 #ifdef __cplusplus
 }
 #endif

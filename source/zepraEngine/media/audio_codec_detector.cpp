@@ -8,7 +8,7 @@
  * Routes audio to appropriate decoder based on format and output device.
  */
 
-#include "engine/audio_codec_detector.h"
+#include "media/audio_codec_detector.h"
 #include <cstring>
 #include <algorithm>
 #include <fstream>

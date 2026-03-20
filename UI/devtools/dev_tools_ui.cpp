@@ -1,6 +1,6 @@
 // Copyright (c) 2025 KetiveeAI. All rights reserved.
 // Licensed under KPL-2.0. See LICENSE file for details.
-#include "ui/dev_tools_ui.h"
+#include "devtools/dev_tools_ui.h"
 #include <iostream>
 
 namespace zepra {

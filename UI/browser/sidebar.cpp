@@ -5,7 +5,7 @@
  * @brief Collapsible sidebar implementation (pure C++, no SDL)
  */
 
-#include "../../source/zepraEngine/include/engine/ui/sidebar.h"
+#include "browser/sidebar.h"
 #include <algorithm>
 
 namespace zepra {
