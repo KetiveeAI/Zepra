@@ -7,6 +7,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Sources
 set(NXXML_SOURCES
     parser.cpp
+    mutation.cpp
+    selector.cpp
 )
 
 # Create library
@@ -14,6 +16,7 @@ add_library(nxxml STATIC ${NXXML_SOURCES})
 
 target_include_directories(nxxml PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 # Compiler warnings

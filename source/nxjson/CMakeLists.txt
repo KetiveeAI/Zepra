@@ -8,6 +8,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(NXJSON_SOURCES
     parser.cpp
     writer.cpp
+    pointer.cpp
 )
 
 # Create library
@@ -15,6 +16,7 @@ add_library(nxjson STATIC ${NXJSON_SOURCES})
 
 target_include_directories(nxjson PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 # Compiler warnings

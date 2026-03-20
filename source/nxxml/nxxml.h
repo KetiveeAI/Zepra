@@ -31,7 +31,8 @@ typedef enum {
     NX_XML_ERROR_NOMEM = -2,
     NX_XML_ERROR_SYNTAX = -3,
     NX_XML_ERROR_UNCLOSED_TAG = -4,
-    NX_XML_ERROR_UNEXPECTED_CLOSE = -5
+    NX_XML_ERROR_UNEXPECTED_CLOSE = -5,
+    NX_XML_ERROR_NOT_FOUND = -6
 } NxXmlError;
 
 // ============================================================================
@@ -133,6 +134,45 @@ char* nx_xml_inner_html(const NxXmlNode* node);
 
 char* nx_xml_to_string(const NxXmlNode* node, bool pretty);
 
+// ============================================================================
+// Node Creation
+// ============================================================================
+
+NxXmlNode* nx_xml_node_create_element(const char* tag);
+NxXmlNode* nx_xml_node_create_text(const char* text);
+void nx_xml_node_free_tree(NxXmlNode* node);
+
+// ============================================================================
+// DOM Mutation
+// ============================================================================
+
+
+NxXmlError nx_xml_node_set_attr(NxXmlNode* node, const char* name, const char* value);
+NxXmlError nx_xml_node_remove_attr(NxXmlNode* node, const char* name);
+NxXmlError nx_xml_node_append_child(NxXmlNode* parent, NxXmlNode* child);
+NxXmlError nx_xml_node_insert_before(NxXmlNode* parent, NxXmlNode* child, NxXmlNode* ref);
+NxXmlError nx_xml_node_remove_child(NxXmlNode* parent, NxXmlNode* child);
+NxXmlError nx_xml_node_replace_child(NxXmlNode* parent, NxXmlNode* new_child, NxXmlNode* old_child);
+NxXmlError nx_xml_node_set_value(NxXmlNode* node, const char* value);
+NxXmlError nx_xml_node_set_name(NxXmlNode* node, const char* name);
+
+// ============================================================================
+// CSS Selector Query
+// ============================================================================
+
+/**
+ * Find first element matching CSS selector.
+ * Supports: tag, .class, #id, [attr], [attr=value], space (descendant), > (child)
+ */
+NxXmlNode* nx_xml_query_selector(NxXmlNode* root, const char* selector);
+
+/**
+ * Find all elements matching CSS selector.
+ * @param out_count  On return, number of matches
+ * @return Array of node pointers. Caller must free() the array.
+ */
+NxXmlNode** nx_xml_query_selector_all(NxXmlNode* root, const char* selector, size_t* out_count);
+
 #ifdef __cplusplus
 }
 #endif
@@ -153,8 +193,8 @@ public:
     XmlNode(NxXmlNode* node) : node_(node) {}
     
     NxXmlNodeType type() const { return nx_xml_node_type(node_); }
-    std::string name() const { return nx_xml_node_name(node_) ?: ""; }
-    std::string value() const { return nx_xml_node_value(node_) ?: ""; }
+    std::string name() const { const char* n = nx_xml_node_name(node_); return n ? n : ""; }
+    std::string value() const { const char* v = nx_xml_node_value(node_); return v ? v : ""; }
     
     XmlNode parent() const { return XmlNode(nx_xml_node_parent(node_)); }
     XmlNode firstChild() const { return XmlNode(nx_xml_node_first_child(node_)); }

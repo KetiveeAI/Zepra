@@ -94,3 +94,6 @@ tmp/
 
 #references
 .ref/
+
+#backup
+.backup_*
