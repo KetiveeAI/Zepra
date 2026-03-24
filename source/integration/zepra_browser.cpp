@@ -35,6 +35,8 @@
 #include <thread>
 #include <vector>
 #include <unistd.h>
+#include <csignal>
+#include <sys/stat.h>
 
 // ===========================================================================
 // SECTION 2: NXRENDER - Platform Graphics Abstraction
@@ -152,6 +154,7 @@ static bool g_currentCursorIsHand = false;
 
 // Hover URL (shown at bottom when hovering over a link)
 static std::string g_hoverUrl = "";
+static const char* g_crash_url = nullptr;  // Last URL for crash context
 
 // Resources
 static nxsvg::SvgLoader g_svg;
@@ -2306,6 +2309,25 @@ void renderSidebar() {
 
 // Main render
 void render() {
+  try {
+    // Track last URL for crash context
+    g_crash_url = g_currentUrl.c_str();
+
+    // === TAB SUSPENDER TICK (every ~1 second @ 60fps) ===
+    static int suspender_frame_counter = 0;
+    if (++suspender_frame_counter >= 60) {
+        suspender_frame_counter = 0;
+        g_tabSuspender.tick();
+        // Collect tab pointers for checkAllTabs
+        std::vector<ZepraBrowser::Tab*> tabPtrs;
+        for (auto& tab : g_tabs) {
+            tabPtrs.push_back(reinterpret_cast<ZepraBrowser::Tab*>(&tab));
+        }
+        if (!tabPtrs.empty()) {
+            g_tabSuspender.checkAllTabs(tabPtrs, g_activeTabId);
+        }
+    }
+
     // === ASYNC LOAD COMPLETION HANDLER ===
     if (g_asyncLoadComplete.load()) {
         // Get pending data under lock
@@ -2669,7 +2691,7 @@ void render() {
             // NOTE: DevToolsTab::Styles was removed - use Elements panel for CSS inspection
             
             case DevToolsTab::Network: {
-                // Network panel
+                // Network panel — real data from per-tab NetworkMonitor
                 text("Network Requests", panelX + 12, contentY + 16, 0x4FC1FF);
                 contentY += 24;
                 
@@ -2680,14 +2702,58 @@ void render() {
                 gfx::rect(panelX, contentY, panelW, 1, 0x3C3C3C);
                 contentY += 4;
                 
-                // Current request info
-                text("GET", panelX + 12, contentY + 15, 0x3FB950);
-                text(g_currentUrl.length() > 45 ? g_currentUrl.substr(0, 42) + "..." : g_currentUrl, 
-                     panelX + 70, contentY + 15, 0xCCCCCC);
-                text(g_isLoading ? "..." : "200", panelX + panelW - 180, contentY + 15, 
-                     g_isLoading ? 0xFFAA00 : 0x3FB950);
-                text(g_isLoading ? "-" : "12.4 KB", panelX + panelW - 120, contentY + 15, 0x888888);
-                text(g_isLoading ? "pending" : "245 ms", panelX + panelW - 60, contentY + 15, 0x888888);
+                // Get active tab's network monitor
+                Tab* netTab = nullptr;
+                for (auto& t : g_tabs) {
+                    if (t.id == g_activeTabId) { netTab = &t; break; }
+                }
+                
+                if (netTab) {
+                    auto& monitor = netTab->getNetworkMonitor();
+                    auto entries = monitor.getEntries();
+                    
+                    if (entries.empty()) {
+                        text("No network requests recorded", panelX + 12, contentY + 14, 0x666666);
+                    } else {
+                        // Show most recent entries that fit
+                        int maxRows = static_cast<int>((contentH - 60) / 16);
+                        size_t startIdx = entries.size() > static_cast<size_t>(maxRows) ? 
+                                          entries.size() - maxRows : 0;
+                        
+                        for (size_t i = startIdx; i < entries.size() && contentY < panelY + panelHeight - 20; i++) {
+                            const auto& entry = entries[i];
+                            
+                            // Method
+                            uint32_t methodColor = (entry.request.method == "GET") ? 0x3FB950 : 0x58A6FF;
+                            text(entry.request.method, panelX + 12, contentY + 15, methodColor, 10.0f);
+                            
+                            // URL (truncated)
+                            std::string displayUrl = entry.request.url.length() > 45 ? 
+                                entry.request.url.substr(0, 42) + "..." : entry.request.url;
+                            text(displayUrl, panelX + 70, contentY + 15, 0xCCCCCC, 10.0f);
+                            
+                            // Status
+                            uint32_t statusColor = entry.response.status_code >= 200 && entry.response.status_code < 300 ? 0x3FB950 :
+                                                   entry.response.status_code >= 400 ? 0xF14C4C : 0xFFAA00;
+                            text(entry.response.status_code > 0 ? std::to_string(entry.response.status_code) : "...", 
+                                 panelX + panelW - 180, contentY + 15, statusColor, 10.0f);
+                            
+                            // Size
+                            std::string sizeStr = entry.response.content_length > 0 ? 
+                                (entry.response.content_length > 1024 ? 
+                                    std::to_string(entry.response.content_length / 1024) + " KB" :
+                                    std::to_string(entry.response.content_length) + " B") : "-";
+                            text(sizeStr, panelX + panelW - 120, contentY + 15, 0x888888, 10.0f);
+                            
+                            // Time
+                            std::string timeStr = entry.response.duration_ms > 0 ? 
+                                std::to_string(static_cast<int>(entry.response.duration_ms)) + " ms" : "pending";
+                            text(timeStr, panelX + panelW - 60, contentY + 15, 0x888888, 10.0f);
+                            
+                            contentY += 16;
+                        }
+                    }
+                }
                 break;
             }
             
@@ -2919,6 +2985,11 @@ void render() {
     }
     
 #endif
+  } catch (const std::exception& e) {
+    std::cerr << "[CRASH] render() exception: " << e.what() << std::endl;
+  } catch (...) {
+    std::cerr << "[CRASH] render() unknown exception — skipping frame" << std::endl;
+  }
 }
 
 // ============================================================================
@@ -3968,8 +4039,72 @@ void handleNXEvent(const NXRender::Event& event) {
     }
 }
 
+// ============================================================================
+// CRASH HANDLER — Graceful shutdown on fatal signals
+// ============================================================================
+
+
+static void crash_signal_handler(int sig) {
+    const char* name = "UNKNOWN";
+    switch (sig) {
+        case SIGSEGV: name = "SIGSEGV"; break;
+        case SIGABRT: name = "SIGABRT"; break;
+        case SIGFPE:  name = "SIGFPE"; break;
+    }
+    // Write directly to stderr (async-signal-safe)
+    write(STDERR_FILENO, "\n[FATAL] Signal: ", 17);
+    write(STDERR_FILENO, name, strlen(name));
+    write(STDERR_FILENO, "\n", 1);
+    if (g_crash_url) {
+        write(STDERR_FILENO, "[FATAL] Last URL: ", 18);
+        write(STDERR_FILENO, g_crash_url, strlen(g_crash_url));
+        write(STDERR_FILENO, "\n", 1);
+    }
+    write(STDERR_FILENO, "[FATAL] Attempting graceful shutdown...\n", 39);
+
+    // Try to shut down NXRender cleanly
+    NXRender::shutdown();
+    _exit(128 + sig);
+}
+
+static bool validate_startup_resources() {
+    struct stat st;
+    std::string resPath = RESOURCE_PATH;
+
+    // Check resources directory
+    if (stat(resPath.c_str(), &st) != 0 || !S_ISDIR(st.st_mode)) {
+        std::cerr << "[STARTUP] WARNING: Resources directory not found: " << resPath << std::endl;
+        std::cerr << "[STARTUP] Icons will not load. Continuing without icons." << std::endl;
+        // Non-fatal — browser can run without icons
+    }
+
+    // Check at least one font is available
+    const char* font_paths[] = {
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+        "/usr/share/fonts/truetype/freefont/FreeSans.ttf",
+        nullptr
+    };
+    bool font_found = false;
+    for (int i = 0; font_paths[i]; i++) {
+        if (stat(font_paths[i], &st) == 0) {
+            font_found = true;
+            break;
+        }
+    }
+    if (!font_found) {
+        std::cerr << "[STARTUP] WARNING: No system fonts found. Text rendering may fail." << std::endl;
+    }
+
+    return true; // Always continue — degrade gracefully
+}
 
 int zepra_main(int argc, char** argv) { // Clean Main - callable from main.cpp
+    // Install crash signal handlers
+    signal(SIGSEGV, crash_signal_handler);
+    signal(SIGABRT, crash_signal_handler);
+    signal(SIGFPE, crash_signal_handler);
+
     std::cout << "Starting ZepraBrowser (NXRender Edition)..." << std::endl;
 
 
@@ -3978,6 +4113,9 @@ int zepra_main(int argc, char** argv) { // Clean Main - callable from main.cpp
         std::cerr << "Failed to init NXRender" << std::endl;
         return 1;
     }
+
+    // Validate startup resources (fonts, icons)
+    validate_startup_resources();
 
     // Initialize Browser GPU Context (Loads shaders)
     g_nxGpu.init(g_width, g_height);

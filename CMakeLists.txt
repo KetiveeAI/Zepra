@@ -202,7 +202,7 @@ if(USE_NXRENDER)
         source/aiEngine/src/ai_sidebar.cpp
         # Memory optimization
         source/platform/src/memory/memory_pools.cpp
-        # source/webCore/browser/tab_suspender.cpp  # DISABLED: ZepraBrowser::Tab vs zepra::Tab mismatch
+        source/webCore/browser/tab_suspender.cpp
         source/webCore/browser/lazy_image_loader.cpp
         # WebCore integration
         source/integration/webcore_integration.cpp
@@ -210,7 +210,7 @@ if(USE_NXRENDER)
         source/webCore/browser/nxrender_layout_bridge.cpp
         # Stubs for missing WebCore symbols (WebGL, etc.)
         source/integration/stubs/webgl_stubs.cpp
-        source/integration/stubs/tab_suspender_stubs.cpp
+        # tab_suspender_stubs removed — real impl now active
         source/integration/stubs/link_stubs.cpp
     )
     set(EXECUTABLE_NAME "zepra_browser")
@@ -334,7 +334,9 @@ if(USE_NXRENDER)
         ${FREETYPE_INCLUDE_DIRS}
         ${CMAKE_SOURCE_DIR}/../../REOX/reolab/runtime
     )
-    target_compile_definitions(${EXECUTABLE_NAME} PRIVATE USE_WEBCORE)
+    target_compile_definitions(${EXECUTABLE_NAME} PRIVATE USE_WEBCORE
+        RESOURCE_PATH="${CMAKE_SOURCE_DIR}/resources"
+    )
     message(STATUS "Using NXRENDER + REOX native rendering with X11/OpenGL/FreeType (NO SDL)")
 else()
     # SDL mode
