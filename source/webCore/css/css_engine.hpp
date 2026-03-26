@@ -73,6 +73,12 @@ public:
     /// Check if selector matches element
     bool selectorMatches(DOMElement* element, const std::string& selector);
     
+    /// Match a single selector group (handles combinators)
+    bool selectorGroupMatches(DOMElement* element, const std::string& selector);
+    
+    /// Match compound selector (tag.class#id[attr]) against single element
+    bool compoundSelectorMatches(DOMElement* element, const std::string& compound);
+    
     /// Calculate specificity of a selector
     Selector::Specificity calculateSpecificity(const std::string& selector);
 };

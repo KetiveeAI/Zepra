@@ -45,22 +45,6 @@ void WebGLBindings::registerNativeFunctions(Runtime::VM* vm) {
 }
 
 // NOTE: DOMElement::innerHTML, setInnerHTML, outerHTML are now in webCore/src/dom.cpp
+// NOTE: MicrotaskQueue::drain() — real implementation in zepra-core.a, DO NOT stub here
 
 } // namespace Zepra::WebCore
-
-// ============================================================================
-// MicrotaskQueue::drain stub (from ZepraScript runtime)
-// ============================================================================
-
-namespace Zepra::Runtime {
-
-class MicrotaskQueue {
-public:
-    void drain();
-};
-
-void MicrotaskQueue::drain() {
-    // No-op stub - microtasks disabled
-}
-
-} // namespace Zepra::Runtime

@@ -377,19 +377,41 @@ ImageResult LazyImageLoader::loadImage(const PendingImage& pending) {
         std::cout << "[LazyImageLoader] Format detected: " << detectedFormat 
                   << " (CT: " << (contentType.empty() ? "none" : contentType.substr(0, 30)) << ")" << std::endl;
         
-        // Handle SVG (placeholder - needs NxSVG on main thread)
+        // Handle SVG — store data for main-thread NxSVG rendering
         if (isSvg) {
             if (pending.box) {
+                // Store raw SVG for main-thread rendering via NxSVG
+                pending.box->svgData = std::string(data.begin(), data.end());
                 pending.box->text = "";  // Clear loading text
-                pending.box->width = 24;
-                pending.box->height = 24;
-                pending.box->color = 0x0066CC;  // Blue icon color
-                pending.box->bgColor = 0xE6F0FF;
-                pending.box->hasBgColor = true;
+                
+                // Parse viewBox for sizing (quick extraction)
+                std::string svgStr = pending.box->svgData;
+                float svgW = 24, svgH = 24;
+                auto vbPos = svgStr.find("viewBox");
+                if (vbPos != std::string::npos) {
+                    auto qStart = svgStr.find('"', vbPos);
+                    auto qEnd = svgStr.find('"', qStart + 1);
+                    if (qStart != std::string::npos && qEnd != std::string::npos) {
+                        std::string vb = svgStr.substr(qStart + 1, qEnd - qStart - 1);
+                        float vx, vy, vw, vh;
+                        if (sscanf(vb.c_str(), "%f %f %f %f", &vx, &vy, &vw, &vh) == 4) {
+                            svgW = vw; svgH = vh;
+                        }
+                    }
+                }
+                
+                // Constrain to reasonable size
+                if (svgW > 256) { svgH *= 256 / svgW; svgW = 256; }
+                if (svgH > 256) { svgW *= 256 / svgH; svgH = 256; }
+                pending.box->width = svgW;
+                pending.box->height = svgH;
+                pending.box->isImage = true;
             }
             result.success = true;
-            result.width = 24;
-            result.height = 24;
+            result.width = (int)pending.box->width;
+            result.height = (int)pending.box->height;
+            std::cout << "[LazyImageLoader] SVG stored for NxSVG rendering: " 
+                      << pending.url.substr(pending.url.rfind('/') + 1) << std::endl;
             return result;
         }
         

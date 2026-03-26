@@ -1159,16 +1159,16 @@ void buildLayoutFromDOM(DOMElement* element, LayoutBox* parentBox, bool inLink,
                 box->color = cssColorToRGB(style->color);
                 box->bold = (style->fontWeight >= FontWeight::Bold);
                 box->italic = (style->fontStyle == FontStyle::Italic);
+                box->textDecoration = style->textDecoration;
                 
                 // Background
                 if (!style->backgroundColor.isTransparent()) {
                     box->bgColor = cssColorToRGB(style->backgroundColor);
                     box->hasBgColor = true;
-                    // DEBUG: trace background colors
-                    std::cout << "[CSS-DEBUG] <" << tag << "> bgColor: rgb(" 
-                              << (int)style->backgroundColor.r << ","
-                              << (int)style->backgroundColor.g << ","
-                              << (int)style->backgroundColor.b << ")" << std::endl;
+                }
+                if (!style->backgroundImage.empty() && style->backgroundImage != "none") {
+                    box->backgroundImage = style->backgroundImage;
+                    box->hasBgColor = true;
                 }
                 
                 // Margins (from CSS)
@@ -1183,36 +1183,67 @@ void buildLayoutFromDOM(DOMElement* element, LayoutBox* parentBox, bool inLink,
                 box->paddingLeft = style->paddingLeft.value;
                 box->paddingRight = style->paddingRight.value;
                 
-                // Display type from CSS
-                switch (style->display) {
-                    case DisplayValue::Block:
-                    case DisplayValue::Flex:
-                        box->type = LayoutType::Flex;
-                        break;
-                    case DisplayValue::Grid:
-                    case DisplayValue::ListItem:
-                        box->type = LayoutType::Block;
-                        break;
-                    case DisplayValue::InlineBlock:
-                    case DisplayValue::InlineFlex:
-                    case DisplayValue::InlineGrid:
-                        box->type = LayoutType::InlineBlock;
-                        break;
-                    default:
-                        box->type = LayoutType::Inline;
-                        break;
+                // Border width/color
+                box->borderTop = style->borderTopWidth;
+                box->borderRight = style->borderRightWidth;
+                box->borderBottom = style->borderBottomWidth;
+                box->borderLeft = style->borderLeftWidth;
+                if (style->borderTopWidth > 0) {
+                    box->borderColor = cssColorToRGB(style->borderTopColor);
                 }
                 
-                // Border radius - TODO: add to LayoutBox struct if needed
-                // box->borderRadius = style->borderTopLeftRadius;
+                // Border radius
+                box->borderRadius = style->borderTopLeftRadius;
                 
-                // Flex direction
+                // Opacity
+                box->opacity = style->opacity;
+                
+                // Overflow
+                box->overflowHidden = (style->overflowX == OverflowValue::Hidden || 
+                                       style->overflowY == OverflowValue::Hidden);
+                
+                // Display type from CSS
+#pragma push_macro("None")
+#undef None
+                if (style->display == DisplayValue::None)
+                    box->type = LayoutType::None;
+#pragma pop_macro("None")
+                else if (style->display == DisplayValue::Flex || style->display == DisplayValue::InlineFlex)
+                    box->type = LayoutType::Flex;
+                else if (style->display == DisplayValue::Block || style->display == DisplayValue::Grid ||
+                         style->display == DisplayValue::ListItem || style->display == DisplayValue::Table)
+                    box->type = LayoutType::Block;
+                else if (style->display == DisplayValue::InlineBlock || style->display == DisplayValue::InlineGrid)
+                    box->type = LayoutType::InlineBlock;
+                else
+                    box->type = LayoutType::Inline;
+                
+                // Flex container properties
                 using namespace Zepra::WebCore;
                 if (style->flexDirection == FlexDirection::Column || 
                     style->flexDirection == FlexDirection::ColumnReverse) {
                     box->flexDirection = 1; // Column
                 } else {
                     box->flexDirection = 0; // Row
+                }
+                box->flexWrap = style->flexWrap;
+                box->gap = style->gap.value;
+                
+                // Justify/Align → int mapping
+                switch (style->justifyContent) {
+                    case JustifyAlign::FlexEnd: case JustifyAlign::End: box->justifyContent = 1; break;
+                    case JustifyAlign::Center: box->justifyContent = 2; break;
+                    case JustifyAlign::SpaceBetween: box->justifyContent = 3; break;
+                    case JustifyAlign::SpaceAround: box->justifyContent = 4; break;
+                    case JustifyAlign::SpaceEvenly: box->justifyContent = 5; break;
+                    default: box->justifyContent = 0; break;
+                }
+                switch (style->alignItems) {
+                    case JustifyAlign::FlexStart: case JustifyAlign::Start: box->alignItems = 1; break;
+                    case JustifyAlign::FlexEnd: case JustifyAlign::End: box->alignItems = 2; break;
+                    case JustifyAlign::Center: box->alignItems = 3; break;
+                    case JustifyAlign::Baseline: box->alignItems = 4; break;
+                    default: box->alignItems = 0; break; // stretch
                 }
             }
             
@@ -1257,7 +1288,11 @@ void buildLayoutFromDOM(DOMElement* element, LayoutBox* parentBox, bool inLink,
             if (childTag == "input") {
                 std::string inputType = childElement->getAttribute("type");
                 std::transform(inputType.begin(), inputType.end(), inputType.begin(), ::tolower);
-                if (inputType == "hidden" || inputType == "submit") continue;
+                if (inputType == "hidden") continue;
+                if (inputType == "submit" || inputType == "button" || inputType == "reset") {
+                    // These are handled by the button handler below
+                    // Fall through by NOT continuing here
+                } else {
                 
                 LayoutBox* inputBox = addChild(parentBox);
                 inputBox->type = LayoutType::InlineBlock;
@@ -1309,39 +1344,179 @@ void buildLayoutFromDOM(DOMElement* element, LayoutBox* parentBox, bool inLink,
                 g_styledLines.push_back(line);
                 
                 continue;
+                } // end else (non-button input types)
             }
             
             // Handle button
-            if (childTag == "button") {
+            if (childTag == "button" || (childTag == "input" && childElement->getAttribute("type") == "submit")) {
                 LayoutBox* btnBox = addChild(parentBox);
                 btnBox->type = LayoutType::InlineBlock;
-                btnBox->text = childElement->textContent();
-                if (btnBox->text.empty()) {
-                     if (childElement->hasAttribute("value")) btnBox->text = childElement->getAttribute("value");
-                     else btnBox->text = "Button";
-                }
-                btnBox->fontSize = 14;
-                btnBox->color = 0xFFFFFF;
-                btnBox->bgColor = 0x0066CC;
-                btnBox->hasBgColor = true;
-                btnBox->bold = true;
-                btnBox->paddingTop = 4; btnBox->paddingBottom = 4;
-                btnBox->paddingLeft = 8; btnBox->paddingRight = 8;
                 
-                // Add to g_styledLines
+                if (childTag == "button") {
+                    btnBox->text = childElement->textContent();
+                    if (btnBox->text.empty() && childElement->hasAttribute("value"))
+                        btnBox->text = childElement->getAttribute("value");
+                } else {
+                    btnBox->text = childElement->getAttribute("value");
+                }
+                if (btnBox->text.empty()) btnBox->text = "Submit";
+                
+                const CSSComputedStyle* style = g_cssEngine->getComputedStyle(childElement);
+                if (style) {
+                    btnBox->fontSize = style->fontSize;
+                    btnBox->color = cssColorToRGB(style->color);
+                    if (!style->backgroundColor.isTransparent()) {
+                        btnBox->bgColor = cssColorToRGB(style->backgroundColor);
+                    } else {
+                        btnBox->bgColor = 0x2563EB; // Default button blue
+                    }
+                    btnBox->hasBgColor = true;
+                    btnBox->bold = (style->fontWeight >= FontWeight::Bold);
+                    btnBox->paddingTop = style->paddingTop.value > 0 ? style->paddingTop.value : 6;
+                    btnBox->paddingBottom = style->paddingBottom.value > 0 ? style->paddingBottom.value : 6;
+                    btnBox->paddingLeft = style->paddingLeft.value > 0 ? style->paddingLeft.value : 12;
+                    btnBox->paddingRight = style->paddingRight.value > 0 ? style->paddingRight.value : 12;
+                    btnBox->borderRadius = style->borderTopLeftRadius > 0 ? style->borderTopLeftRadius : 4;
+                    btnBox->borderTop = style->borderTopWidth;
+                    btnBox->borderColor = cssColorToRGB(style->borderTopColor);
+                } else {
+                    btnBox->fontSize = 14;
+                    btnBox->color = 0xFFFFFF;
+                    btnBox->bgColor = 0x2563EB;
+                    btnBox->hasBgColor = true;
+                    btnBox->bold = true;
+                    btnBox->paddingTop = 6; btnBox->paddingBottom = 6;
+                    btnBox->paddingLeft = 12; btnBox->paddingRight = 12;
+                    btnBox->borderRadius = 4;
+                }
+                
                 StyledTextLine line;
                 line.text = btnBox->text;
                 line.fontSize = btnBox->fontSize;
                 line.color = btnBox->color;
                 line.bgColor = btnBox->bgColor;
                 line.hasBgColor = true;
-                line.bold = true;
+                line.bold = btnBox->bold;
                 g_styledLines.push_back(line);
                 
                 continue;
             }
 
-            // Handle image elements
+            // Handle select element (dropdown)
+            if (childTag == "select") {
+                LayoutBox* selBox = addChild(parentBox);
+                selBox->type = LayoutType::InlineBlock;
+                
+                // Get first <option> text as display value
+                std::string displayText;
+                for (DOMNode* opt = childElement->firstChild(); opt; opt = opt->nextSibling()) {
+                    if (auto* optEl = dynamic_cast<DOMElement*>(opt)) {
+                        if (optEl->hasAttribute("selected")) {
+                            displayText = optEl->textContent();
+                            break;
+                        }
+                        if (displayText.empty()) displayText = optEl->textContent();
+                    }
+                }
+                if (displayText.empty()) displayText = "Select...";
+                selBox->text = displayText + " \xE2\x96\xBE"; // ▾ dropdown arrow
+                
+                const CSSComputedStyle* style = g_cssEngine->getComputedStyle(childElement);
+                if (style) {
+                    selBox->fontSize = style->fontSize;
+                    selBox->color = cssColorToRGB(style->color);
+                    if (!style->backgroundColor.isTransparent())
+                        selBox->bgColor = cssColorToRGB(style->backgroundColor);
+                    else
+                        selBox->bgColor = 0x2D2D2D;
+                    selBox->hasBgColor = true;
+                    selBox->paddingTop = style->paddingTop.value > 0 ? style->paddingTop.value : 4;
+                    selBox->paddingBottom = style->paddingBottom.value > 0 ? style->paddingBottom.value : 4;
+                    selBox->paddingLeft = style->paddingLeft.value > 0 ? style->paddingLeft.value : 8;
+                    selBox->paddingRight = style->paddingRight.value > 0 ? style->paddingRight.value : 20;
+                    selBox->borderRadius = style->borderTopLeftRadius > 0 ? style->borderTopLeftRadius : 4;
+                    selBox->borderTop = style->borderTopWidth > 0 ? style->borderTopWidth : 1;
+                    selBox->borderColor = cssColorToRGB(style->borderTopColor);
+                } else {
+                    selBox->fontSize = 14;
+                    selBox->color = 0xCCCCCC;
+                    selBox->bgColor = 0x2D2D2D;
+                    selBox->hasBgColor = true;
+                    selBox->paddingTop = 4; selBox->paddingBottom = 4;
+                    selBox->paddingLeft = 8; selBox->paddingRight = 20;
+                    selBox->borderRadius = 4;
+                    selBox->borderTop = 1;
+                    selBox->borderColor = 0x555555;
+                }
+                
+                StyledTextLine line;
+                line.text = selBox->text;
+                line.fontSize = selBox->fontSize;
+                line.color = selBox->color;
+                line.bgColor = selBox->bgColor;
+                line.hasBgColor = true;
+                g_styledLines.push_back(line);
+                continue;
+            }
+
+            // Handle textarea element
+            if (childTag == "textarea") {
+                LayoutBox* taBox = addChild(parentBox);
+                taBox->type = LayoutType::Block;
+                taBox->isInput = true;
+                taBox->inputType = "textarea";
+                taBox->text = childElement->textContent();
+                taBox->placeholder = childElement->getAttribute("placeholder");
+                if (taBox->text.empty() && !taBox->placeholder.empty())
+                    taBox->text = taBox->placeholder;
+                
+                const CSSComputedStyle* style = g_cssEngine->getComputedStyle(childElement);
+                if (style) {
+                    taBox->fontSize = style->fontSize;
+                    taBox->color = cssColorToRGB(style->color);
+                    if (!style->backgroundColor.isTransparent())
+                        taBox->bgColor = cssColorToRGB(style->backgroundColor);
+                    else
+                        taBox->bgColor = 0x1E1E1E;
+                    taBox->hasBgColor = true;
+                    taBox->paddingTop = style->paddingTop.value > 0 ? style->paddingTop.value : 8;
+                    taBox->paddingBottom = style->paddingBottom.value > 0 ? style->paddingBottom.value : 8;
+                    taBox->paddingLeft = style->paddingLeft.value > 0 ? style->paddingLeft.value : 8;
+                    taBox->paddingRight = style->paddingRight.value > 0 ? style->paddingRight.value : 8;
+                    taBox->borderRadius = style->borderTopLeftRadius > 0 ? style->borderTopLeftRadius : 4;
+                    taBox->borderTop = style->borderTopWidth > 0 ? style->borderTopWidth : 1;
+                    taBox->borderColor = cssColorToRGB(style->borderTopColor);
+                } else {
+                    taBox->fontSize = 14;
+                    taBox->color = 0xCCCCCC;
+                    taBox->bgColor = 0x1E1E1E;
+                    taBox->hasBgColor = true;
+                    taBox->paddingTop = 8; taBox->paddingBottom = 8;
+                    taBox->paddingLeft = 8; taBox->paddingRight = 8;
+                    taBox->borderRadius = 4;
+                    taBox->borderTop = 1;
+                    taBox->borderColor = 0x555555;
+                }
+                
+                // Textarea default size (rows/cols)
+                int rows = 3;
+                if (childElement->hasAttribute("rows")) {
+                    try { rows = std::stoi(childElement->getAttribute("rows")); } catch (...) {}
+                }
+                taBox->width = 300;
+                taBox->height = rows * (taBox->fontSize + 4) + taBox->paddingTop + taBox->paddingBottom;
+                
+                StyledTextLine line;
+                line.text = taBox->text;
+                line.fontSize = taBox->fontSize;
+                line.isInput = true;
+                line.inputType = "textarea";
+                line.color = taBox->color;
+                line.bgColor = taBox->bgColor;
+                line.hasBgColor = true;
+                g_styledLines.push_back(line);
+                continue;
+            }
             if (childTag == "img") {
                 std::string src = childElement->getAttribute("src");
                 std::cout << "[Layout] processing img src=" << src << std::endl;
@@ -1579,10 +1754,19 @@ static void layout_register_link(float x, float y, float w, float h,
 
 // Line drawing for underlines
 static void layout_gfx_line(float x1, float y1, float x2, float y2, uint32_t color, float thickness) {
-    // Draw horizontal line as thin rect (nxgfx doesn't have line primitive)
     float y = std::min(y1, y2);
     float h = std::max(thickness, 1.0f);
     gfx::rect(x1, y, x2 - x1, h, color);
+}
+
+// Rounded rect callback for border-radius
+static void layout_gfx_rrect(float x, float y, float w, float h, float radius, uint32_t color, uint8_t alpha) {
+    gfx::rrect(x, y, w, h, radius, color, alpha);
+}
+
+// Gradient callback for background-image: linear-gradient(...)
+static void layout_gfx_gradient(float x, float y, float w, float h, uint32_t c1, uint32_t c2) {
+    gfx::gradient(x, y, w, h, c1, c2);
 }
 
 // Initialize layout engine callbacks
@@ -1596,7 +1780,27 @@ static void initLayoutEngine() {
         layout_gfx_texture,
         layout_gfx_line
     );
-    std::cout << "[Layout] Modular layout engine initialized (with underline support)" << std::endl;
+    
+    ZepraBrowser::setLayoutCallbacks2(
+        layout_gfx_rrect,
+        layout_gfx_gradient,
+        // SVG rendering callback: parse and render via NxSVG
+        [](float x, float y, float size, const std::string& svgData) {
+            // Generate a unique key from the SVG data hash
+            std::hash<std::string> hasher;
+            std::string key = "web_svg_" + std::to_string(hasher(svgData));
+            
+            // Load if not already cached
+            if (!g_svg.has(key)) {
+                g_svg.loadFromString(key, svgData);
+            }
+            
+            // Render at position with size
+            g_svg.draw(key, x, y, size);
+        }
+    );
+    
+    std::cout << "[Layout] Layout engine initialized (rounded rect + gradient support)" << std::endl;
     
     // Register MouseHandler callbacks for text selection
     g_mouseHandler.onGetText([](float x, float y, float w, float h) -> std::string {
@@ -3966,10 +4170,6 @@ bool loadResources() {
 // extern removal
 
 void handleNXEvent(const NXRender::Event& event) {
-    // DEBUG TRACE — remove after diagnosis
-    if (event.type == NXRender::EventType::MouseDown || event.type == NXRender::EventType::KeyDown) {
-        std::cout << "[handleNXEvent] type=" << (int)event.type << " mouse=" << event.mouse.x << "," << event.mouse.y << std::endl;
-    }
     if (event.type == NXRender::EventType::Close) {
         g_running = false;
     } else if (event.type == NXRender::EventType::Resize) {

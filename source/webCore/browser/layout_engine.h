@@ -77,6 +77,27 @@ struct LayoutBox {
     bool italic = false;
     bool hasBgColor = false;
     
+    // Border radius (uniform for now)
+    float borderRadius = 0;
+    
+    // Opacity (0.0 = transparent, 1.0 = opaque)
+    float opacity = 1.0f;
+    
+    // Background image / gradient (CSS string)
+    std::string backgroundImage;
+    
+    // Overflow clipping
+    bool overflowHidden = false;
+    
+    // Flex container properties
+    int justifyContent = 0; // 0=start, 1=end, 2=center, 3=space-between, 4=space-around, 5=space-evenly
+    int alignItems = 0;     // 0=stretch, 1=start, 2=end, 3=center, 4=baseline
+    bool flexWrap = false;
+    float gap = 0;
+    
+    // Text decoration
+    std::string textDecoration;
+    
     // Input properties
     bool isInput = false;
     std::string inputType;
@@ -90,6 +111,7 @@ struct LayoutBox {
     // Image properties
     bool isImage = false;
     uint32_t textureId = 0; // 0 = no texture
+    std::string svgData;    // Raw SVG string for NxSVG rendering on main thread
     
     
     // Children (using list for stable pointers - vector invalidates on realloc)
@@ -123,6 +145,13 @@ void setLayoutCallbacks(
     void (*register_link)(float x, float y, float w, float h, const std::string& href, const std::string& target),
     void (*gfx_texture)(float x, float y, float w, float h, uint32_t textureId),
     void (*gfx_line)(float x1, float y1, float x2, float y2, uint32_t color, float thickness) = nullptr
+);
+
+/// Set extended rendering callbacks (rounded rect, gradient)
+void setLayoutCallbacks2(
+    void (*gfx_rrect)(float x, float y, float w, float h, float radius, uint32_t color, uint8_t alpha),
+    void (*gfx_gradient)(float x, float y, float w, float h, uint32_t c1, uint32_t c2),
+    void (*gfx_svg)(float x, float y, float size, const std::string& svgData) = nullptr
 );
 
 /**

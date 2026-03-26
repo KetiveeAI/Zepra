@@ -98,11 +98,7 @@ static void renderDebugOverlay() {
     g_gpu->drawText(buf, 10, 70, Color(200, 200, 200), 12.0f);
 }
 
-static void dispatchEvent(const Event& event) {
-    // DEBUG TRACE — remove after diagnosis
-    if (event.type == EventType::MouseDown || event.type == EventType::KeyDown) {
-        std::cout << "[NXRender::dispatch] type=" << (int)event.type << std::endl;
-    }
+void dispatchEvent(const Event& event) {
     if (event.type == EventType::Close) {
         g_quitRequested = true;
         g_running = false;
@@ -301,11 +297,6 @@ void setResizeCallback(ResizeCallback callback) {
 // =========================================================================
 
 void processEvents() {
-    static bool once = false;
-    if (!once) {
-        std::cout << "[DEBUG] processEvents: g_platform=" << (void*)g_platform.get() << std::endl;
-        once = true;
-    }
     if (g_platform) {
         g_platform->pollEvents();
     }

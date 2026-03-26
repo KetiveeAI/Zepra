@@ -61,14 +61,16 @@ public:
         }
         
         Colormap cmap = XCreateColormap(display_, RootWindow(display_, screen), vi->visual, AllocNone);
-        XSetWindowAttributes swa;
+        XSetWindowAttributes swa = {};  // Zero-init all fields
         swa.colormap = cmap;
+        swa.border_pixel = 0;  // Required for non-default visuals
         swa.event_mask = ExposureMask | KeyPressMask | KeyReleaseMask | 
                          ButtonPressMask | ButtonReleaseMask | 
                          PointerMotionMask | StructureNotifyMask;
         
         window_ = XCreateWindow(display_, RootWindow(display_, screen), 0, 0, width, height, 0,
-                                vi->depth, InputOutput, vi->visual, CWColormap | CWEventMask, &swa);
+                                vi->depth, InputOutput, vi->visual, 
+                                CWColormap | CWBorderPixel | CWEventMask, &swa);
         
         XMapWindow(display_, window_);
         XStoreName(display_, window_, title.c_str());
@@ -95,10 +97,17 @@ public:
         XChangeProperty(display_, window_, XdndAware_, XA_ATOM, 32, 
                         PropModeReplace, (unsigned char*)&xdndVersion, 1);
         
-        // Create context
+        // Create GL context
         glContext_ = glXCreateContext(display_, vi, nullptr, GL_TRUE);
         glXMakeCurrent(display_, window_, glContext_);
         XFree(vi);
+        
+        // Explicitly re-apply event mask after GLX context binding
+        // Required on some X11/GLX implementations where CWEventMask alone
+        // is insufficient with non-default visuals
+        XSelectInput(display_, window_, ExposureMask | KeyPressMask | KeyReleaseMask |
+                     ButtonPressMask | ButtonReleaseMask |
+                     PointerMotionMask | StructureNotifyMask);
         
         // Create Cursors
         cursorArrow_ = XCreateFontCursor(display_, XC_left_ptr);
@@ -121,11 +130,6 @@ public:
     }
     
     void pollEvents() override {
-        static int debugCount = 0;
-        if (debugCount < 3 && XPending(display_) > 0) {
-            std::cout << "[X11] pollEvents: events pending" << std::endl;
-            debugCount++;
-        }
         while (XPending(display_) > 0) {
             XEvent ev;
             XNextEvent(display_, &ev);
@@ -173,7 +177,6 @@ public:
                 event.mouse.modifiers = getModifiers(ev.xmotion.state);
                 NXRender::dispatchEvent(event);
             } else if (ev.type == ButtonPress) {
-                std::cout << "[X11] ButtonPress at " << ev.xbutton.x << "," << ev.xbutton.y << " btn=" << ev.xbutton.button << std::endl;
                 Event event;
                 event.type = EventType::MouseDown;
                 event.mouse.x = (float)ev.xbutton.x;

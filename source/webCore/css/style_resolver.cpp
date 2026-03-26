@@ -13,6 +13,7 @@
 
 #include "css/css_engine.hpp"
 #include "browser/dom.hpp"
+#include <sstream>
 #include <algorithm>
 #include <iostream>
 #include <cmath>
@@ -198,7 +199,6 @@ void StyleResolver::applyProperty(CSSComputedStyle& style,
                                    const CSSComputedStyle* parentStyle) {
     // Handle 'inherit' keyword
     if (value == "inherit" && parentStyle) {
-        // Copy value from parent
         if (property == "color") style.color = parentStyle->color;
         else if (property == "font-family") style.fontFamily = parentStyle->fontFamily;
         else if (property == "font-size") style.fontSize = parentStyle->fontSize;
@@ -206,49 +206,85 @@ void StyleResolver::applyProperty(CSSComputedStyle& style,
         else if (property == "font-style") style.fontStyle = parentStyle->fontStyle;
         else if (property == "line-height") style.lineHeight = parentStyle->lineHeight;
         else if (property == "text-align") style.textAlign = parentStyle->textAlign;
+        else if (property == "letter-spacing") style.letterSpacing = parentStyle->letterSpacing;
+        else if (property == "word-spacing") style.wordSpacing = parentStyle->wordSpacing;
+        else if (property == "white-space") style.whiteSpace = parentStyle->whiteSpace;
+        else if (property == "visibility") style.visibility = parentStyle->visibility;
+        else if (property == "cursor") style.cursor = parentStyle->cursor;
         return;
     }
     
     // Handle 'initial' keyword
     if (value == "initial") {
-        // Reset to initial value
         if (property == "color") style.color = CSSColor::black();
         else if (property == "font-size") style.fontSize = 16.0f;
         else if (property == "font-weight") style.fontWeight = FontWeight::Normal;
+        else if (property == "display") style.display = DisplayValue::Inline;
+        else if (property == "position") style.position = PositionValue::Static;
+        else if (property == "opacity") style.opacity = 1.0f;
         return;
     }
-    
-    // Apply specific properties
+
+    // =====================================================================
+    // Display
+    // =====================================================================
     if (property == "display") {
         if (value == "none") style.display = DisplayValue::None;
         else if (value == "block") style.display = DisplayValue::Block;
         else if (value == "inline") style.display = DisplayValue::Inline;
         else if (value == "inline-block") style.display = DisplayValue::InlineBlock;
         else if (value == "flex") style.display = DisplayValue::Flex;
+        else if (value == "inline-flex") style.display = DisplayValue::InlineFlex;
         else if (value == "grid") style.display = DisplayValue::Grid;
+        else if (value == "inline-grid") style.display = DisplayValue::InlineGrid;
+        else if (value == "table") style.display = DisplayValue::Table;
+        else if (value == "table-row") style.display = DisplayValue::TableRow;
+        else if (value == "table-cell") style.display = DisplayValue::TableCell;
+        else if (value == "list-item") style.display = DisplayValue::ListItem;
+        else if (value == "contents") style.display = DisplayValue::Contents;
     }
-    else if (property == "color") {
-        style.color = parseColor(value);
+
+    // =====================================================================
+    // Position
+    // =====================================================================
+    else if (property == "position") {
+        if (value == "static") style.position = PositionValue::Static;
+        else if (value == "relative") style.position = PositionValue::Relative;
+        else if (value == "absolute") style.position = PositionValue::Absolute;
+        else if (value == "fixed") style.position = PositionValue::Fixed;
+        else if (value == "sticky") style.position = PositionValue::Sticky;
     }
-    else if (property == "background-color") {
-        style.backgroundColor = parseColor(value);
+    else if (property == "top") { style.top = parseLength(value); }
+    else if (property == "right") { style.right = parseLength(value); }
+    else if (property == "bottom") { style.bottom = parseLength(value); }
+    else if (property == "left") { style.left = parseLength(value); }
+    else if (property == "z-index") {
+        if (value == "auto") { style.zIndexAuto = true; }
+        else { try { style.zIndex = std::stoi(value); style.zIndexAuto = false; } catch (...) {} }
     }
+
+    // =====================================================================
+    // Typography
+    // =====================================================================
+    else if (property == "color") { style.color = parseColor(value); }
     else if (property == "font-size") {
         CSSLength len = parseLength(value);
         if (!len.isAuto()) {
-            // Convert to pixels using parent font size
             float parentFontSize = parentStyle ? parentStyle->fontSize : 16.0f;
             style.fontSize = len.toPx(parentFontSize, 16.0f, 1920, 1080, 0);
         }
     }
-    else if (property == "font-family") {
-        style.fontFamily = value;
-    }
+    else if (property == "font-family") { style.fontFamily = value; }
     else if (property == "font-weight") {
         if (value == "bold" || value == "700") style.fontWeight = FontWeight::Bold;
         else if (value == "normal" || value == "400") style.fontWeight = FontWeight::Normal;
-        else if (value == "lighter") style.fontWeight = FontWeight::Lighter;
-        else if (value == "bolder") style.fontWeight = FontWeight::Bolder;
+        else if (value == "lighter" || value == "100") style.fontWeight = FontWeight::Lighter;
+        else if (value == "bolder" || value == "900") style.fontWeight = FontWeight::Bolder;
+        else if (value == "200") style.fontWeight = FontWeight::W200;
+        else if (value == "300") style.fontWeight = FontWeight::W300;
+        else if (value == "500") style.fontWeight = FontWeight::W500;
+        else if (value == "600") style.fontWeight = FontWeight::W600;
+        else if (value == "800") style.fontWeight = FontWeight::W800;
     }
     else if (property == "font-style") {
         if (value == "italic") style.fontStyle = FontStyle::Italic;
@@ -256,72 +292,288 @@ void StyleResolver::applyProperty(CSSComputedStyle& style,
         else style.fontStyle = FontStyle::Normal;
     }
     else if (property == "text-align") {
-        if (value == "left") style.textAlign = TextAlign::Left;
-        else if (value == "right") style.textAlign = TextAlign::Right;
+        if (value == "left" || value == "start") style.textAlign = TextAlign::Left;
+        else if (value == "right" || value == "end") style.textAlign = TextAlign::Right;
         else if (value == "center") style.textAlign = TextAlign::Center;
         else if (value == "justify") style.textAlign = TextAlign::Justify;
     }
-    else if (property == "width") {
-        style.width = parseLength(value);
+    else if (property == "text-decoration" || property == "text-decoration-line") {
+        style.textDecoration = value;
     }
-    else if (property == "height") {
-        style.height = parseLength(value);
+    else if (property == "text-transform") { style.textTransform = value; }
+    else if (property == "letter-spacing") {
+        CSSLength len = parseLength(value);
+        if (!len.isAuto()) style.letterSpacing = len.toPx(style.fontSize, 16.0f, 1920, 1080, 0);
     }
+    else if (property == "word-spacing") {
+        CSSLength len = parseLength(value);
+        if (!len.isAuto()) style.wordSpacing = len.toPx(style.fontSize, 16.0f, 1920, 1080, 0);
+    }
+    else if (property == "white-space") { style.whiteSpace = value; }
+    else if (property == "line-height") {
+        if (value == "normal") { style.lineHeight = 1.2f; }
+        else if (value.find_first_of("0123456789.") != std::string::npos) {
+            try {
+                float val = std::stof(value);
+                if (value.back() == '%') style.lineHeight = val / 100.0f;
+                else if (value.find("px") != std::string::npos) style.lineHeight = val / style.fontSize;
+                else style.lineHeight = val;
+            } catch (...) {}
+        }
+    }
+
+    // =====================================================================
+    // Dimensions
+    // =====================================================================
+    else if (property == "width") { style.width = parseLength(value); }
+    else if (property == "height") { style.height = parseLength(value); }
+    else if (property == "min-width") { style.minWidth = parseLength(value); }
+    else if (property == "min-height") { style.minHeight = parseLength(value); }
+    else if (property == "max-width") { style.maxWidth = parseLength(value); }
+    else if (property == "max-height") { style.maxHeight = parseLength(value); }
+
+    // =====================================================================
+    // Margin
+    // =====================================================================
     else if (property == "margin") {
         CSSLength len = parseLength(value);
-        style.marginTop = len;
-        style.marginRight = len;
-        style.marginBottom = len;
-        style.marginLeft = len;
+        style.marginTop = len; style.marginRight = len;
+        style.marginBottom = len; style.marginLeft = len;
     }
-    else if (property == "margin-top") {
-        style.marginTop = parseLength(value);
-    }
-    else if (property == "margin-right") {
-        style.marginRight = parseLength(value);
-    }
-    else if (property == "margin-bottom") {
-        style.marginBottom = parseLength(value);
-    }
-    else if (property == "margin-left") {
-        style.marginLeft = parseLength(value);
-    }
+    else if (property == "margin-top") { style.marginTop = parseLength(value); }
+    else if (property == "margin-right") { style.marginRight = parseLength(value); }
+    else if (property == "margin-bottom") { style.marginBottom = parseLength(value); }
+    else if (property == "margin-left") { style.marginLeft = parseLength(value); }
+
+    // =====================================================================
+    // Padding
+    // =====================================================================
     else if (property == "padding") {
         CSSLength len = parseLength(value);
-        style.paddingTop = len;
-        style.paddingRight = len;
-        style.paddingBottom = len;
-        style.paddingLeft = len;
+        style.paddingTop = len; style.paddingRight = len;
+        style.paddingBottom = len; style.paddingLeft = len;
     }
-    else if (property == "padding-top") {
-        style.paddingTop = parseLength(value);
+    else if (property == "padding-top") { style.paddingTop = parseLength(value); }
+    else if (property == "padding-right") { style.paddingRight = parseLength(value); }
+    else if (property == "padding-bottom") { style.paddingBottom = parseLength(value); }
+    else if (property == "padding-left") { style.paddingLeft = parseLength(value); }
+
+    // =====================================================================
+    // Border
+    // =====================================================================
+    else if (property == "border-width") {
+        CSSLength len = parseLength(value);
+        float px = len.toPx(style.fontSize, 16.0f, 1920, 1080, 0);
+        style.borderTopWidth = px; style.borderRightWidth = px;
+        style.borderBottomWidth = px; style.borderLeftWidth = px;
     }
-    else if (property == "padding-right") {
-        style.paddingRight = parseLength(value);
+    else if (property == "border-top-width") {
+        style.borderTopWidth = parseLength(value).toPx(style.fontSize, 16.0f, 1920, 1080, 0);
     }
-    else if (property == "padding-bottom") {
-        style.paddingBottom = parseLength(value);
+    else if (property == "border-right-width") {
+        style.borderRightWidth = parseLength(value).toPx(style.fontSize, 16.0f, 1920, 1080, 0);
     }
-    else if (property == "padding-left") {
-        style.paddingLeft = parseLength(value);
+    else if (property == "border-bottom-width") {
+        style.borderBottomWidth = parseLength(value).toPx(style.fontSize, 16.0f, 1920, 1080, 0);
     }
-    else if (property == "line-height") {
-        if (value.find_first_of("0123456789.") != std::string::npos) {
-            float val = std::stof(value);
-            if (value.back() == '%') {
-                style.lineHeight = val / 100.0f;
-            } else if (value.find("px") != std::string::npos) {
-                style.lineHeight = val / style.fontSize;
-            } else {
-                style.lineHeight = val;
+    else if (property == "border-left-width") {
+        style.borderLeftWidth = parseLength(value).toPx(style.fontSize, 16.0f, 1920, 1080, 0);
+    }
+    else if (property == "border-color") {
+        CSSColor c = parseColor(value);
+        style.borderTopColor = c; style.borderRightColor = c;
+        style.borderBottomColor = c; style.borderLeftColor = c;
+    }
+    else if (property == "border-top-color") { style.borderTopColor = parseColor(value); }
+    else if (property == "border-right-color") { style.borderRightColor = parseColor(value); }
+    else if (property == "border-bottom-color") { style.borderBottomColor = parseColor(value); }
+    else if (property == "border-left-color") { style.borderLeftColor = parseColor(value); }
+    else if (property == "border-radius") {
+        CSSLength len = parseLength(value);
+        float px = len.toPx(style.fontSize, 16.0f, 1920, 1080, 0);
+        style.borderTopLeftRadius = px; style.borderTopRightRadius = px;
+        style.borderBottomRightRadius = px; style.borderBottomLeftRadius = px;
+    }
+    else if (property == "border-top-left-radius") {
+        style.borderTopLeftRadius = parseLength(value).toPx(style.fontSize, 16.0f, 1920, 1080, 0);
+    }
+    else if (property == "border-top-right-radius") {
+        style.borderTopRightRadius = parseLength(value).toPx(style.fontSize, 16.0f, 1920, 1080, 0);
+    }
+    else if (property == "border-bottom-right-radius") {
+        style.borderBottomRightRadius = parseLength(value).toPx(style.fontSize, 16.0f, 1920, 1080, 0);
+    }
+    else if (property == "border-bottom-left-radius") {
+        style.borderBottomLeftRadius = parseLength(value).toPx(style.fontSize, 16.0f, 1920, 1080, 0);
+    }
+    else if (property == "border" || property == "border-top" || 
+             property == "border-right" || property == "border-bottom" || 
+             property == "border-left") {
+        // Shorthand: "1px solid #000"
+        // Parse width, style, color from space-separated values
+        std::istringstream ss(value);
+        std::string token;
+        float bw = 0;
+        CSSColor bc = CSSColor::black();
+        while (ss >> token) {
+            if (token == "none") { bw = 0; break; }
+            if (token == "solid" || token == "dashed" || token == "dotted" || 
+                token == "double" || token == "groove" || token == "ridge" ||
+                token == "inset" || token == "outset") continue;
+            if (token == "thin") { bw = 1; continue; }
+            if (token == "medium") { bw = 3; continue; }
+            if (token == "thick") { bw = 5; continue; }
+            if (token[0] == '#' || token.substr(0,3) == "rgb" || 
+                CSSColor::parse(token).a != 0 || token == "transparent") {
+                bc = CSSColor::parse(token); continue;
             }
+            CSSLength len = parseLength(token);
+            if (!len.isAuto()) bw = len.toPx(style.fontSize, 16.0f, 1920, 1080, 0);
         }
+        if (property == "border") {
+            style.borderTopWidth = bw; style.borderRightWidth = bw;
+            style.borderBottomWidth = bw; style.borderLeftWidth = bw;
+            style.borderTopColor = bc; style.borderRightColor = bc;
+            style.borderBottomColor = bc; style.borderLeftColor = bc;
+        } else if (property == "border-top") { style.borderTopWidth = bw; style.borderTopColor = bc; }
+        else if (property == "border-right") { style.borderRightWidth = bw; style.borderRightColor = bc; }
+        else if (property == "border-bottom") { style.borderBottomWidth = bw; style.borderBottomColor = bc; }
+        else if (property == "border-left") { style.borderLeftWidth = bw; style.borderLeftColor = bc; }
+    }
+
+    // =====================================================================
+    // Flexbox
+    // =====================================================================
+    else if (property == "flex-direction") {
+        if (value == "row") style.flexDirection = FlexDirection::Row;
+        else if (value == "row-reverse") style.flexDirection = FlexDirection::RowReverse;
+        else if (value == "column") style.flexDirection = FlexDirection::Column;
+        else if (value == "column-reverse") style.flexDirection = FlexDirection::ColumnReverse;
+    }
+    else if (property == "flex-wrap") {
+        style.flexWrap = (value == "wrap" || value == "wrap-reverse");
+    }
+    else if (property == "justify-content") {
+        if (value == "flex-start" || value == "start") style.justifyContent = JustifyAlign::FlexStart;
+        else if (value == "flex-end" || value == "end") style.justifyContent = JustifyAlign::FlexEnd;
+        else if (value == "center") style.justifyContent = JustifyAlign::Center;
+        else if (value == "space-between") style.justifyContent = JustifyAlign::SpaceBetween;
+        else if (value == "space-around") style.justifyContent = JustifyAlign::SpaceAround;
+        else if (value == "space-evenly") style.justifyContent = JustifyAlign::SpaceEvenly;
+    }
+    else if (property == "align-items") {
+        if (value == "flex-start" || value == "start") style.alignItems = JustifyAlign::FlexStart;
+        else if (value == "flex-end" || value == "end") style.alignItems = JustifyAlign::FlexEnd;
+        else if (value == "center") style.alignItems = JustifyAlign::Center;
+        else if (value == "stretch") style.alignItems = JustifyAlign::Stretch;
+        else if (value == "baseline") style.alignItems = JustifyAlign::Baseline;
+    }
+    else if (property == "align-content") {
+        if (value == "flex-start" || value == "start") style.alignContent = JustifyAlign::FlexStart;
+        else if (value == "flex-end" || value == "end") style.alignContent = JustifyAlign::FlexEnd;
+        else if (value == "center") style.alignContent = JustifyAlign::Center;
+        else if (value == "stretch") style.alignContent = JustifyAlign::Stretch;
+        else if (value == "space-between") style.alignContent = JustifyAlign::SpaceBetween;
+        else if (value == "space-around") style.alignContent = JustifyAlign::SpaceAround;
+    }
+    else if (property == "align-self") {
+        if (value == "auto" || value == "flex-start" || value == "start") style.alignSelf = JustifyAlign::Start;
+        else if (value == "flex-end" || value == "end") style.alignSelf = JustifyAlign::End;
+        else if (value == "center") style.alignSelf = JustifyAlign::Center;
+        else if (value == "stretch") style.alignSelf = JustifyAlign::Stretch;
+        else if (value == "baseline") style.alignSelf = JustifyAlign::Baseline;
+    }
+    else if (property == "flex-grow") {
+        try { style.flexGrow = std::stof(value); } catch (...) {}
+    }
+    else if (property == "flex-shrink") {
+        try { style.flexShrink = std::stof(value); } catch (...) {}
+    }
+    else if (property == "flex-basis") { style.flexBasis = parseLength(value); }
+    else if (property == "flex") {
+        // Shorthand: "1" or "1 0 auto" or "none" or "auto"
+        if (value == "none") { style.flexGrow = 0; style.flexShrink = 0; style.flexBasis = CSSLength::auto_(); }
+        else if (value == "auto") { style.flexGrow = 1; style.flexShrink = 1; style.flexBasis = CSSLength::auto_(); }
+        else {
+            try { style.flexGrow = std::stof(value); style.flexShrink = 1; style.flexBasis = CSSLength::px(0); } catch (...) {}
+        }
+    }
+    else if (property == "order") {
+        try { style.order = std::stoi(value); } catch (...) {}
+    }
+    else if (property == "gap" || property == "grid-gap") {
+        style.gap = parseLength(value);
+        style.rowGap = style.gap;
+        style.columnGap = style.gap;
+    }
+    else if (property == "row-gap") { style.rowGap = parseLength(value); }
+    else if (property == "column-gap") { style.columnGap = parseLength(value); }
+
+    // =====================================================================
+    // Grid
+    // =====================================================================
+    else if (property == "grid-template-columns") { style.gridTemplateColumns = value; }
+    else if (property == "grid-template-rows") { style.gridTemplateRows = value; }
+
+    // =====================================================================
+    // Background & Visual
+    // =====================================================================
+    else if (property == "background-color") { style.backgroundColor = parseColor(value); }
+    else if (property == "background-image") { style.backgroundImage = value; }
+    else if (property == "background-size") { style.backgroundSize = value; }
+    else if (property == "background-position") { style.backgroundPosition = value; }
+    else if (property == "background-repeat") { style.backgroundRepeat = value; }
+    else if (property == "background") {
+        // Shorthand: try color first, then store full value for image/gradient
+        if (value.find("url(") != std::string::npos || value.find("gradient") != std::string::npos) {
+            style.backgroundImage = value;
+        } else if (value != "none") {
+            style.backgroundColor = parseColor(value);
+        }
+    }
+    else if (property == "opacity") {
+        try { style.opacity = std::stof(value); } catch (...) {}
+    }
+    else if (property == "box-shadow") { style.boxShadow = value; }
+    else if (property == "transform") { style.transform = value; }
+    else if (property == "transition") { style.transition = value; }
+    else if (property == "animation") { style.animation = value; }
+    else if (property == "filter") { style.filter = value; }
+
+    // =====================================================================
+    // Overflow & Box
+    // =====================================================================
+    else if (property == "overflow") {
+        OverflowValue ov = OverflowValue::Visible;
+        if (value == "hidden") ov = OverflowValue::Hidden;
+        else if (value == "scroll") ov = OverflowValue::Scroll;
+        else if (value == "auto") ov = OverflowValue::Auto;
+        else if (value == "clip") ov = OverflowValue::Clip;
+        style.overflowX = ov; style.overflowY = ov;
+    }
+    else if (property == "overflow-x") {
+        if (value == "hidden") style.overflowX = OverflowValue::Hidden;
+        else if (value == "scroll") style.overflowX = OverflowValue::Scroll;
+        else if (value == "auto") style.overflowX = OverflowValue::Auto;
+        else style.overflowX = OverflowValue::Visible;
+    }
+    else if (property == "overflow-y") {
+        if (value == "hidden") style.overflowY = OverflowValue::Hidden;
+        else if (value == "scroll") style.overflowY = OverflowValue::Scroll;
+        else if (value == "auto") style.overflowY = OverflowValue::Auto;
+        else style.overflowY = OverflowValue::Visible;
+    }
+    else if (property == "box-sizing") {
+        if (value == "border-box") style.boxSizing = BoxSizing::BorderBox;
+        else style.boxSizing = BoxSizing::ContentBox;
     }
     else if (property == "visibility") {
         if (value == "hidden") style.visibility = Visibility::Hidden;
         else if (value == "collapse") style.visibility = Visibility::Collapse;
         else style.visibility = Visibility::Visible;
     }
+    else if (property == "cursor") { style.cursor = value; }
+    else if (property == "pointer-events") { style.pointerEvents = value; }
 }
 
 // ============================================================================

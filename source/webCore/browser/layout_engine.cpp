@@ -23,6 +23,11 @@ static void (*s_register_link)(float, float, float, float, const std::string&, c
 static void (*s_gfx_texture)(float, float, float, float, uint32_t) = nullptr;
 static void (*s_gfx_line)(float, float, float, float, uint32_t, float) = nullptr;
 
+// Extended callbacks (set via setLayoutCallbacks2)
+static void (*s_gfx_rrect)(float, float, float, float, float, uint32_t, uint8_t) = nullptr;
+static void (*s_gfx_gradient)(float, float, float, float, uint32_t, uint32_t) = nullptr;
+static void (*s_gfx_svg)(float, float, float, const std::string&) = nullptr;
+
 // Set rendering callbacks
 void setLayoutCallbacks(
     void (*gfx_rect)(float, float, float, float, uint32_t),
@@ -40,6 +45,16 @@ void setLayoutCallbacks(
     s_register_link = register_link;
     s_gfx_texture = gfx_texture;
     s_gfx_line = gfx_line;
+}
+
+void setLayoutCallbacks2(
+    void (*gfx_rrect)(float, float, float, float, float, uint32_t, uint8_t),
+    void (*gfx_gradient)(float, float, float, float, uint32_t, uint32_t),
+    void (*gfx_svg)(float, float, float, const std::string&)
+) {
+    s_gfx_rrect = gfx_rrect;
+    s_gfx_gradient = gfx_gradient;
+    s_gfx_svg = gfx_svg;
 }
 
 // =============================================================================
@@ -63,56 +78,117 @@ void layoutBlock(LayoutBox& box, float containingWidth, float startY) {
     float lineWidth = 0;
     float contentWidth = box.width - box.paddingLeft - box.paddingRight - box.borderLeft - box.borderRight;
     
-    for (auto& child : box.children) {
-        if (child.type == LayoutType::None) continue;
+    // Flex containers: pre-loop pass handles all children at once
+    if (box.type == LayoutType::Flex) {
+        float flexGap = box.gap;
         
-        // Flexbox: horizontal layout
-        if (box.type == LayoutType::Flex) {
-            // Flex children are laid out horizontally
-            if (child.width == 0) {
-                // Auto width: measure text or give default
-                if (!child.text.empty()) {
-                    child.width = measureTextWidth(child.text, child.fontSize) + 8;
-                } else {
-                    child.width = 100; // Default
-                }
-            }
-            if (child.height == 0) {
-                child.height = child.fontSize + 8;
-            }
+        // Pass 1: Measure all flex children
+        struct FlexChild {
+            LayoutBox* ptr;
+            float mainSize;
+            float crossSize;
+        };
+        std::vector<FlexChild> flexChildren;
+        float totalMainSize = 0;
+        float maxCrossSize = 0;
+        int childCount = 0;
+        
+        for (auto& child : box.children) {
+            if (child.type == LayoutType::None) continue;
             
-            // Recursively layout child to determine size and position children
-            // Use a tentative width (e.g. contentWidth / number_of_children or just contentWidth for auto)
-            // Ideally Flex layout is multi-pass, but for this simple engine:
-            float childAvailableWidth = (box.width > 0) ? box.width : 200; 
-            if (contentWidth > 0) childAvailableWidth = contentWidth; // Constrain to parent width
+            float childAvailableWidth = contentWidth > 0 ? contentWidth : 200;
+            layoutBlock(child, childAvailableWidth, 0);
             
-            layoutBlock(child, childAvailableWidth, 0); // Recursive layout
-            
-            // Re-measure after layout (in case it expanded)
-            if (child.width == 0 && !child.text.empty()) {
-                 child.width = measureTextWidth(child.text, child.fontSize) + 8;
-            }
+            if (child.width == 0 && !child.text.empty())
+                child.width = measureTextWidth(child.text, child.fontSize) + 8;
             if (child.height == 0) child.height = child.fontSize + 8;
             
-            if (box.flexDirection == 1) { // Column
-                child.x = childX + child.marginLeft;
-                child.y = childY + child.marginTop;
-                
-                // Advance Y cursor for next item
-                childY += child.height + child.marginTop + child.marginBottom;
-                // Update container height? (LayoutBlock does this at end using childY)
-            } else { // Row (Default)
-                child.x = childX + lineWidth + child.marginLeft;
-                child.y = childY + child.marginTop;
+            float mainSize = (box.flexDirection == 1)
+                ? (child.height + child.marginTop + child.marginBottom)
+                : (child.width + child.marginLeft + child.marginRight);
+            float crossSize = (box.flexDirection == 1)
+                ? (child.width + child.marginLeft + child.marginRight)
+                : (child.height + child.marginTop + child.marginBottom);
             
-                // Advance X cursor
-                lineWidth += child.width + 8 + child.marginLeft + child.marginRight; // Flex gap + margins
-                lineHeight = std::max(lineHeight, child.height + child.marginTop + child.marginBottom);
+            flexChildren.push_back({&child, mainSize, crossSize});
+            totalMainSize += mainSize;
+            maxCrossSize = std::max(maxCrossSize, crossSize);
+            childCount++;
+        }
+        
+        float totalGap = (childCount > 1) ? flexGap * (childCount - 1) : 0;
+        float mainAxisSpace = (box.flexDirection == 1)
+            ? (box.height > 0 ? box.height - box.paddingTop - box.paddingBottom - box.borderTop - box.borderBottom : 0)
+            : contentWidth;
+        float freeSpace = mainAxisSpace - totalMainSize - totalGap;
+        if (freeSpace < 0) freeSpace = 0;
+        
+        // Pass 2: Distribute space per justify-content
+        float mainOffset = 0;
+        float itemSpacing = flexGap;
+        
+        switch (box.justifyContent) {
+            case 1: mainOffset = freeSpace; break; // flex-end
+            case 2: mainOffset = freeSpace / 2.0f; break; // center
+            case 3: // space-between
+                if (childCount > 1) itemSpacing = flexGap + freeSpace / (childCount - 1);
+                break;
+            case 4: // space-around
+                if (childCount > 0) {
+                    float pad = freeSpace / (childCount * 2);
+                    mainOffset = pad;
+                    itemSpacing = flexGap + pad * 2;
+                }
+                break;
+            case 5: // space-evenly
+                if (childCount > 0) {
+                    float pad = freeSpace / (childCount + 1);
+                    mainOffset = pad;
+                    itemSpacing = flexGap + pad;
+                }
+                break;
+            default: break;
+        }
+        
+        // Pass 3: Position children
+        float cursor = mainOffset;
+        for (size_t i = 0; i < flexChildren.size(); i++) {
+            auto& fc = flexChildren[i];
+            LayoutBox& child = *fc.ptr;
+            
+            float crossOffset = 0;
+            float crossSpace = (box.flexDirection == 1) ? contentWidth : maxCrossSize;
+            switch (box.alignItems) {
+                case 1: crossOffset = 0; break;
+                case 2: crossOffset = crossSpace - fc.crossSize; break;
+                case 3: crossOffset = (crossSpace - fc.crossSize) / 2.0f; break;
+                default:
+                    if (box.flexDirection == 1)
+                        child.width = contentWidth - child.marginLeft - child.marginRight;
+                    else
+                        child.height = maxCrossSize - child.marginTop - child.marginBottom;
+                    break;
+            }
+            
+            if (box.flexDirection == 1) {
+                child.x = childX + child.marginLeft + crossOffset;
+                child.y = childY + cursor + child.marginTop;
+                cursor += fc.mainSize;
+                if (i < flexChildren.size() - 1) cursor += itemSpacing;
+                childY = child.y + child.height + child.marginBottom;
+            } else {
+                child.x = childX + cursor + child.marginLeft;
+                child.y = childY + child.marginTop + crossOffset;
+                cursor += fc.mainSize;
+                if (i < flexChildren.size() - 1) cursor += itemSpacing;
+                lineHeight = std::max(lineHeight, fc.crossSize);
             }
             child.type = LayoutType::FlexItem;
-            continue;
         }
+    } else {
+    // Block/Inline flow layout
+    for (auto& child : box.children) {
+        if (child.type == LayoutType::None) continue;
         
         if (child.type == LayoutType::Block) {
             // Block elements: stack vertically
@@ -163,7 +239,7 @@ void layoutBlock(LayoutBox& box, float containingWidth, float startY) {
             lineHeight = std::max(lineHeight, child.height);
         }
     }
-    
+    } // end else (block/inline flow)
     // Add remaining line height
     if (lineHeight > 0) {
         childY += lineHeight;
@@ -190,6 +266,7 @@ void layoutBlock(LayoutBox& box, float containingWidth, float startY) {
 void paintBox(const LayoutBox& box, float offsetX, float offsetY,
               float viewportHeight, float scrollY) {
     if (box.type == LayoutType::None) return;
+    if (box.opacity <= 0.001f) return;
     
     float screenX = offsetX + box.x;
     float screenY = offsetY + box.y - scrollY;
@@ -203,9 +280,46 @@ void paintBox(const LayoutBox& box, float offsetX, float offsetY,
         return;
     }
     
-    // Draw background
-    if (box.hasBgColor && s_gfx_rect) {
-        s_gfx_rect(screenX, screenY, box.width, box.height, box.bgColor);
+    uint8_t alpha = (uint8_t)(box.opacity * 255.0f);
+    
+    // Draw background (gradient or solid)
+    if (box.hasBgColor) {
+        if (!box.backgroundImage.empty() && box.backgroundImage.find("gradient") != std::string::npos && s_gfx_gradient) {
+            // Parse simple linear-gradient: extract two colors
+            // e.g. "linear-gradient(to bottom, #1a1a2e, #16213e)"
+            uint32_t c1 = box.bgColor;
+            uint32_t c2 = box.bgColor;
+            auto extractColors = [](const std::string& grad, uint32_t& out1, uint32_t& out2) {
+                // Find hex colors in gradient string
+                std::vector<uint32_t> colors;
+                size_t pos = 0;
+                while (pos < grad.size() && colors.size() < 2) {
+                    if (grad[pos] == '#') {
+                        pos++;
+                        std::string hex;
+                        while (pos < grad.size() && std::isxdigit(grad[pos])) {
+                            hex += grad[pos++];
+                        }
+                        if (hex.size() == 3) {
+                            hex = std::string(1,hex[0]) + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+                        }
+                        if (hex.size() >= 6) {
+                            colors.push_back((uint32_t)std::stoul(hex.substr(0,6), nullptr, 16));
+                        }
+                    } else {
+                        pos++;
+                    }
+                }
+                if (colors.size() >= 2) { out1 = colors[0]; out2 = colors[1]; }
+                else if (colors.size() == 1) { out1 = colors[0]; out2 = colors[0]; }
+            };
+            extractColors(box.backgroundImage, c1, c2);
+            s_gfx_gradient(screenX, screenY, box.width, box.height, c1, c2);
+        } else if (box.borderRadius > 0 && s_gfx_rrect) {
+            s_gfx_rrect(screenX, screenY, box.width, box.height, box.borderRadius, box.bgColor, alpha);
+        } else if (s_gfx_rect) {
+            s_gfx_rect(screenX, screenY, box.width, box.height, box.bgColor);
+        }
     }
     
     // Draw border
@@ -214,57 +328,55 @@ void paintBox(const LayoutBox& box, float offsetX, float offsetY,
         s_gfx_border(screenX, screenY, box.width, box.height, box.borderColor, thickness);
     }
     
-    // Draw input style
-    // Draw input style (Unified with standard box rendering)
-    if (box.isInput && s_gfx_border && s_gfx_rect) {
-        // Use box properties (bgColor, borderColor) which are now set from CSS
-        // If specific input styling is needed beyond standard box props, add it here
-        // without overriding colors.
-        
-        // Ensure inputs have at least a border if CSS didn't set one?
-        // For now, trust CSS or defaults set in buildLayoutFromDOM
-    }
-    
-    // Draw image placeholder
     // Draw image
     if (box.isImage) {
-        if (box.textureId > 0 && s_gfx_texture) {
-            // Draw real textue
+        if (!box.svgData.empty() && s_gfx_svg) {
+            // SVG: render via NxSVG on main thread
+            float svgSize = std::min(box.width, box.height);
+            s_gfx_svg(screenX, screenY, svgSize, box.svgData);
+        } else if (box.textureId > 0 && s_gfx_texture) {
             s_gfx_texture(screenX, screenY, box.width, box.height, box.textureId);
         } else if (s_gfx_rect && s_gfx_border) {
-            // Draw placeholder
-            s_gfx_rect(screenX, screenY, box.width, box.height, box.bgColor); // Use bgColor (Success/Fail color)
+            s_gfx_rect(screenX, screenY, box.width, box.height, box.bgColor);
             s_gfx_border(screenX, screenY, box.width, box.height, 0x000000, 1.0f);
         }
     }
 
     // Draw text content
     if ((!box.text.empty() || !box.placeholder.empty()) && 
-        (box.type == LayoutType::Text || box.type == LayoutType::Inline || box.type == LayoutType::Block || box.type == LayoutType::InlineBlock)) {
+        (box.type == LayoutType::Text || box.type == LayoutType::Inline || 
+         box.type == LayoutType::Block || box.type == LayoutType::InlineBlock ||
+         box.type == LayoutType::FlexItem)) {
         
         float textX = screenX + box.paddingLeft + (box.isInput ? 4 : 0);
         float textY = screenY + box.paddingTop + box.fontSize + (box.isInput ? 2 : 0);
         
-        // Use placeholder if text is empty for inputs
         std::string drawText = box.text;
         uint32_t drawColor = box.color;
         
         if (box.isInput && drawText.empty() && !box.placeholder.empty()) {
             drawText = box.placeholder;
-            drawColor = 0x999999; // Gray placeholder
+            drawColor = 0x999999;
         }
         
         if (s_text_render && !drawText.empty()) s_text_render(drawText, textX, textY, drawColor, box.fontSize);
         
-        // Draw underline for links
-        if (box.isLink && !drawText.empty()) {
+        // Text decoration
+        if (!drawText.empty()) {
             float textW = s_text_width ? s_text_width(drawText, box.fontSize) : (drawText.length() * box.fontSize * 0.5f);
-            float underlineY = textY + 2;  // 2px below baseline
-            if (s_gfx_line) {
-                s_gfx_line(textX, underlineY, textX + textW, underlineY, box.color, 1.0f);
-            } else if (s_gfx_rect) {
-                // Fallback: use thin rect as line
-                s_gfx_rect(textX, underlineY, textW, 1.0f, box.color);
+            
+            bool underline = box.isLink || (box.textDecoration.find("underline") != std::string::npos);
+            bool lineThrough = (box.textDecoration.find("line-through") != std::string::npos);
+            
+            if (underline) {
+                float lineY = textY + 2;
+                if (s_gfx_line) s_gfx_line(textX, lineY, textX + textW, lineY, drawColor, 1.0f);
+                else if (s_gfx_rect) s_gfx_rect(textX, lineY, textW, 1.0f, drawColor);
+            }
+            if (lineThrough) {
+                float lineY = textY - box.fontSize * 0.35f;
+                if (s_gfx_line) s_gfx_line(textX, lineY, textX + textW, lineY, drawColor, 1.0f);
+                else if (s_gfx_rect) s_gfx_rect(textX, lineY, textW, 1.0f, drawColor);
             }
         }
         
@@ -278,7 +390,7 @@ void paintBox(const LayoutBox& box, float offsetX, float offsetY,
     for (const auto& child : box.children) {
         paintBox(child, screenX + box.paddingLeft + box.borderLeft,
                  screenY + box.paddingTop + box.borderTop,
-                 viewportHeight, 0);  // Children use parent-relative scroll
+                 viewportHeight, 0);
     }
 }
 

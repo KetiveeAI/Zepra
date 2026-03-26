@@ -118,12 +118,6 @@ std::optional<std::string> CSSCascade::cascadedValue(
 bool CSSCascade::selectorMatches(DOMElement* element, const std::string& selector) {
     if (!element) return false;
     
-    // Split compound selectors
-    // Tag selector: "div", "p", etc.
-    // Class selector: ".class-name"
-    // ID selector: "#id-name"
-    // Universal: "*"
-    
     std::string sel = selector;
     
     // Trim whitespace
@@ -132,37 +126,228 @@ bool CSSCascade::selectorMatches(DOMElement* element, const std::string& selecto
     if (start == std::string::npos) return false;
     sel = sel.substr(start, end - start + 1);
     
-    // Universal selector matches everything
-    if (sel == "*") return true;
-    
-    // ID selector
-    if (sel[0] == '#') {
-        std::string id = sel.substr(1);
-        return element->getAttribute("id") == id;
-    }
-    
-    // Class selector
-    if (sel[0] == '.') {
-        std::string className = sel.substr(1);
-        std::string classes = element->getAttribute("class");
-        
-        // Check if className is in the space-separated class list
-        size_t pos = 0;
-        while ((pos = classes.find(className, pos)) != std::string::npos) {
-            bool startOK = (pos == 0 || classes[pos-1] == ' ');
-            bool endOK = (pos + className.length() >= classes.length() || 
-                          classes[pos + className.length()] == ' ');
-            if (startOK && endOK) return true;
-            pos++;
+    // Handle comma-separated selector groups: "div, .class, #id"
+    // Each group is tested independently — if any matches, the selector matches
+    {
+        size_t depth = 0;
+        size_t groupStart = 0;
+        for (size_t i = 0; i <= sel.size(); i++) {
+            if (i < sel.size() && sel[i] == '(') depth++;
+            else if (i < sel.size() && sel[i] == ')' && depth > 0) depth--;
+            else if ((i == sel.size() || sel[i] == ',') && depth == 0) {
+                std::string group = sel.substr(groupStart, i - groupStart);
+                // Trim the group
+                size_t gs = group.find_first_not_of(" \t\n\r");
+                size_t ge = group.find_last_not_of(" \t\n\r");
+                if (gs != std::string::npos) {
+                    group = group.substr(gs, ge - gs + 1);
+                    if (selectorGroupMatches(element, group)) return true;
+                }
+                groupStart = i + 1;
+            }
         }
         return false;
     }
+}
+
+// Match a single selector group (no commas) — handles combinators
+bool CSSCascade::selectorGroupMatches(DOMElement* element, const std::string& selector) {
+    if (!element || selector.empty()) return false;
     
-    // Tag selector (case insensitive)
-    std::string tag = element->tagName();
-    std::transform(tag.begin(), tag.end(), tag.begin(), ::tolower);
-    std::transform(sel.begin(), sel.end(), sel.begin(), ::tolower);
-    return tag == sel;
+    // Tokenize selector into parts separated by combinators
+    // "div > .class p.item" → ["div", ">", ".class", " ", "p.item"]
+    std::vector<std::string> parts;
+    std::vector<char> combinators; // ' ' = descendant, '>' = child
+    
+    size_t i = 0;
+    size_t len = selector.size();
+    while (i < len) {
+        // Skip whitespace
+        while (i < len && (selector[i] == ' ' || selector[i] == '\t')) i++;
+        if (i >= len) break;
+        
+        // Check for combinator
+        if (!parts.empty() && (selector[i] == '>' || selector[i] == '+' || selector[i] == '~')) {
+            char comb = selector[i];
+            i++;
+            while (i < len && (selector[i] == ' ' || selector[i] == '\t')) i++;
+            combinators.push_back(comb);
+            continue;
+        }
+        
+        // Read compound selector part
+        size_t partStart = i;
+        while (i < len && selector[i] != ' ' && selector[i] != '\t' && 
+               selector[i] != '>' && selector[i] != '+' && selector[i] != '~') {
+            if (selector[i] == '[') {
+                while (i < len && selector[i] != ']') i++;
+                if (i < len) i++;
+            } else if (selector[i] == '(') {
+                int depth = 1;
+                i++;
+                while (i < len && depth > 0) {
+                    if (selector[i] == '(') depth++;
+                    else if (selector[i] == ')') depth--;
+                    i++;
+                }
+            } else {
+                i++;
+            }
+        }
+        
+        if (i > partStart) {
+            std::string part = selector.substr(partStart, i - partStart);
+            if (!parts.empty() && combinators.size() < parts.size()) {
+                combinators.push_back(' '); // implicit descendant combinator
+            }
+            parts.push_back(part);
+        }
+    }
+    
+    if (parts.empty()) return false;
+    
+    // Single compound selector — no combinators
+    if (parts.size() == 1) {
+        return compoundSelectorMatches(element, parts[0]);
+    }
+    
+    // Match rightmost part against element, then walk up for combinators
+    if (!compoundSelectorMatches(element, parts.back())) return false;
+    
+    DOMElement* current = element;
+    for (int p = (int)parts.size() - 2; p >= 0; p--) {
+        char comb = (p < (int)combinators.size()) ? combinators[p] : ' ';
+        
+        if (comb == '>') {
+            // Child combinator — parent must match
+            DOMNode* parentNode = current->parentNode();
+            current = parentNode ? dynamic_cast<DOMElement*>(parentNode) : nullptr;
+            if (!current || !compoundSelectorMatches(current, parts[p])) return false;
+        } else {
+            // Descendant combinator — any ancestor must match
+            DOMNode* parentNode = current->parentNode();
+            DOMElement* ancestor = parentNode ? dynamic_cast<DOMElement*>(parentNode) : nullptr;
+            bool found = false;
+            while (ancestor) {
+                if (compoundSelectorMatches(ancestor, parts[p])) {
+                    current = ancestor;
+                    found = true;
+                    break;
+                }
+                parentNode = ancestor->parentNode();
+                ancestor = parentNode ? dynamic_cast<DOMElement*>(parentNode) : nullptr;
+            }
+            if (!found) return false;
+        }
+    }
+    
+    return true;
+}
+
+// Match a compound selector ("div.class#id[attr]") against a single element
+bool CSSCascade::compoundSelectorMatches(DOMElement* element, const std::string& compound) {
+    if (!element || compound.empty()) return false;
+    
+    // Universal selector
+    if (compound == "*") return true;
+    
+    size_t i = 0;
+    size_t len = compound.size();
+    
+    while (i < len) {
+        if (compound[i] == '#') {
+            // ID selector
+            i++;
+            size_t s = i;
+            while (i < len && (std::isalnum(compound[i]) || compound[i] == '-' || compound[i] == '_')) i++;
+            std::string id = compound.substr(s, i - s);
+            if (element->getAttribute("id") != id) return false;
+        }
+        else if (compound[i] == '.') {
+            // Class selector
+            i++;
+            size_t s = i;
+            while (i < len && (std::isalnum(compound[i]) || compound[i] == '-' || compound[i] == '_')) i++;
+            std::string className = compound.substr(s, i - s);
+            std::string classes = element->getAttribute("class");
+            // Word boundary match
+            size_t pos = 0;
+            bool found = false;
+            while ((pos = classes.find(className, pos)) != std::string::npos) {
+                bool startOK = (pos == 0 || classes[pos-1] == ' ');
+                bool endOK = (pos + className.length() >= classes.length() || 
+                              classes[pos + className.length()] == ' ');
+                if (startOK && endOK) { found = true; break; }
+                pos++;
+            }
+            if (!found) return false;
+        }
+        else if (compound[i] == '[') {
+            // Attribute selector
+            i++;
+            size_t s = i;
+            while (i < len && compound[i] != '=' && compound[i] != ']' && compound[i] != '~' && compound[i] != '|') i++;
+            std::string attrName = compound.substr(s, i - s);
+            
+            if (i < len && compound[i] == ']') {
+                // [attr] — has attribute
+                i++;
+                if (element->getAttribute(attrName).empty() && !element->hasAttribute(attrName)) return false;
+            } else if (i < len && compound[i] == '=') {
+                // [attr=value]
+                i++;
+                std::string attrVal;
+                if (i < len && (compound[i] == '"' || compound[i] == '\'')) {
+                    char q = compound[i++];
+                    size_t vs = i;
+                    while (i < len && compound[i] != q) i++;
+                    attrVal = compound.substr(vs, i - vs);
+                    if (i < len) i++;
+                } else {
+                    size_t vs = i;
+                    while (i < len && compound[i] != ']') i++;
+                    attrVal = compound.substr(vs, i - vs);
+                }
+                if (i < len && compound[i] == ']') i++;
+                if (element->getAttribute(attrName) != attrVal) return false;
+            } else {
+                // Skip to end of attribute selector
+                while (i < len && compound[i] != ']') i++;
+                if (i < len) i++;
+            }
+        }
+        else if (compound[i] == ':') {
+            // Pseudo-class/element — skip for now (matches anything)
+            i++;
+            if (i < len && compound[i] == ':') i++;
+            while (i < len && (std::isalnum(compound[i]) || compound[i] == '-')) i++;
+            if (i < len && compound[i] == '(') {
+                int depth = 1;
+                i++;
+                while (i < len && depth > 0) {
+                    if (compound[i] == '(') depth++;
+                    else if (compound[i] == ')') depth--;
+                    i++;
+                }
+            }
+        }
+        else if (std::isalnum(compound[i]) || compound[i] == '-' || compound[i] == '_') {
+            // Tag selector
+            size_t s = i;
+            while (i < len && (std::isalnum(compound[i]) || compound[i] == '-' || compound[i] == '_')) i++;
+            std::string tag = compound.substr(s, i - s);
+            std::string elemTag = element->tagName();
+            // Case-insensitive comparison
+            std::transform(tag.begin(), tag.end(), tag.begin(), ::tolower);
+            std::transform(elemTag.begin(), elemTag.end(), elemTag.begin(), ::tolower);
+            if (elemTag != tag) return false;
+        }
+        else {
+            i++;
+        }
+    }
+    
+    return true;
 }
 
 Selector::Specificity CSSCascade::calculateSpecificity(const std::string& selector) {

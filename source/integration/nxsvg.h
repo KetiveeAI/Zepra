@@ -24,15 +24,55 @@ using Color = NXRender::Color;
 using Point = NXRender::Point;
 
     inline Color parseColor(const std::string& name) {
-        if (name.empty() || name == "none") return Color(0, 0, 0, 0);
+        if (name.empty() || name == "none" || name == "transparent") return Color(0, 0, 0, 0);
+        
+        // CSS named colors
         if (name == "black") return Color(0, 0, 0);
         if (name == "white") return Color(255, 255, 255);
         if (name == "red") return Color(255, 0, 0);
-        if (name == "green") return Color(0, 255, 0);
+        if (name == "green") return Color(0, 128, 0);
         if (name == "blue") return Color(0, 0, 255);
         if (name == "yellow") return Color(255, 255, 0);
         if (name == "purple") return Color(128, 0, 128);
+        if (name == "orange") return Color(255, 165, 0);
+        if (name == "cyan" || name == "aqua") return Color(0, 255, 255);
+        if (name == "magenta" || name == "fuchsia") return Color(255, 0, 255);
+        if (name == "lime") return Color(0, 255, 0);
+        if (name == "gray" || name == "grey") return Color(128, 128, 128);
+        if (name == "silver") return Color(192, 192, 192);
+        if (name == "maroon") return Color(128, 0, 0);
+        if (name == "olive") return Color(128, 128, 0);
+        if (name == "navy") return Color(0, 0, 128);
+        if (name == "teal") return Color(0, 128, 128);
+        if (name == "darkgray" || name == "darkgrey") return Color(169, 169, 169);
+        if (name == "lightgray" || name == "lightgrey") return Color(211, 211, 211);
+        if (name == "dimgray" || name == "dimgrey") return Color(105, 105, 105);
+        if (name == "darkred") return Color(139, 0, 0);
+        if (name == "darkgreen") return Color(0, 100, 0);
+        if (name == "darkblue") return Color(0, 0, 139);
+        if (name == "coral") return Color(255, 127, 80);
+        if (name == "tomato") return Color(255, 99, 71);
+        if (name == "gold") return Color(255, 215, 0);
+        if (name == "skyblue") return Color(135, 206, 235);
+        if (name == "steelblue") return Color(70, 130, 180);
+        if (name == "indianred") return Color(205, 92, 92);
+        if (name == "salmon") return Color(250, 128, 114);
+        if (name == "pink") return Color(255, 192, 203);
+        if (name == "brown") return Color(165, 42, 42);
+        if (name == "tan") return Color(210, 180, 140);
+        if (name == "wheat") return Color(245, 222, 179);
+        if (name == "ivory") return Color(255, 255, 240);
+        if (name == "lavender") return Color(230, 230, 250);
+        if (name == "crimson") return Color(220, 20, 60);
+        if (name == "indigo") return Color(75, 0, 130);
+        if (name == "violet") return Color(238, 130, 238);
+        if (name == "plum") return Color(221, 160, 221);
+        if (name == "orchid") return Color(218, 112, 214);
+        if (name == "turquoise") return Color(64, 224, 208);
+        if (name == "slategray" || name == "slategrey") return Color(112, 128, 144);
+        if (name == "currentColor" || name == "currentcolor") return Color(255, 255, 255, 255); // Sentinel for currentColor
         
+        // Hex colors
         if (name[0] == '#') {
             std::string hex = name.substr(1);
             if (hex.length() == 3) {
@@ -44,8 +84,31 @@ using Point = NXRender::Point;
                 return Color(std::stoi(hex.substr(0, 2), nullptr, 16),
                              std::stoi(hex.substr(2, 2), nullptr, 16),
                              std::stoi(hex.substr(4, 2), nullptr, 16));
+            } else if (hex.length() == 8) {
+                return Color(std::stoi(hex.substr(0, 2), nullptr, 16),
+                             std::stoi(hex.substr(2, 2), nullptr, 16),
+                             std::stoi(hex.substr(4, 2), nullptr, 16),
+                             std::stoi(hex.substr(6, 2), nullptr, 16));
             }
         }
+        
+        // rgb(r, g, b) and rgba(r, g, b, a)
+        if (name.substr(0, 4) == "rgb(" || name.substr(0, 5) == "rgba(") {
+            std::regex rgbRegex(R"(rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([0-9.]+)\s*)?\))");
+            std::smatch m;
+            if (std::regex_search(name, m, rgbRegex)) {
+                int r = std::stoi(m[1].str());
+                int g = std::stoi(m[2].str());
+                int b = std::stoi(m[3].str());
+                int a = 255;
+                if (m[4].matched) {
+                    float af = std::stof(m[4].str());
+                    a = (int)(af <= 1.0f ? af * 255 : af);
+                }
+                return Color(r, g, b, a);
+            }
+        }
+        
         return Color(0, 0, 0);
     }
 
@@ -61,6 +124,7 @@ struct Shape {
     std::vector<std::pair<float, float>> points; // For POLYLINE/POLYGON
     float cx = 0, cy = 0, r = 0, rx = 0, ry = 0;
     float x = 0, y = 0, w = 0, h = 0;
+    float rectRx = 0, rectRy = 0; // Rounded rect corner radii
     float x1 = 0, y1 = 0, x2 = 0, y2 = 0;
     Color stroke = Color::black(), fill = Color::black();
     float strokeWidth = 1.5f;
@@ -133,7 +197,7 @@ public:
                     break;
                 case Shape::RECT:
                     renderRect(ox + s.x * scale, oy + s.y * scale, s.w * scale, s.h * scale, 
-                               fill, stroke, s.strokeWidth * scale, s.hasFill, s.hasStroke);
+                               fill, stroke, s.strokeWidth * scale, s.hasFill, s.hasStroke, s.rectRx * scale, s.rectRy * scale);
                     break;
                 case Shape::LINE:
                     renderLine(ox + s.x1 * scale, oy + s.y1 * scale, 
@@ -270,7 +334,7 @@ private:
                 break;
             case Shape::RECT:
                 renderRect(ox + s.x * scale, oy + s.y * scale, s.w * scale, s.h * scale,
-                           fill, stroke, s.strokeWidth * scale, s.hasFill, s.hasStroke);
+                           fill, stroke, s.strokeWidth * scale, s.hasFill, s.hasStroke, s.rectRx * scale, s.rectRy * scale);
                 break;
             case Shape::LINE:
                 renderLine(ox + s.x1 * scale, oy + s.y1 * scale,
@@ -326,16 +390,28 @@ private:
         gpu->popTransform();
     }
 
-    void renderRect(float x, float y, float w, float h, Color fill, Color stroke, float sw, bool hasFill, bool hasStroke) {
+    void renderRect(float x, float y, float w, float h, Color fill, Color stroke, float sw, bool hasFill, bool hasStroke, float rx = 0, float ry = 0) {
         if (w <= 0 || h <= 0) return;
         auto* gpu = NXRender::gpu();
         NXRender::Rect r(x, y, w, h);
         
-        if (hasFill && fill.a > 0) {
-            gpu->fillRect(r, fill);
-        }
-        if (hasStroke && stroke.a > 0) {
-            gpu->strokeRect(r, stroke, sw);
+        float cornerR = std::max(rx, ry);
+        if (cornerR > 0) {
+            // Clamp corner radius to half the smallest dimension
+            cornerR = std::min(cornerR, std::min(w, h) / 2.0f);
+            if (hasFill && fill.a > 0) {
+                gpu->fillRoundedRect(r, fill, cornerR);
+            }
+            if (hasStroke && stroke.a > 0) {
+                gpu->strokeRoundedRect(r, stroke, cornerR, sw);
+            }
+        } else {
+            if (hasFill && fill.a > 0) {
+                gpu->fillRect(r, fill);
+            }
+            if (hasStroke && stroke.a > 0) {
+                gpu->strokeRect(r, stroke, sw);
+            }
         }
     }
 
@@ -373,6 +449,7 @@ private:
         
         float cx = 0, cy = 0;
         float startX = 0, startY = 0;
+        float lastCpX = 0, lastCpY = 0; // Last control point for smooth curves
         bool closedSubpath = false;
         
         auto flushContour = [&]() {
@@ -383,6 +460,8 @@ private:
             }
         };
 
+        const int BEZIER_STEPS = 16; // Higher resolution for sharp icons
+
         for (const auto& cmd : cmds) {
             size_t argCount = cmd.args.size();
             
@@ -392,6 +471,7 @@ private:
                     if (argCount >= 2) {
                         cx = cmd.args[0]; cy = cmd.args[1];
                         startX = cx; startY = cy;
+                        lastCpX = cx; lastCpY = cy;
                         currentContour.emplace_back(ox + cx * scale, oy + cy * scale);
                         for (size_t i = 2; i + 1 < argCount; i += 2) {
                             cx = cmd.args[i]; cy = cmd.args[i + 1];
@@ -404,6 +484,7 @@ private:
                     if (argCount >= 2) {
                         cx += cmd.args[0]; cy += cmd.args[1];
                         startX = cx; startY = cy;
+                        lastCpX = cx; lastCpY = cy;
                         currentContour.emplace_back(ox + cx * scale, oy + cy * scale);
                         for (size_t i = 2; i + 1 < argCount; i += 2) {
                             cx += cmd.args[i]; cy += cmd.args[i + 1];
@@ -416,41 +497,47 @@ private:
                         cx = cmd.args[i]; cy = cmd.args[i + 1];
                         currentContour.emplace_back(ox + cx * scale, oy + cy * scale);
                     }
+                    lastCpX = cx; lastCpY = cy;
                     break;
                 case 'l': // Relative Line To
                     for (size_t i = 0; i + 1 < argCount; i += 2) {
                         cx += cmd.args[i]; cy += cmd.args[i + 1];
                         currentContour.emplace_back(ox + cx * scale, oy + cy * scale);
                     }
+                    lastCpX = cx; lastCpY = cy;
                     break;
                 case 'H': // Horizontal Line To
                     for (size_t i = 0; i < argCount; i++) {
                         cx = cmd.args[i];
                         currentContour.emplace_back(ox + cx * scale, oy + cy * scale);
                     }
+                    lastCpX = cx; lastCpY = cy;
                     break;
                 case 'h': // Relative Horizontal Line To
                     for (size_t i = 0; i < argCount; i++) {
                         cx += cmd.args[i];
                         currentContour.emplace_back(ox + cx * scale, oy + cy * scale);
                     }
+                    lastCpX = cx; lastCpY = cy;
                     break;
                 case 'V': // Vertical Line To
                     for (size_t i = 0; i < argCount; i++) {
                         cy = cmd.args[i];
                         currentContour.emplace_back(ox + cx * scale, oy + cy * scale);
                     }
+                    lastCpX = cx; lastCpY = cy;
                     break;
                 case 'v': // Relative Vertical Line To
                     for (size_t i = 0; i < argCount; i++) {
                         cy += cmd.args[i];
                         currentContour.emplace_back(ox + cx * scale, oy + cy * scale);
                     }
+                    lastCpX = cx; lastCpY = cy;
                     break;
                 case 'Z': case 'z': // Close Path
                     closedSubpath = true;
                     cx = startX; cy = startY;
-                    // Ensure loop is closed visually
+                    lastCpX = cx; lastCpY = cy;
                     if (!currentContour.empty()) {
                         auto& last = currentContour.back();
                         if (last.x != ox + cx * scale || last.y != oy + cy * scale) {
@@ -463,13 +550,14 @@ private:
                         float x1 = cmd.args[i], y1 = cmd.args[i+1];
                         float x2 = cmd.args[i+2], y2 = cmd.args[i+3];
                         float x3 = cmd.args[i+4], y3 = cmd.args[i+5];
-                        for (int t = 1; t <= 8; t++) {
-                            float u = t / 8.0f, u2 = u * u, u3 = u2 * u;
+                        for (int t = 1; t <= BEZIER_STEPS; t++) {
+                            float u = t / (float)BEZIER_STEPS, u2 = u * u, u3 = u2 * u;
                             float m = 1 - u, m2 = m * m, m3 = m2 * m;
                             float px = m3 * cx + 3 * m2 * u * x1 + 3 * m * u2 * x2 + u3 * x3;
                             float py = m3 * cy + 3 * m2 * u * y1 + 3 * m * u2 * y2 + u3 * y3;
                             currentContour.emplace_back(ox + px * scale, oy + py * scale);
                         }
+                        lastCpX = x2; lastCpY = y2;
                         cx = x3; cy = y3;
                     }
                     break;
@@ -478,16 +566,177 @@ private:
                         float x1 = cx + cmd.args[i], y1 = cy + cmd.args[i+1];
                         float x2 = cx + cmd.args[i+2], y2 = cy + cmd.args[i+3];
                         float x3 = cx + cmd.args[i+4], y3 = cy + cmd.args[i+5];
-                        for (int t = 1; t <= 8; t++) {
-                            float u = t / 8.0f, u2 = u * u, u3 = u2 * u;
+                        for (int t = 1; t <= BEZIER_STEPS; t++) {
+                            float u = t / (float)BEZIER_STEPS, u2 = u * u, u3 = u2 * u;
                             float m = 1 - u, m2 = m * m, m3 = m2 * m;
                             float px = m3 * cx + 3 * m2 * u * x1 + 3 * m * u2 * x2 + u3 * x3;
                             float py = m3 * cy + 3 * m2 * u * y1 + 3 * m * u2 * y2 + u3 * y3;
                             currentContour.emplace_back(ox + px * scale, oy + py * scale);
                         }
+                        lastCpX = x2; lastCpY = y2;
                         cx = x3; cy = y3;
                     }
                     break;
+                case 'S': // Smooth Cubic Bezier
+                    for (size_t i = 0; i + 3 < argCount; i += 4) {
+                        // Reflect last control point
+                        float x1 = 2 * cx - lastCpX, y1 = 2 * cy - lastCpY;
+                        float x2 = cmd.args[i], y2 = cmd.args[i+1];
+                        float x3 = cmd.args[i+2], y3 = cmd.args[i+3];
+                        for (int t = 1; t <= BEZIER_STEPS; t++) {
+                            float u = t / (float)BEZIER_STEPS, u2 = u * u, u3 = u2 * u;
+                            float m = 1 - u, m2 = m * m, m3 = m2 * m;
+                            float px = m3 * cx + 3 * m2 * u * x1 + 3 * m * u2 * x2 + u3 * x3;
+                            float py = m3 * cy + 3 * m2 * u * y1 + 3 * m * u2 * y2 + u3 * y3;
+                            currentContour.emplace_back(ox + px * scale, oy + py * scale);
+                        }
+                        lastCpX = x2; lastCpY = y2;
+                        cx = x3; cy = y3;
+                    }
+                    break;
+                case 's': // Relative Smooth Cubic Bezier
+                    for (size_t i = 0; i + 3 < argCount; i += 4) {
+                        float x1 = 2 * cx - lastCpX, y1 = 2 * cy - lastCpY;
+                        float x2 = cx + cmd.args[i], y2 = cy + cmd.args[i+1];
+                        float x3 = cx + cmd.args[i+2], y3 = cy + cmd.args[i+3];
+                        for (int t = 1; t <= BEZIER_STEPS; t++) {
+                            float u = t / (float)BEZIER_STEPS, u2 = u * u, u3 = u2 * u;
+                            float m = 1 - u, m2 = m * m, m3 = m2 * m;
+                            float px = m3 * cx + 3 * m2 * u * x1 + 3 * m * u2 * x2 + u3 * x3;
+                            float py = m3 * cy + 3 * m2 * u * y1 + 3 * m * u2 * y2 + u3 * y3;
+                            currentContour.emplace_back(ox + px * scale, oy + py * scale);
+                        }
+                        lastCpX = x2; lastCpY = y2;
+                        cx = x3; cy = y3;
+                    }
+                    break;
+                case 'Q': // Quadratic Bezier
+                    for (size_t i = 0; i + 3 < argCount; i += 4) {
+                        float x1 = cmd.args[i], y1 = cmd.args[i+1];
+                        float x2 = cmd.args[i+2], y2 = cmd.args[i+3];
+                        for (int t = 1; t <= BEZIER_STEPS; t++) {
+                            float u = t / (float)BEZIER_STEPS;
+                            float m = 1 - u;
+                            float px = m * m * cx + 2 * m * u * x1 + u * u * x2;
+                            float py = m * m * cy + 2 * m * u * y1 + u * u * y2;
+                            currentContour.emplace_back(ox + px * scale, oy + py * scale);
+                        }
+                        lastCpX = x1; lastCpY = y1;
+                        cx = x2; cy = y2;
+                    }
+                    break;
+                case 'q': // Relative Quadratic Bezier
+                    for (size_t i = 0; i + 3 < argCount; i += 4) {
+                        float x1 = cx + cmd.args[i], y1 = cy + cmd.args[i+1];
+                        float x2 = cx + cmd.args[i+2], y2 = cy + cmd.args[i+3];
+                        for (int t = 1; t <= BEZIER_STEPS; t++) {
+                            float u = t / (float)BEZIER_STEPS;
+                            float m = 1 - u;
+                            float px = m * m * cx + 2 * m * u * x1 + u * u * x2;
+                            float py = m * m * cy + 2 * m * u * y1 + u * u * y2;
+                            currentContour.emplace_back(ox + px * scale, oy + py * scale);
+                        }
+                        lastCpX = x1; lastCpY = y1;
+                        cx = x2; cy = y2;
+                    }
+                    break;
+                case 'T': // Smooth Quadratic Bezier
+                    for (size_t i = 0; i + 1 < argCount; i += 2) {
+                        float x1 = 2 * cx - lastCpX, y1 = 2 * cy - lastCpY;
+                        float x2 = cmd.args[i], y2 = cmd.args[i+1];
+                        for (int t = 1; t <= BEZIER_STEPS; t++) {
+                            float u = t / (float)BEZIER_STEPS;
+                            float m = 1 - u;
+                            float px = m * m * cx + 2 * m * u * x1 + u * u * x2;
+                            float py = m * m * cy + 2 * m * u * y1 + u * u * y2;
+                            currentContour.emplace_back(ox + px * scale, oy + py * scale);
+                        }
+                        lastCpX = x1; lastCpY = y1;
+                        cx = x2; cy = y2;
+                    }
+                    break;
+                case 't': // Relative Smooth Quadratic Bezier
+                    for (size_t i = 0; i + 1 < argCount; i += 2) {
+                        float x1 = 2 * cx - lastCpX, y1 = 2 * cy - lastCpY;
+                        float x2 = cx + cmd.args[i], y2 = cy + cmd.args[i+1];
+                        for (int t = 1; t <= BEZIER_STEPS; t++) {
+                            float u = t / (float)BEZIER_STEPS;
+                            float m = 1 - u;
+                            float px = m * m * cx + 2 * m * u * x1 + u * u * x2;
+                            float py = m * m * cy + 2 * m * u * y1 + u * u * y2;
+                            currentContour.emplace_back(ox + px * scale, oy + py * scale);
+                        }
+                        lastCpX = x1; lastCpY = y1;
+                        cx = x2; cy = y2;
+                    }
+                    break;
+                case 'A': case 'a': { // Elliptical Arc
+                    bool relative = (cmd.type == 'a');
+                    for (size_t i = 0; i + 6 < argCount; i += 7) {
+                        float rx = std::abs(cmd.args[i]);
+                        float ry = std::abs(cmd.args[i+1]);
+                        float xrot = cmd.args[i+2] * M_PI / 180.0f;
+                        int largeArc = (int)cmd.args[i+3];
+                        int sweep = (int)cmd.args[i+4];
+                        float ex = cmd.args[i+5], ey = cmd.args[i+6];
+                        if (relative) { ex += cx; ey += cy; }
+                        
+                        if (rx < 0.001f || ry < 0.001f) {
+                            // Degenerate arc → line
+                            cx = ex; cy = ey;
+                            currentContour.emplace_back(ox + cx * scale, oy + cy * scale);
+                            continue;
+                        }
+                        
+                        // SVG endpoint to center parameterization
+                        float cosRot = std::cos(xrot), sinRot = std::sin(xrot);
+                        float dx2 = (cx - ex) / 2.0f, dy2 = (cy - ey) / 2.0f;
+                        float x1p = cosRot * dx2 + sinRot * dy2;
+                        float y1p = -sinRot * dx2 + cosRot * dy2;
+                        
+                        float rx2 = rx * rx, ry2 = ry * ry;
+                        float x1p2 = x1p * x1p, y1p2 = y1p * y1p;
+                        
+                        // Scale radii if needed
+                        float lambda = x1p2 / rx2 + y1p2 / ry2;
+                        if (lambda > 1.0f) {
+                            float sq = std::sqrt(lambda);
+                            rx *= sq; ry *= sq;
+                            rx2 = rx * rx; ry2 = ry * ry;
+                        }
+                        
+                        float num = rx2 * ry2 - rx2 * y1p2 - ry2 * x1p2;
+                        float den = rx2 * y1p2 + ry2 * x1p2;
+                        float sq = (den > 0) ? std::sqrt(std::max(0.0f, num / den)) : 0;
+                        if (largeArc == sweep) sq = -sq;
+                        
+                        float cxp = sq * rx * y1p / ry;
+                        float cyp = sq * -ry * x1p / rx;
+                        
+                        float centerX = cosRot * cxp - sinRot * cyp + (cx + ex) / 2.0f;
+                        float centerY = sinRot * cxp + cosRot * cyp + (cy + ey) / 2.0f;
+                        
+                        float theta1 = std::atan2((y1p - cyp) / ry, (x1p - cxp) / rx);
+                        float dtheta = std::atan2((-y1p - cyp) / ry, (-x1p - cxp) / rx) - theta1;
+                        
+                        if (sweep && dtheta < 0) dtheta += 2 * M_PI;
+                        if (!sweep && dtheta > 0) dtheta -= 2 * M_PI;
+                        
+                        int steps = std::max(8, (int)(std::abs(dtheta) / (M_PI / 8)));
+                        for (int t = 1; t <= steps; t++) {
+                            float angle = theta1 + dtheta * t / steps;
+                            float px = std::cos(angle) * rx;
+                            float py = std::sin(angle) * ry;
+                            float rx2_ = cosRot * px - sinRot * py + centerX;
+                            float ry2_ = sinRot * px + cosRot * py + centerY;
+                            currentContour.emplace_back(ox + rx2_ * scale, oy + ry2_ * scale);
+                        }
+                        
+                        lastCpX = cx; lastCpY = cy;
+                        cx = ex; cy = ey;
+                    }
+                    break;
+                }
             }
         }
         flushContour();
@@ -764,6 +1013,11 @@ private:
             s.y = parseAttr(elem, "y", 0);
             s.w = parseAttr(elem, "width", 0);
             s.h = parseAttr(elem, "height", 0);
+            s.rectRx = parseAttr(elem, "rx", 0);
+            s.rectRy = parseAttr(elem, "ry", 0);
+            // SVG spec: if only rx or ry specified, the other equals it
+            if (s.rectRx > 0 && s.rectRy == 0) s.rectRy = s.rectRx;
+            if (s.rectRy > 0 && s.rectRx == 0) s.rectRx = s.rectRy;
             parseShapeStyle(elem, s);
             if (s.w > 0 && s.h > 0) img.shapes.push_back(s);
         }
