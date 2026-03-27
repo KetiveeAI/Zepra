@@ -1288,67 +1288,211 @@ void buildLayoutFromDOM(DOMElement* element, LayoutBox* parentBox, bool inLink,
             if (childTag == "input") {
                 std::string inputType = childElement->getAttribute("type");
                 std::transform(inputType.begin(), inputType.end(), inputType.begin(), ::tolower);
+                if (inputType.empty()) inputType = "text";
                 if (inputType == "hidden") continue;
+                
+                // Route button-like inputs to button handler below
                 if (inputType == "submit" || inputType == "button" || inputType == "reset") {
-                    // These are handled by the button handler below
-                    // Fall through by NOT continuing here
-                } else {
-                
-                LayoutBox* inputBox = addChild(parentBox);
-                inputBox->type = LayoutType::InlineBlock;
-                inputBox->text = childElement->getAttribute("placeholder");
-                if (inputBox->text.empty()) inputBox->text = "[" + (inputType.empty() ? "text" : inputType) + "]";
-                
-                // Fix: Apply CSS styles instead of hardcoding
-                // inputBox->fontSize = 16;
-                // inputBox->color = 0x666666;
-                // inputBox->bgColor = 0xFFFFFF; 
-                // inputBox->hasBgColor = true;
-                
-                // Get computed styles for input
-                const CSSComputedStyle* style = g_cssEngine->getComputedStyle(childElement);
-                if (style) {
-                    inputBox->color = cssColorToRGB(style->color);
-                    inputBox->fontSize = style->fontSize; // Fix: fontSize is float, not CSSLength
-                    if (!style->backgroundColor.isTransparent()) {
-                        inputBox->bgColor = cssColorToRGB(style->backgroundColor);
-                        inputBox->hasBgColor = true;
-                    }
-                    // Apply border/padding if needed (LayoutBox handles padding)
-                    inputBox->paddingTop = style->paddingTop.value;
-                    inputBox->paddingBottom = style->paddingBottom.value;
-                    inputBox->paddingLeft = style->paddingLeft.value;
-                    inputBox->paddingRight = style->paddingRight.value;
-                } else {
-                    // Fallback only if no style
-                    inputBox->fontSize = 16;
-                    inputBox->color = 0xCCCCCC;
-                    inputBox->bgColor = 0x333333; // Dark default
-                    inputBox->hasBgColor = true;
+                    // Fall through — handled by button handler below
                 }
-
-                inputBox->isInput = true;
-                inputBox->inputType = inputType;
-                inputBox->placeholder = childElement->getAttribute("placeholder");
-                
-                // Add to g_styledLines for persistence
-                StyledTextLine line;
-                line.text = inputBox->text;
-                line.isInput = true;
-                line.inputType = inputType;
-                line.placeholder = inputBox->placeholder;
-                line.fontSize = inputBox->fontSize;
-                line.color = inputBox->color;
-                line.bgColor = inputBox->bgColor;
-                line.hasBgColor = true;
-                g_styledLines.push_back(line);
-                
-                continue;
-                } // end else (non-button input types)
+                // Checkbox rendering
+                else if (inputType == "checkbox") {
+                    LayoutBox* cbBox = addChild(parentBox);
+                    cbBox->type = LayoutType::InlineBlock;
+                    bool checked = childElement->hasAttribute("checked");
+                    cbBox->text = checked ? "\xe2\x98\x91" : "\xe2\x98\x90"; // ☑ or ☐
+                    
+                    const CSSComputedStyle* style = g_cssEngine->getComputedStyle(childElement);
+                    if (style && !style->backgroundColor.isTransparent()) {
+                        cbBox->bgColor = cssColorToRGB(style->backgroundColor);
+                        cbBox->hasBgColor = true;
+                        cbBox->color = cssColorToRGB(style->color);
+                    } else {
+                        cbBox->color = 0xCCCCCC;
+                    }
+                    cbBox->fontSize = 16;
+                    cbBox->width = 18; cbBox->height = 18;
+                    cbBox->paddingLeft = 2; cbBox->paddingRight = 2;
+                    cbBox->paddingTop = 1; cbBox->paddingBottom = 1;
+                    cbBox->isInput = true;
+                    cbBox->inputType = inputType;
+                    continue;
+                }
+                // Radio button rendering
+                else if (inputType == "radio") {
+                    LayoutBox* rbBox = addChild(parentBox);
+                    rbBox->type = LayoutType::InlineBlock;
+                    bool checked = childElement->hasAttribute("checked");
+                    rbBox->text = checked ? "\xe2\x97\x89" : "\xe2\x97\x8b"; // ◉ or ○
+                    
+                    const CSSComputedStyle* style = g_cssEngine->getComputedStyle(childElement);
+                    if (style && !style->backgroundColor.isTransparent()) {
+                        rbBox->bgColor = cssColorToRGB(style->backgroundColor);
+                        rbBox->hasBgColor = true;
+                        rbBox->color = cssColorToRGB(style->color);
+                    } else {
+                        rbBox->color = 0xCCCCCC;
+                    }
+                    rbBox->fontSize = 16;
+                    rbBox->width = 18; rbBox->height = 18;
+                    rbBox->paddingLeft = 2; rbBox->paddingRight = 2;
+                    rbBox->paddingTop = 1; rbBox->paddingBottom = 1;
+                    rbBox->isInput = true;
+                    rbBox->inputType = inputType;
+                    continue;
+                }
+                // Range slider (simplified bar)
+                else if (inputType == "range") {
+                    LayoutBox* rangeBox = addChild(parentBox);
+                    rangeBox->type = LayoutType::InlineBlock;
+                    rangeBox->text = "";
+                    rangeBox->width = 150; rangeBox->height = 20;
+                    rangeBox->bgColor = 0x444444;
+                    rangeBox->hasBgColor = true;
+                    rangeBox->borderRadius = 4;
+                    rangeBox->borderTop = 1; rangeBox->borderColor = 0x666666;
+                    rangeBox->isInput = true;
+                    rangeBox->inputType = inputType;
+                    continue;
+                }
+                // Color picker (swatch)
+                else if (inputType == "color") {
+                    LayoutBox* colorBox = addChild(parentBox);
+                    colorBox->type = LayoutType::InlineBlock;
+                    colorBox->text = "";
+                    std::string val = childElement->getAttribute("value");
+                    uint32_t swatchColor = 0x000000;
+                    if (!val.empty() && val[0] == '#' && val.size() >= 7) {
+                        swatchColor = (uint32_t)std::stoul(val.substr(1, 6), nullptr, 16);
+                    }
+                    colorBox->width = 32; colorBox->height = 24;
+                    colorBox->bgColor = swatchColor;
+                    colorBox->hasBgColor = true;
+                    colorBox->borderTop = 1; colorBox->borderRight = 1;
+                    colorBox->borderBottom = 1; colorBox->borderLeft = 1;
+                    colorBox->borderColor = 0x888888;
+                    colorBox->borderRadius = 3;
+                    colorBox->isInput = true;
+                    colorBox->inputType = inputType;
+                    continue;
+                }
+                // File upload
+                else if (inputType == "file") {
+                    LayoutBox* fileBox = addChild(parentBox);
+                    fileBox->type = LayoutType::InlineBlock;
+                    fileBox->text = "Choose File";
+                    fileBox->fontSize = 13;
+                    fileBox->color = 0xDDDDDD;
+                    fileBox->bgColor = 0x444444;
+                    fileBox->hasBgColor = true;
+                    fileBox->paddingTop = 4; fileBox->paddingBottom = 4;
+                    fileBox->paddingLeft = 10; fileBox->paddingRight = 10;
+                    fileBox->borderTop = 1; fileBox->borderRight = 1;
+                    fileBox->borderBottom = 1; fileBox->borderLeft = 1;
+                    fileBox->borderColor = 0x666666;
+                    fileBox->borderRadius = 3;
+                    fileBox->isInput = true;
+                    fileBox->inputType = inputType;
+                    continue;
+                }
+                // Text-like inputs: text, password, email, search, url, tel, number, date, datetime-local, month, week, time
+                else {
+                    LayoutBox* inputBox = addChild(parentBox);
+                    inputBox->type = LayoutType::InlineBlock;
+                    
+                    // Display value or placeholder
+                    std::string value = childElement->getAttribute("value");
+                    if (inputType == "password" && !value.empty()) {
+                        value = std::string(value.size(), '\xe2\x80\xa2'); // bullet dots
+                    }
+                    inputBox->text = value;
+                    inputBox->placeholder = childElement->getAttribute("placeholder");
+                    if (inputBox->text.empty() && inputBox->placeholder.empty()) {
+                        inputBox->placeholder = inputType;
+                    }
+                    
+                    const CSSComputedStyle* style = g_cssEngine->getComputedStyle(childElement);
+                    if (style) {
+                        inputBox->color = cssColorToRGB(style->color);
+                        inputBox->fontSize = style->fontSize > 0 ? style->fontSize : 14;
+                        if (!style->backgroundColor.isTransparent()) {
+                            inputBox->bgColor = cssColorToRGB(style->backgroundColor);
+                        } else {
+                            inputBox->bgColor = 0x2A2A2A; // Dark default for text inputs
+                        }
+                        inputBox->hasBgColor = true;
+                        inputBox->paddingTop = style->paddingTop.value > 0 ? style->paddingTop.value : 6;
+                        inputBox->paddingBottom = style->paddingBottom.value > 0 ? style->paddingBottom.value : 6;
+                        inputBox->paddingLeft = style->paddingLeft.value > 0 ? style->paddingLeft.value : 8;
+                        inputBox->paddingRight = style->paddingRight.value > 0 ? style->paddingRight.value : 8;
+                        // Apply border from CSS or default
+                        if (style->borderTopWidth > 0) {
+                            inputBox->borderTop = style->borderTopWidth;
+                            inputBox->borderRight = style->borderRightWidth;
+                            inputBox->borderBottom = style->borderBottomWidth;
+                            inputBox->borderLeft = style->borderLeftWidth;
+                            inputBox->borderColor = cssColorToRGB(style->borderTopColor);
+                        } else {
+                            inputBox->borderTop = 1; inputBox->borderRight = 1;
+                            inputBox->borderBottom = 1; inputBox->borderLeft = 1;
+                            inputBox->borderColor = 0x555555;
+                        }
+                        inputBox->borderRadius = style->borderTopLeftRadius > 0 ? style->borderTopLeftRadius : 3;
+                    } else {
+                        inputBox->fontSize = 14;
+                        inputBox->color = 0xDDDDDD;
+                        inputBox->bgColor = 0x2A2A2A;
+                        inputBox->hasBgColor = true;
+                        inputBox->paddingTop = 6; inputBox->paddingBottom = 6;
+                        inputBox->paddingLeft = 8; inputBox->paddingRight = 8;
+                        inputBox->borderTop = 1; inputBox->borderRight = 1;
+                        inputBox->borderBottom = 1; inputBox->borderLeft = 1;
+                        inputBox->borderColor = 0x555555;
+                        inputBox->borderRadius = 3;
+                    }
+                    
+                    inputBox->isInput = true;
+                    inputBox->inputType = inputType;
+                    
+                    // Size attribute → width
+                    std::string sizeAttr = childElement->getAttribute("size");
+                    if (!sizeAttr.empty()) {
+                        int sz = std::stoi(sizeAttr);
+                        inputBox->width = sz * inputBox->fontSize * 0.6f + inputBox->paddingLeft + inputBox->paddingRight;
+                    } else {
+                        // Default width based on type
+                        if (inputType == "number" || inputType == "time") {
+                            inputBox->width = 80;
+                        } else if (inputType == "date" || inputType == "month" || inputType == "week" || inputType == "datetime-local") {
+                            inputBox->width = 160;
+                        } else {
+                            inputBox->width = 180; // Default text input width
+                        }
+                    }
+                    
+                    inputBox->height = inputBox->fontSize + inputBox->paddingTop + inputBox->paddingBottom + 
+                                       inputBox->borderTop + inputBox->borderBottom;
+                    
+                    StyledTextLine line;
+                    line.text = inputBox->text.empty() ? inputBox->placeholder : inputBox->text;
+                    line.isInput = true;
+                    line.inputType = inputType;
+                    line.placeholder = inputBox->placeholder;
+                    line.fontSize = inputBox->fontSize;
+                    line.color = inputBox->color;
+                    line.bgColor = inputBox->bgColor;
+                    line.hasBgColor = true;
+                    g_styledLines.push_back(line);
+                    
+                    continue;
+                }
             }
             
-            // Handle button
-            if (childTag == "button" || (childTag == "input" && childElement->getAttribute("type") == "submit")) {
+            // Handle button and button-like inputs
+            if (childTag == "button" || 
+                (childTag == "input" && (childElement->getAttribute("type") == "submit" || 
+                                         childElement->getAttribute("type") == "button" ||
+                                         childElement->getAttribute("type") == "reset"))) {
                 LayoutBox* btnBox = addChild(parentBox);
                 btnBox->type = LayoutType::InlineBlock;
                 
@@ -1359,11 +1503,17 @@ void buildLayoutFromDOM(DOMElement* element, LayoutBox* parentBox, bool inLink,
                 } else {
                     btnBox->text = childElement->getAttribute("value");
                 }
-                if (btnBox->text.empty()) btnBox->text = "Submit";
+                
+                // Default text by type
+                if (btnBox->text.empty()) {
+                    std::string btype = childElement->getAttribute("type");
+                    if (btype == "reset") btnBox->text = "Reset";
+                    else btnBox->text = "Submit";
+                }
                 
                 const CSSComputedStyle* style = g_cssEngine->getComputedStyle(childElement);
                 if (style) {
-                    btnBox->fontSize = style->fontSize;
+                    btnBox->fontSize = style->fontSize > 0 ? style->fontSize : 14;
                     btnBox->color = cssColorToRGB(style->color);
                     if (!style->backgroundColor.isTransparent()) {
                         btnBox->bgColor = cssColorToRGB(style->backgroundColor);
@@ -1372,23 +1522,33 @@ void buildLayoutFromDOM(DOMElement* element, LayoutBox* parentBox, bool inLink,
                     }
                     btnBox->hasBgColor = true;
                     btnBox->bold = (style->fontWeight >= FontWeight::Bold);
-                    btnBox->paddingTop = style->paddingTop.value > 0 ? style->paddingTop.value : 6;
-                    btnBox->paddingBottom = style->paddingBottom.value > 0 ? style->paddingBottom.value : 6;
-                    btnBox->paddingLeft = style->paddingLeft.value > 0 ? style->paddingLeft.value : 12;
-                    btnBox->paddingRight = style->paddingRight.value > 0 ? style->paddingRight.value : 12;
+                    btnBox->paddingTop = style->paddingTop.value > 0 ? style->paddingTop.value : 8;
+                    btnBox->paddingBottom = style->paddingBottom.value > 0 ? style->paddingBottom.value : 8;
+                    btnBox->paddingLeft = style->paddingLeft.value > 0 ? style->paddingLeft.value : 16;
+                    btnBox->paddingRight = style->paddingRight.value > 0 ? style->paddingRight.value : 16;
                     btnBox->borderRadius = style->borderTopLeftRadius > 0 ? style->borderTopLeftRadius : 4;
-                    btnBox->borderTop = style->borderTopWidth;
-                    btnBox->borderColor = cssColorToRGB(style->borderTopColor);
+                    if (style->borderTopWidth > 0) {
+                        btnBox->borderTop = style->borderTopWidth;
+                        btnBox->borderRight = style->borderRightWidth;
+                        btnBox->borderBottom = style->borderBottomWidth;
+                        btnBox->borderLeft = style->borderLeftWidth;
+                        btnBox->borderColor = cssColorToRGB(style->borderTopColor);
+                    }
                 } else {
                     btnBox->fontSize = 14;
                     btnBox->color = 0xFFFFFF;
                     btnBox->bgColor = 0x2563EB;
                     btnBox->hasBgColor = true;
                     btnBox->bold = true;
-                    btnBox->paddingTop = 6; btnBox->paddingBottom = 6;
-                    btnBox->paddingLeft = 12; btnBox->paddingRight = 12;
+                    btnBox->paddingTop = 8; btnBox->paddingBottom = 8;
+                    btnBox->paddingLeft = 16; btnBox->paddingRight = 16;
                     btnBox->borderRadius = 4;
                 }
+                
+                // Compute dimensions from text + padding
+                float textW = btnBox->text.size() * btnBox->fontSize * 0.55f;
+                btnBox->width = textW + btnBox->paddingLeft + btnBox->paddingRight;
+                btnBox->height = btnBox->fontSize + btnBox->paddingTop + btnBox->paddingBottom;
                 
                 StyledTextLine line;
                 line.text = btnBox->text;
