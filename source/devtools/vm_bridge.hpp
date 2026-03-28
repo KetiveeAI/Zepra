@@ -2,12 +2,8 @@
  * @file vm_bridge.hpp
  * @brief Real connection between DevTools and ZepraScript Engine
  * 
- * This provides the actual VM integration - no dummy data!
- * Uses ZepraScript Debug APIs:
- * - Console::instance() for real console messages
- * - Debugger for breakpoints, stepping, call stack
- * - Inspector for object inspection
- * - Isolate::getHeapStats() for memory stats
+ * Uses ZepraScript Debug APIs when available, otherwise
+ * delegates to ScriptContext (the page's live VM).
  */
 
 #pragma once
@@ -19,6 +15,12 @@
 #include <chrono>
 #include <deque>
 #include <mutex>
+#include <unordered_map>
+
+// ScriptContext for shared VM access
+#ifdef USE_WEBCORE
+#include "scripting/script_context.hpp"
+#endif
 
 // ZepraScript includes
 #ifdef ZEPRA_VM_AVAILABLE
@@ -94,7 +96,7 @@ struct VMNetworkRequest {
 };
 
 // =============================================================================
-// VM Bridge - Real Engine Connection
+// VM Bridge - Engine Connection
 // =============================================================================
 class VMBridge {
 public:
@@ -102,6 +104,9 @@ public:
         static VMBridge inst;
         return inst;
     }
+    
+    // Bind to the page's live ScriptContext (shared VM, no duplicate)
+    void setScriptContext(void* ctx) { scriptCtx_ = ctx; }
     
     // --- Connection ---
     
@@ -173,41 +178,48 @@ public:
     // --- Console ---
     
     std::string evaluate(const std::string& code) {
-#ifdef ZEPRA_VM_AVAILABLE
-        if (!connected_ || !engine_) {
-            return "Error: Not connected to VM";
-        }
-        
         // Log input
         VMConsoleEntry input;
         input.level = VMConsoleEntry::INPUT;
         input.text = "> " + code;
         input.timestamp = getCurrentTime();
         addConsoleEntry(input);
-        
-        // Execute
-        auto result = engine_->execute(code, "<devtools>");
-        
-        std::string output;
-        if (result.isSuccess()) {
-            output = Debug::Inspector::formatValue(result.value());
-        } else {
-            output = "Error: " + result.error();
+
+#ifdef ZEPRA_VM_AVAILABLE
+        if (connected_ && engine_) {
+            auto result = engine_->execute(code, "<devtools>");
+            std::string output;
+            if (result.isSuccess()) {
+                output = Debug::Inspector::formatValue(result.value());
+            } else {
+                output = "Error: " + result.error();
+            }
+            VMConsoleEntry outEntry;
+            outEntry.level = result.isSuccess() ? VMConsoleEntry::OUTPUT : VMConsoleEntry::ERROR;
+            outEntry.text = output;
+            outEntry.timestamp = getCurrentTime();
+            addConsoleEntry(outEntry);
+            return output;
         }
-        
-        // Log output
-        VMConsoleEntry outEntry;
-        outEntry.level = result.isSuccess() ? VMConsoleEntry::OUTPUT : VMConsoleEntry::ERROR;
-        outEntry.text = output;
-        outEntry.timestamp = getCurrentTime();
-        addConsoleEntry(outEntry);
-        
-        return output;
-#else
-        // Fallback when no VM
+#endif
+
+#ifdef USE_WEBCORE
+        // Delegate to page's ScriptContext when available
+        if (scriptCtx_) {
+            auto* ctx = static_cast<Zepra::WebCore::ScriptContext*>(scriptCtx_);
+            auto result = ctx->evaluate(code, "<devtools>");
+            std::string output = result.success ? result.value : result.error;
+            VMConsoleEntry outEntry;
+            outEntry.level = result.success ? VMConsoleEntry::OUTPUT : VMConsoleEntry::ERROR;
+            outEntry.text = output;
+            outEntry.timestamp = getCurrentTime();
+            addConsoleEntry(outEntry);
+            return output;
+        }
+#endif
+
         addSystemMessage("VM not connected - simulating: " + code);
         return simulateEval(code);
-#endif
     }
     
     std::vector<VMConsoleEntry> getConsoleMessages() {
@@ -311,13 +323,14 @@ public:
             stats.totalHeap = heapStats.totalHeapSize;
             stats.usedHeap = heapStats.usedHeapSize;
             stats.objectCount = heapStats.objectCount;
+            return stats;
         }
-#else
-        // Simulate for testing
-        stats.totalHeap = 64 * 1024 * 1024;
-        stats.usedHeap = 42 * 1024 * 1024;
-        stats.objectCount = 15000;
 #endif
+        // Report process-level memory as approximation when VM stats unavailable
+        // This is better than fake hardcoded values
+        stats.totalHeap = 0;
+        stats.usedHeap = 0;
+        stats.objectCount = 0;
         return stats;
     }
     
@@ -416,6 +429,7 @@ private:
     
     bool connected_ = false;
     std::string lastError_;
+    void* scriptCtx_ = nullptr;  // Zepra::WebCore::ScriptContext* (avoids header dep)
     
 #ifdef ZEPRA_VM_AVAILABLE
     std::unique_ptr<ScriptEngine> engine_;

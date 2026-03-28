@@ -3,14 +3,16 @@
  * @brief Browser-DevTools Integration Layer
  * 
  * Provides the interface between the main browser and DevTools.
- * DevTools runs in background, window opens on demand (F12).
+ * Two usage patterns:
+ *   1. Browser-embedded: show(vm) / hide() lifecycle from F12
+ *   2. Standalone window: DevToolsIntegration(window, vm) factory
  */
 
 #pragma once
 
 #include <memory>
-#include <thread>
 #include <atomic>
+#include <string>
 
 // Forward declarations
 namespace Zepra::Runtime {
@@ -20,147 +22,69 @@ namespace Zepra::Runtime {
 
 namespace Zepra::Debug {
     class Debugger;
-    class Console;
+    struct DebugCallFrame;
+    struct Breakpoint;
+}
+
+namespace Zepra::WebCore {
+    class ScriptContext;
 }
 
 namespace Zepra::DevTools {
 
+class DevToolsWindow;
 class DevToolsPanel;
+struct NetworkEntry;
+
+/**
+ * @brief Result of evaluating an expression in DevTools console
+ */
+struct EvalResult {
+    bool success = false;
+    std::string value;
+    std::string type;
+    std::string error;
+};
 
 /**
  * @brief Manages DevTools lifecycle and connection to browser
- * 
- * Usage from browser:
- *   DevToolsIntegration devtools_;
- *   
- *   // On F12:
- *   devtools_.show(activePage_->vm());
- *   
- *   // DevTools window closes:
- *   devtools_.hide();
  */
 class DevToolsIntegration {
 public:
-    DevToolsIntegration();
+    // Standalone window mode
+    DevToolsIntegration(DevToolsWindow* window, Zepra::Runtime::VM* vm);
     ~DevToolsIntegration();
-    
-    /**
-     * @brief Show DevTools window
-     * @param vm VM from active tab/page to debug
-     */
-    void show(Runtime::VM* vm);
-    
-    /**
-     * @brief Hide DevTools window
-     */
-    void hide();
-    
-    /**
-     * @brief Check if DevTools window is visible
-     */
-    bool isVisible() const { return visible_; }
-    
-    /**
-     * @brief Update DevTools (call from browser main loop)
-     */
-    void update();
-    
-    /**
-     * @brief Connect to different VM (tab switch)
-     */
-    void connectVM(Runtime::VM* vm);
-    
-    /**
-     * @brief Notify DevTools of network request
-     */
-    void notifyNetworkRequest(int id, const std::string& url, 
-                               const std::string& method, int status,
-                               size_t size, double time);
-    
-    /**
-     * @brief Get the internal panel (for advanced use)
-     */
-    DevToolsPanel* panel() { return panel_.get(); }
-    
+
+    // Connection
+    void connect();
+    void disconnect();
+    bool isConnected() const { return connected_; }
+
+    // Console evaluation — wired to ScriptContext when available
+    EvalResult evaluate(const std::string& expression);
+
+    // ScriptContext binding (from browser side)
+    void setScriptContext(Zepra::WebCore::ScriptContext* ctx);
+
+    // Debugger events
+    void onDebugEvent(int event, const void* data);
+
 private:
-    std::unique_ptr<DevToolsPanel> panel_;
-    std::atomic<bool> visible_{false};
-    Runtime::VM* currentVM_ = nullptr;
-    
-    // Window handle (SDL)
-    void* windowHandle_ = nullptr;
-    void* rendererHandle_ = nullptr;
+    void hookConsole();
+    void syncBreakpoints();
+    void onPaused(const Zepra::Debug::DebugCallFrame& frame);
+    void onResumed();
+    void onBreakpointHit(const Zepra::Debug::Breakpoint& bp);
+
+    DevToolsWindow* window_ = nullptr;
+    Zepra::Runtime::VM* vm_ = nullptr;
+    Zepra::Debug::Debugger* debugger_ = nullptr;
+    Zepra::WebCore::ScriptContext* scriptContext_ = nullptr;
+    bool connected_ = false;
 };
 
-// =============================================================================
-// Inline Implementation
-// =============================================================================
-
-inline DevToolsIntegration::DevToolsIntegration() {}
-
-inline DevToolsIntegration::~DevToolsIntegration() {
-    hide();
-}
-
-inline void DevToolsIntegration::show(Runtime::VM* vm) {
-    if (visible_) return;
-    
-    currentVM_ = vm;
-    
-    // Create panel connected to VM
-    panel_ = std::make_unique<DevToolsPanel>(vm);
-    panel_->connect();
-    
-    // Create SDL window for DevTools
-    // Note: In production, this would create a separate SDL window
-    // For now, DevTools panel handles its own window creation
-    
-    visible_ = true;
-}
-
-inline void DevToolsIntegration::hide() {
-    if (!visible_) return;
-    
-    if (panel_) {
-        panel_->disconnect();
-        panel_.reset();
-    }
-    
-    visible_ = false;
-}
-
-inline void DevToolsIntegration::update() {
-    // DevTools update is handled by its own event loop
-    // This is called from browser main loop if needed
-}
-
-inline void DevToolsIntegration::connectVM(Runtime::VM* vm) {
-    if (panel_) {
-        panel_->disconnect();
-    }
-    
-    currentVM_ = vm;
-    
-    if (panel_ && visible_) {
-        panel_ = std::make_unique<DevToolsPanel>(vm);
-        panel_->connect();
-    }
-}
-
-inline void DevToolsIntegration::notifyNetworkRequest(
-    int id, const std::string& url, const std::string& method,
-    int status, size_t size, double time) {
-    
-    if (panel_) {
-        NetworkEntry entry;
-        entry.id = id;
-        entry.url = url;
-        entry.method = method;
-        entry.status = status;
-        entry.responseSize = size;
-        entry.endTime = time;
-        panel_->addNetworkEntry(entry);
-    }
-}
+// Factory functions
+DevToolsWindow* createDevTools(Zepra::Runtime::VM* vm);
+void destroyDevTools(DevToolsWindow* window);
 
 } // namespace Zepra::DevTools

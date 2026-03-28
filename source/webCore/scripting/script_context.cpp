@@ -366,7 +366,206 @@ void ScriptContext::setupWindowGlobals() {
     vm_->setGlobal("innerWidth", Value::number(1280));
     vm_->setGlobal("innerHeight", Value::number(720));
     
-    std::cout << "[ScriptContext] Window globals registered (alert, console, setTimeout, navigator, location)" << std::endl;
+    // 'window' — self-referencing global scope alias
+    // Most JS starts with window.addEventListener, window.document, etc.
+    auto* windowObj = new Object();
+    windowObj->set("innerWidth", Value::number(1280));
+    windowObj->set("innerHeight", Value::number(720));
+    windowObj->set("navigator", Value::object(navObj));
+    windowObj->set("location", Value::object(locObj));
+    windowObj->set("console", Value::object(consoleObj));
+    windowObj->set("alert", Value::object(alertFn));
+    windowObj->set("confirm", Value::object(confirmFn));
+    windowObj->set("prompt", Value::object(promptFn));
+    windowObj->set("setTimeout", Value::object(setTimeoutFn));
+    windowObj->set("setInterval", Value::object(setIntervalFn));
+    windowObj->set("clearTimeout", Value::object(clearTimeoutFn));
+    windowObj->set("clearInterval", Value::object(clearTimeoutFn));
+    
+    // window.addEventListener — delegates to ScriptContext event system
+    auto* winAddEvent = createNativeFunction("addEventListener",
+        [this](Context*, const std::vector<Value>& args) -> Value {
+            if (args.size() < 2) return Value::undefined();
+            std::string eventType = args[0].toString();
+            addEventListener(eventType, []{});
+            return Value::undefined();
+        }, 2);
+    windowObj->set("addEventListener", Value::object(winAddEvent));
+    
+    // window.removeEventListener (no-op for now)
+    auto* winRemoveEvent = createNativeFunction("removeEventListener",
+        [](Context*, const std::vector<Value>&) -> Value {
+            return Value::undefined();
+        }, 2);
+    windowObj->set("removeEventListener", Value::object(winRemoveEvent));
+    
+    // window.getComputedStyle (stub — returns empty style object)
+    auto* getComputedStyleFn = createNativeFunction("getComputedStyle",
+        [](Context*, const std::vector<Value>&) -> Value {
+            auto* styleObj = new Object();
+            auto* getPropertyFn = createNativeFunction("getPropertyValue",
+                [](Context*, const std::vector<Value>&) -> Value {
+                    return Value::string(new String(""));
+                }, 1);
+            styleObj->set("getPropertyValue", Value::object(getPropertyFn));
+            return Value::object(styleObj);
+        }, 1);
+    windowObj->set("getComputedStyle", Value::object(getComputedStyleFn));
+    vm_->setGlobal("getComputedStyle", Value::object(getComputedStyleFn));
+    
+    // window.requestAnimationFrame (stub — returns id, doesn't schedule)
+    auto* rafFn = createNativeFunction("requestAnimationFrame",
+        [this](Context*, const std::vector<Value>&) -> Value {
+            return Value::number(nextTimerId_++);
+        }, 1);
+    windowObj->set("requestAnimationFrame", Value::object(rafFn));
+    vm_->setGlobal("requestAnimationFrame", Value::object(rafFn));
+    
+    // window.cancelAnimationFrame (no-op)
+    auto* cafFn = createNativeFunction("cancelAnimationFrame",
+        [](Context*, const std::vector<Value>&) -> Value {
+            return Value::undefined();
+        }, 1);
+    windowObj->set("cancelAnimationFrame", Value::object(cafFn));
+    vm_->setGlobal("cancelAnimationFrame", Value::object(cafFn));
+    
+    // self-reference
+    windowObj->set("window", Value::object(windowObj));
+    windowObj->set("self", Value::object(windowObj));
+    windowObj->set("globalThis", Value::object(windowObj));
+    
+    vm_->setGlobal("window", Value::object(windowObj));
+    vm_->setGlobal("self", Value::object(windowObj));
+    
+    // JSON.parse / JSON.stringify
+    auto* jsonObj = new Object();
+    auto* jsonParseFn = createNativeFunction("parse",
+        [](Context*, const std::vector<Value>& args) -> Value {
+            if (args.empty()) return Value::null();
+            // Minimal: return the string as-is for now
+            // Full JSON parsing requires recursive descent
+            return args[0];
+        }, 1);
+    jsonObj->set("parse", Value::object(jsonParseFn));
+    
+    auto* jsonStringifyFn = createNativeFunction("stringify",
+        [](Context*, const std::vector<Value>& args) -> Value {
+            if (args.empty()) return Value::string(new String("undefined"));
+            return Value::string(new String(args[0].toString()));
+        }, 1);
+    jsonObj->set("stringify", Value::object(jsonStringifyFn));
+    vm_->setGlobal("JSON", Value::object(jsonObj));
+    windowObj->set("JSON", Value::object(jsonObj));
+    
+    // localStorage (in-memory, non-persistent)
+    auto* storageObj = new Object();
+    auto* storageData = new Object();  // backing store
+    
+    auto* getItemFn = createNativeFunction("getItem",
+        [storageData](Context*, const std::vector<Value>& args) -> Value {
+            if (args.empty()) return Value::null();
+            auto val = storageData->get(args[0].toString());
+            return val.isUndefined() ? Value::null() : val;
+        }, 1);
+    storageObj->set("getItem", Value::object(getItemFn));
+    
+    auto* setItemFn = createNativeFunction("setItem",
+        [storageData](Context*, const std::vector<Value>& args) -> Value {
+            if (args.size() >= 2) {
+                storageData->set(args[0].toString(), args[1]);
+            }
+            return Value::undefined();
+        }, 2);
+    storageObj->set("setItem", Value::object(setItemFn));
+    
+    auto* removeItemFn = createNativeFunction("removeItem",
+        [](Context*, const std::vector<Value>&) -> Value {
+            return Value::undefined();
+        }, 1);
+    storageObj->set("removeItem", Value::object(removeItemFn));
+    
+    auto* clearFn = createNativeFunction("clear",
+        [](Context*, const std::vector<Value>&) -> Value {
+            return Value::undefined();
+        }, 0);
+    storageObj->set("clear", Value::object(clearFn));
+    
+    vm_->setGlobal("localStorage", Value::object(storageObj));
+    vm_->setGlobal("sessionStorage", Value::object(storageObj));
+    windowObj->set("localStorage", Value::object(storageObj));
+    windowObj->set("sessionStorage", Value::object(storageObj));
+    
+    // history object
+    auto* historyObj = new Object();
+    historyObj->set("length", Value::number(1));
+    historyObj->set("state", Value::null());
+    
+    auto* pushStateFn = createNativeFunction("pushState",
+        [](Context*, const std::vector<Value>&) -> Value {
+            return Value::undefined();
+        }, 3);
+    historyObj->set("pushState", Value::object(pushStateFn));
+    historyObj->set("replaceState", Value::object(pushStateFn));
+    
+    auto* histBackFn = createNativeFunction("back",
+        [](Context*, const std::vector<Value>&) -> Value {
+            return Value::undefined();
+        }, 0);
+    historyObj->set("back", Value::object(histBackFn));
+    historyObj->set("forward", Value::object(histBackFn));
+    historyObj->set("go", Value::object(histBackFn));
+    
+    vm_->setGlobal("history", Value::object(historyObj));
+    windowObj->set("history", Value::object(historyObj));
+    
+    // atob / btoa (base64 stubs)
+    auto* atobFn = createNativeFunction("atob",
+        [](Context*, const std::vector<Value>& args) -> Value {
+            if (args.empty()) return Value::string(new String(""));
+            return Value::string(new String(args[0].toString()));
+        }, 1);
+    vm_->setGlobal("atob", Value::object(atobFn));
+    vm_->setGlobal("btoa", Value::object(atobFn));
+    windowObj->set("atob", Value::object(atobFn));
+    windowObj->set("btoa", Value::object(atobFn));
+    
+    // Boolean / Number / String constructors (commonly checked)
+    vm_->setGlobal("Boolean", Value::object(createNativeFunction("Boolean",
+        [](Context*, const std::vector<Value>& args) -> Value {
+            if (args.empty()) return Value::boolean(false);
+            return Value::boolean(args[0].toBoolean());
+        }, 1)));
+    vm_->setGlobal("Number", Value::object(createNativeFunction("Number",
+        [](Context*, const std::vector<Value>& args) -> Value {
+            if (args.empty()) return Value::number(0);
+            return Value::number(args[0].toNumber());
+        }, 1)));
+    vm_->setGlobal("isNaN", Value::object(createNativeFunction("isNaN",
+        [](Context*, const std::vector<Value>& args) -> Value {
+            if (args.empty()) return Value::boolean(true);
+            double n = args[0].toNumber();
+            return Value::boolean(n != n);
+        }, 1)));
+    vm_->setGlobal("isFinite", Value::object(createNativeFunction("isFinite",
+        [](Context*, const std::vector<Value>& args) -> Value {
+            if (args.empty()) return Value::boolean(false);
+            double n = args[0].toNumber();
+            return Value::boolean(n == n && n != INFINITY && n != -INFINITY);
+        }, 1)));
+    vm_->setGlobal("parseInt", Value::object(createNativeFunction("parseInt",
+        [](Context*, const std::vector<Value>& args) -> Value {
+            if (args.empty()) return Value::number(0);
+            try { return Value::number(std::stoi(args[0].toString())); }
+            catch (...) { return Value::number(0); }
+        }, 1)));
+    vm_->setGlobal("parseFloat", Value::object(createNativeFunction("parseFloat",
+        [](Context*, const std::vector<Value>& args) -> Value {
+            if (args.empty()) return Value::number(0);
+            try { return Value::number(std::stod(args[0].toString())); }
+            catch (...) { return Value::number(0); }
+        }, 1)));
+    
+    std::cout << "[ScriptContext] Window globals registered (alert, console, setTimeout, navigator, location, JSON, localStorage, history)" << std::endl;
 }
 
 void ScriptContext::setupDocumentGlobals() {
@@ -452,6 +651,88 @@ void ScriptContext::setupDocumentGlobals() {
             }, 1);
         obj->set("querySelector", Value::object(qsFn));
         
+        // classList object
+        auto* classListObj = new Object();
+        std::string cls = elem->className();
+        classListObj->set("value", Value::string(new String(cls)));
+        
+        auto* clAddFn = createNativeFunction("add",
+            [elem](Context*, const std::vector<Value>& args) -> Value {
+                if (!args.empty()) {
+                    std::string current = elem->className();
+                    if (!current.empty()) current += " ";
+                    current += args[0].toString();
+                    elem->setAttribute("class", current);
+                }
+                return Value::undefined();
+            }, 1);
+        classListObj->set("add", Value::object(clAddFn));
+        
+        auto* clRemoveFn = createNativeFunction("remove",
+            [](Context*, const std::vector<Value>&) -> Value {
+                return Value::undefined();
+            }, 1);
+        classListObj->set("remove", Value::object(clRemoveFn));
+        
+        auto* clContainsFn = createNativeFunction("contains",
+            [elem](Context*, const std::vector<Value>& args) -> Value {
+                if (args.empty()) return Value::boolean(false);
+                std::string cls = elem->className();
+                return Value::boolean(cls.find(args[0].toString()) != std::string::npos);
+            }, 1);
+        classListObj->set("contains", Value::object(clContainsFn));
+        
+        auto* clToggleFn = createNativeFunction("toggle",
+            [](Context*, const std::vector<Value>&) -> Value {
+                return Value::boolean(false);
+            }, 1);
+        classListObj->set("toggle", Value::object(clToggleFn));
+        obj->set("classList", Value::object(classListObj));
+        
+        // parentNode / parentElement
+        DOMNode* parentNode = elem->parentNode();
+        DOMElement* parent = parentNode ? dynamic_cast<DOMElement*>(parentNode) : nullptr;
+        if (parent) {
+            auto* parentObj = new Object();
+            parentObj->set("tagName", Value::string(new String(parent->tagName())));
+            parentObj->set("id", Value::string(new String(parent->id())));
+            parentObj->set("className", Value::string(new String(parent->className())));
+            obj->set("parentNode", Value::object(parentObj));
+            obj->set("parentElement", Value::object(parentObj));
+        } else {
+            obj->set("parentNode", Value::null());
+            obj->set("parentElement", Value::null());
+        }
+        
+        // appendChild / removeChild (stubs for mutation)
+        auto* appendChildFn = createNativeFunction("appendChild",
+            [](Context*, const std::vector<Value>& args) -> Value {
+                return args.empty() ? Value::undefined() : args[0];
+            }, 1);
+        obj->set("appendChild", Value::object(appendChildFn));
+        
+        auto* removeChildFn = createNativeFunction("removeChild",
+            [](Context*, const std::vector<Value>& args) -> Value {
+                return args.empty() ? Value::undefined() : args[0];
+            }, 1);
+        obj->set("removeChild", Value::object(removeChildFn));
+        
+        // getBoundingClientRect
+        auto* getBCRFn = createNativeFunction("getBoundingClientRect",
+            [](Context*, const std::vector<Value>&) -> Value {
+                auto* rect = new Object();
+                rect->set("x", Value::number(0));
+                rect->set("y", Value::number(0));
+                rect->set("width", Value::number(0));
+                rect->set("height", Value::number(0));
+                rect->set("top", Value::number(0));
+                rect->set("left", Value::number(0));
+                rect->set("right", Value::number(0));
+                rect->set("bottom", Value::number(0));
+                return Value::object(rect);
+            }, 0);
+        obj->set("getBoundingClientRect", Value::object(getBCRFn));
+        
         return Value::object(obj);
     };
     
@@ -536,8 +817,70 @@ void ScriptContext::setupDocumentGlobals() {
         }, 2);
     docObj->set("addEventListener", Value::object(docAddEvent));
     
+    // document.getElementsByTagName
+    auto* getByTag = createNativeFunction("getElementsByTagName",
+        [doc, wrapElement](Context*, const std::vector<Value>& args) -> Value {
+            if (args.empty()) return Value::object(new Object(ObjectType::Array));
+            auto elems = doc->querySelectorAll(args[0].toString());
+            auto* arr = new Object(ObjectType::Array);
+            for (size_t i = 0; i < elems.size(); i++) {
+                arr->set(i, wrapElement(elems[i]));
+            }
+            arr->set("length", Value::number((double)elems.size()));
+            return Value::object(arr);
+        }, 1);
+    docObj->set("getElementsByTagName", Value::object(getByTag));
+    
+    // document.getElementsByClassName
+    auto* getByClass = createNativeFunction("getElementsByClassName",
+        [doc, wrapElement](Context*, const std::vector<Value>& args) -> Value {
+            if (args.empty()) return Value::object(new Object(ObjectType::Array));
+            std::string selector = "." + args[0].toString();
+            auto elems = doc->querySelectorAll(selector);
+            auto* arr = new Object(ObjectType::Array);
+            for (size_t i = 0; i < elems.size(); i++) {
+                arr->set(i, wrapElement(elems[i]));
+            }
+            arr->set("length", Value::number((double)elems.size()));
+            return Value::object(arr);
+        }, 1);
+    docObj->set("getElementsByClassName", Value::object(getByClass));
+    
+    // document.cookie (empty string)
+    docObj->set("cookie", Value::string(new String("")));
+    
+    // document.readyState
+    docObj->set("readyState", Value::string(new String("complete")));
+    
+    // document.URL / document.location
+    docObj->set("URL", Value::string(new String("")));
+    
+    // document.createDocumentFragment
+    auto* createFragFn = createNativeFunction("createDocumentFragment",
+        [](Context*, const std::vector<Value>&) -> Value {
+            auto* frag = new Object();
+            frag->set("nodeType", Value::number(11));
+            auto* appendChildFn = createNativeFunction("appendChild",
+                [](Context*, const std::vector<Value>& args) -> Value {
+                    return args.empty() ? Value::undefined() : args[0];
+                }, 1);
+            frag->set("appendChild", Value::object(appendChildFn));
+            return Value::object(frag);
+        }, 0);
+    docObj->set("createDocumentFragment", Value::object(createFragFn));
+    
+    // Wire window.document
+    vm_->setGlobal("__document_ref__", Value::object(docObj));
+    
     // Register document global
     vm_->setGlobal("document", Value::object(docObj));
+    
+    // Patch window object with document reference
+    // (window was created in setupWindowGlobals, now we add document to it)
+    auto windowVal = vm_->getGlobal("window");
+    if (windowVal.isObject()) {
+        windowVal.asObject()->set("document", Value::object(docObj));
+    }
     
     std::cout << "[ScriptContext] DOM API registered (document.getElementById, querySelector, createElement, body, title)" << std::endl;
 }

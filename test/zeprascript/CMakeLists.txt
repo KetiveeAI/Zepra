@@ -76,6 +76,7 @@ set(ZEPRASCRIPT_INTEGRATION_TEST_SOURCES
     integration/indexeddb_tests.cpp
     integration/browser_vm_integration_test.cpp
     integration/js_execution_test.cpp
+    integration/script_context_test.cpp
 )
 
 add_executable(zeprascript-integration-tests ${ZEPRASCRIPT_INTEGRATION_TEST_SOURCES})
@@ -83,6 +84,7 @@ add_executable(zeprascript-integration-tests ${ZEPRASCRIPT_INTEGRATION_TEST_SOUR
 target_link_libraries(zeprascript-integration-tests
     PRIVATE
         zepra-core
+        webcore
         networking
         GTest::gtest
         GTest::gtest_main
@@ -95,6 +97,7 @@ target_include_directories(zeprascript-integration-tests
     PRIVATE
         ${PROJECT_SOURCE_DIR}/include
         ${PROJECT_SOURCE_DIR}/source/zepraScript
+        ${PROJECT_SOURCE_DIR}/source/webCore
 )
 
 target_compile_definitions(zeprascript-integration-tests

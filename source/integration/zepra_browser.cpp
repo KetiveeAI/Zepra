@@ -304,8 +304,13 @@ static std::string g_pageTitle = "New Tab";      // Page title
 static bool g_isLoading = false;                 // Loading indicator
 static std::string g_loadError = "";             // Error message
 static bool g_consoleVisible = false;            // Developer console (F12)
-static bool g_contextMenuVisible = false;        // Right-click context menu
-static float g_contextMenuX = 0, g_contextMenuY = 0;  // Context menu position
+
+// Alert/Confirm/Prompt modal state
+static bool g_alertVisible = false;
+static std::string g_alertMessage;
+static bool g_alertIsConfirm = false;
+static bool g_alertResult = false;
+static bool g_uiHoverHand = false;                // UI element hover (buttons, tabs, links)
 
 // =============================================================================
 // ZepraWebView DevTools State
@@ -1034,6 +1039,70 @@ void parseWithWebCore(const std::string& html) {
     
     std::cout << "[Layout] Built layout tree with " << g_layoutRoot->children.size() << " boxes (direct DOM)" << std::endl;
     std::cout << "[Cache] Saved " << g_styledLines.size() << " lines for tab " << g_activeTabId << std::endl;
+    
+    // Initialize ScriptContext and execute inline <script> tags
+    g_scriptContext = std::make_unique<ScriptContext>();
+    
+    // Route console output to active tab
+    Tab* activeTab = nullptr;
+    for (auto& t : g_tabs) {
+        if (t.id == g_activeTabId) { activeTab = &t; break; }
+    }
+    if (activeTab) {
+        g_scriptContext->setConsoleHandler(
+            [activeTab](const std::string& level, const std::string& msg) {
+                activeTab->logConsole("[" + level + "] " + msg);
+            });
+    }
+    
+    g_scriptContext->initialize(g_document.get());
+    
+    // Wire alert/confirm/prompt handlers
+    g_scriptContext->setAlertHandler([](const std::string& msg) {
+        g_alertMessage = msg;
+        g_alertIsConfirm = false;
+        g_alertVisible = true;
+    });
+    
+    // Set location globals from current URL
+    g_scriptContext->setGlobal("__pageUrl__", g_currentUrl);
+    
+    // Execute inline scripts
+    std::function<void(DOMElement*)> executePageScripts = [&](DOMElement* el) {
+        if (!el) return;
+        for (size_t i = 0; i < el->childNodes().size(); i++) {
+            if (auto* child = dynamic_cast<DOMElement*>(el->childNodes()[i].get())) {
+                std::string tag = child->tagName();
+                std::transform(tag.begin(), tag.end(), tag.begin(), ::tolower);
+                if (tag == "script") {
+                    std::string src = child->getAttribute("src");
+                    if (src.empty()) {
+                        // Inline script
+                        std::string code = child->textContent();
+                        if (!code.empty()) {
+                            std::cout << "[JS] Executing inline script (" << code.size() << " bytes)" << std::endl;
+                            g_scriptContext->evaluate(code, g_currentUrl);
+                        }
+                    }
+                    // External scripts (src=) would need httpGet — skip for beta
+                } else {
+                    executePageScripts(child);
+                }
+            }
+        }
+    };
+    
+    if (g_document->body()) {
+        executePageScripts(g_document->body());
+    }
+    // Also check head for scripts
+    if (g_document->head()) {
+        executePageScripts(g_document->head());
+    }
+    
+    // Fire DOMContentLoaded
+    g_scriptContext->fireDOMContentLoaded();
+    std::cout << "[JS] DOMContentLoaded fired" << std::endl;
 }
 
 // =============================================================================
@@ -2772,8 +2841,28 @@ void render() {
     
     // Render current page
     bool isStart = g_currentUrl == "zepra://start" || g_currentUrl.empty();
-    if (isStart) {
+    if (isStart && !g_layoutRoot) {
+        // Fallback: hardcoded start page if DOM wasn't built yet
         renderStartPage(contentX, contentY, contentW, contentH);
+    } else if (isStart && g_layoutRoot) {
+        // Start page rendered through layout engine (DOM-based)
+        gfx::rect(contentX, contentY, contentW, contentH, 0xFFFFFF);
+        g_linkHitBoxes.clear();
+        g_cursorIsPointer = false;
+        float layoutWidth = contentW - 40;
+        ZepraBrowser::layoutBlock(*g_layoutRoot, layoutWidth, 0);
+        float scrollY = 0;
+        for (const auto& tab : g_tabs) {
+            if (tab.id == g_activeTabId) { scrollY = tab.scrollY; break; }
+        }
+        ZepraBrowser::paintBox(*g_layoutRoot, contentX + 20, contentY + 20, contentY + contentH - 20, scrollY);
+        for (const auto& hitBox : g_linkHitBoxes) {
+            if (g_mouseX >= hitBox.x && g_mouseX < hitBox.x + hitBox.w &&
+                g_mouseY >= hitBox.y && g_mouseY < hitBox.y + hitBox.h) {
+                g_cursorIsPointer = true;
+                break;
+            }
+        }
     } else {
         // Render loaded web content
         gfx::rect(contentX, contentY, contentW, contentH, 0xFFFFFF);
@@ -3280,59 +3369,52 @@ void render() {
         }
     }
     
-    // ==========================================================================
-    // Context Menu (Right-click)
-    // ==========================================================================
-    if (g_contextMenuVisible) {
-        float menuX = g_contextMenuX;
-        float menuY = g_contextMenuY;
-        float menuW = 200;
-        float itemH = 32;
+    // ===========================================================================
+    // Alert/Confirm Modal Dialog Overlay
+    // ===========================================================================
+    if (g_alertVisible) {
+        // Semi-transparent backdrop
+        gfx::rect(0, 0, g_width, g_height, 0x00000088);
         
-        // Menu items
-        const char* menuItems[] = {
-            "Back",
-            "Forward",
-            "Reload",
-            "───────────",
-            "Save page as...",
-            "Print...",
-            "───────────",
-            "View page source",
-            "Inspect"
-        };
-        int itemCount = 9;
-        float menuH = itemCount * itemH + 8;
+        // Dialog dimensions
+        float dlgW = 400;
+        float msgLines = 1 + (float)g_alertMessage.size() / 45;
+        float dlgH = 120 + msgLines * 18;
+        float dlgX = (g_width - dlgW) / 2;
+        float dlgY = (g_height - dlgH) / 2;
         
-        // Ensure menu stays on screen
-        if (menuX + menuW > g_width) menuX = g_width - menuW - 10;
-        if (menuY + menuH > g_height) menuY = g_height - menuH - 10;
+        // Dialog shadow + background
+        gfx::rrect(dlgX + 4, dlgY + 4, dlgW, dlgH, 12, 0x00000040);
+        gfx::rrect(dlgX, dlgY, dlgW, dlgH, 12, g_theme.bg_primary);
+        gfx::border(dlgX, dlgY, dlgW, dlgH, 1, g_theme.border);
         
-        // Menu shadow
-        gfx::rrect(menuX + 4, menuY + 4, menuW, menuH, 8, 0x00000080);
+        // Title bar
+        text("Zepra Browser", dlgX + 20, dlgY + 28, g_theme.text_secondary, 11.0f);
+        gfx::rect(dlgX + 16, dlgY + 38, dlgW - 32, 1, g_theme.border);
         
-        // Menu background
-        gfx::rrect(menuX, menuY, menuW, menuH, 8, g_theme.bg_tertiary);
-        gfx::border(menuX, menuY, menuW, menuH, 1, g_theme.border);
-        
-        // Menu items
-        float itemY = menuY + 4;
-        for (int i = 0; i < itemCount; i++) {
-            bool isSeparator = (menuItems[i][0] == '-');
-            
-            if (!isSeparator) {
-                bool hover = hit(menuX, itemY, menuW, itemH);
-                if (hover) {
-                    gfx::rrect(menuX + 4, itemY, menuW - 8, itemH, 4, g_theme.bg_elevated);
-                }
-                text(menuItems[i], menuX + 16, itemY + 22, 
-                     hover ? g_theme.text_primary : g_theme.text_secondary, 13.0f);
-            } else {
-                // Separator line
-                gfx::rect(menuX + 8, itemY + itemH/2, menuW - 16, 1, g_theme.border);
+        // Message text (word-wrap approximation)
+        float textY = dlgY + 62;
+        std::string remaining = g_alertMessage;
+        while (!remaining.empty()) {
+            std::string line = remaining.substr(0, 50);
+            if (remaining.size() > 50) {
+                size_t sp = line.rfind(' ');
+                if (sp != std::string::npos) line = remaining.substr(0, sp + 1);
             }
-            itemY += itemH;
+            text(line, dlgX + 24, textY, g_theme.text_primary, 13.0f);
+            textY += 20;
+            remaining = remaining.substr(std::min(line.size(), remaining.size()));
         }
+        
+        // OK button
+        float btnW = 80, btnH = 32;
+        float btnX = dlgX + dlgW - btnW - 20;
+        float btnY = dlgY + dlgH - btnH - 16;
+        bool btnHover = hit(btnX, btnY, btnW, btnH);
+        
+        gfx::rrect(btnX, btnY, btnW, btnH, 6, btnHover ? g_theme.accent : g_theme.bg_elevated);
+        text("OK", btnX + btnW/2 - 10, btnY + 21, btnHover ? 0xFFFFFF : g_theme.text_primary, 13.0f);
+        if (btnHover) g_uiHoverHand = true;
     }
     
     gfx::present();
@@ -3348,14 +3430,37 @@ void render() {
         }
     }
 #endif
+    // Detect hover over any clickable UI element (buttons, tabs, sidebar items)
+    // Top bar buttons area (y < TOPBAR_HEIGHT, outside address bar focus zone)
+    if (g_mouseY < TOPBAR_HEIGHT && !g_addressFocused) {
+        float sidebarOffset = g_leftSidebarVisible ? 
+            (g_leftSidebarExpanded ? LEFT_SIDEBAR_EXPANDED : LEFT_SIDEBAR_WIDTH) : 0;
+        // Left buttons (sidebar toggle, zepra logo)
+        if (g_mouseX > sidebarOffset && g_mouseX < sidebarOffset + 80) {
+            g_uiHoverHand = true;
+        }
+        // Right buttons (refresh, close, new tab, menu, share)
+        float rightEdge = g_width;
+        if (g_mouseX > rightEdge - 180) {
+            g_uiHoverHand = true;
+        }
+    }
+    // Left sidebar icons
+    if (g_leftSidebarVisible && g_mouseY > TOPBAR_HEIGHT) {
+        float sidebarW = g_leftSidebarExpanded ? LEFT_SIDEBAR_EXPANDED : LEFT_SIDEBAR_WIDTH;
+        if (g_mouseX < sidebarW) {
+            g_uiHoverHand = true;
+        }
+    }
     // Cursor switching based on UI state
     if (g_addressFocused || g_searchFocused || g_consoleFocused) {
         NXRender::setCursor(NXRender::CursorType::Text);
-    } else if (g_currentCursorIsHand || isOverLink) {
+    } else if (g_currentCursorIsHand || isOverLink || g_cursorIsPointer || g_uiHoverHand) {
         NXRender::setCursor(NXRender::CursorType::Hand);
     } else {
         NXRender::setCursor(NXRender::CursorType::Arrow);
     }
+    g_uiHoverHand = false;  // Reset per frame — set by UI hit-tests
   } catch (const std::exception& e) {
     std::cerr << "[CRASH] render() exception: " << e.what() << std::endl;
   } catch (...) {
@@ -3621,6 +3726,82 @@ void onNavigate(const std::string& input) {
                 tab.title = "New Tab";
             }
         }
+        
+#ifdef USE_WEBCORE
+        // Generate start page HTML and build DOM for DevTools
+        if (url == "zepra://start") {
+            std::string startHtml = R"(
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>New Tab - Zepra</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: linear-gradient(135deg, #EDE0F0, #F5E6F8, #E8D5EB);
+  font-family: sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  color: #333;
+}
+.center { text-align: center; margin-top: 80px; }
+.logo { width: 120px; height: 120px; margin: 0 auto 16px; }
+.brand { font-size: 18px; color: #6B5B95; margin-bottom: 32px; font-weight: 500; }
+.search-box {
+  width: 500px; max-width: 90vw; height: 48px;
+  border-radius: 24px; border: 1px solid #D0C0D2;
+  background: #fff; padding: 0 20px;
+  font-size: 14px; color: #333;
+  outline: none;
+}
+.search-box:focus { border-color: #9B59B6; box-shadow: 0 0 0 3px rgba(155,89,182,0.15); }
+.shortcuts {
+  display: flex; gap: 16px; margin-top: 40px;
+  flex-wrap: wrap; justify-content: center;
+}
+.shortcut {
+  width: 80px; height: 80px;
+  border-radius: 12px; background: rgba(255,255,255,0.7);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  font-size: 11px; color: #666;
+  cursor: pointer; text-decoration: none;
+}
+.shortcut:hover { background: rgba(255,255,255,0.95); }
+.shortcut-icon { font-size: 24px; margin-bottom: 6px; }
+</style>
+</head>
+<body>
+<div class="center">
+  <div class="brand">Zepra</div>
+  <input class="search-box" type="text" placeholder="Search the web..." autofocus />
+  <div class="shortcuts">
+    <a class="shortcut" href="https://ketivee.com">
+      <span class="shortcut-icon">K</span>
+      <span>Ketivee</span>
+    </a>
+    <a class="shortcut" href="https://github.com">
+      <span class="shortcut-icon">G</span>
+      <span>GitHub</span>
+    </a>
+    <a class="shortcut" href="https://youtube.com">
+      <span class="shortcut-icon">Y</span>
+      <span>YouTube</span>
+    </a>
+  </div>
+</div>
+</body>
+</html>
+)";
+            g_pageContent = startHtml;
+            parseWithWebCore(startHtml);
+            std::cout << "[Browser] Start page DOM built" << std::endl;
+        }
+#endif
     } else {
         // Async load for external URLs
         // Normalize (auto-add index.html for directories) synchronously
@@ -3704,45 +3885,20 @@ void onSearch(const std::string& query) {
 }
 
 void handleClick(float mx, float my) {
-    // Handle context menu clicks first
-    if (g_contextMenuVisible) {
-        float menuX = g_contextMenuX;
-        float menuY = g_contextMenuY;
-        float menuW = 200;
-        float itemH = 32;
-        
-        // Ensure menu stays on screen
-        if (menuX + menuW > g_width) menuX = g_width - menuW - 10;
-        if (menuY + 9 * itemH + 8 > g_height) menuY = g_height - 9 * itemH - 18;
-        
-        const char* menuItems[] = {"Back", "Forward", "Reload", "", "Save page as...", "Print...", "", "View page source", "Inspect"};
-        
-        float itemY = menuY + 4;
-        for (int i = 0; i < 9; i++) {
-            bool isSeparator = (menuItems[i][0] == '\0' || menuItems[i][0] == '-');
-            if (!isSeparator && hit(menuX, itemY, menuW, itemH)) {
-                std::cout << "[Context Menu] Clicked: " << menuItems[i] << std::endl;
-                
-                if (i == 0) { /* Back - TODO */ }
-                else if (i == 1) { /* Forward - TODO */ }
-                else if (i == 2) { onNavigate(g_currentUrl); } // Reload
-                else if (i == 7) { 
-                    // View page source
-                    std::cout << "=== PAGE SOURCE ===" << std::endl;
-                    std::cout << g_pageContent.substr(0, 1000) << std::endl;
-                }
-                else if (i == 8) { 
-                    g_consoleVisible = !g_consoleVisible; // Inspect (toggle DevTools)
-                }
-                
-                g_contextMenuVisible = false;
-                return;
-            }
-            itemY += itemH;
+    // Alert dialog intercepts all clicks
+    if (g_alertVisible) {
+        g_alertVisible = false;
+        return;
+    }
+    
+    // Handle MouseHandler context menu clicks first
+    auto& ctxMenu = g_mouseHandler.getContextMenu();
+    if (ctxMenu.visible) {
+        auto action = ctxMenu.handleClick(mx, my);
+        if (action != static_cast<ZepraBrowser::ContextMenuAction>(0)) {
+            g_mouseHandler.executeAction(action);
         }
-        
-    // Clicked outside menu - close it
-        g_contextMenuVisible = false;
+        ctxMenu.hide();
         return;
     }
     
@@ -3958,6 +4114,14 @@ using NXRender::KeyCode;
 
 void handleKeyPress(NXRender::KeyCode key, const std::string& text, bool ctrl, bool shift) {
     
+    // Alert dialog intercepts keyboard
+    if (g_alertVisible) {
+        if (key == NXRender::KeyCode::Enter || key == NXRender::KeyCode::Escape) {
+            g_alertVisible = false;
+        }
+        return;
+    }
+    
     // Keyboard shortcuts (Ctrl+...)
     if (ctrl) {
         if (key == NXRender::KeyCode::C) {
@@ -4038,45 +4202,32 @@ void handleKeyPress(NXRender::KeyCode key, const std::string& text, bool ctrl, b
                 if (activeTab) {
                     activeTab->logConsole("> " + expr);
                     
-                    // Execute with ZepraScript VM (TODO: integrate real VM)
-                    // For now, provide basic evaluation of simple expressions
+                    // Execute with ZepraScript VM
                     std::string result;
                     
-                    // Simple expression evaluator (placeholder - replace with ZepraScript VM)
-                    if (expr == "document.title") {
-                        result = "\"" + g_pageTitle + "\"";
-                    } else if (expr == "location.href" || expr == "window.location.href") {
-                        result = "\"" + g_currentUrl + "\"";
-                    } else if (expr == "document.body" || expr == "document.body.innerHTML") {
-                        result = "[HTMLBodyElement]";
-                    } else if (expr.find("console.log(") == 0) {
-                        // Extract message
-                        size_t start = expr.find('(') + 1;
-                        size_t end = expr.rfind(')');
-                        if (start < end) {
-                            std::string msg = expr.substr(start, end - start);
-                            // Remove quotes if present
-                            if (msg.size() >= 2 && (msg[0] == '"' || msg[0] == '\'')) {
-                                msg = msg.substr(1, msg.size() - 2);
-                            }
-                            activeTab->logConsole(msg);
-                        }
-                        result = "undefined";
-                    } else if (expr == "clear()" || expr == "console.clear()") {
+                    // Special cases handled before VM
+                    if (expr == "clear()" || expr == "console.clear()") {
                         activeTab->consoleLog.clear();
-                        result = ""; // Don't show result
-                    } else if (expr.find("alert(") == 0) {
-                        result = "undefined (alert not supported in DevTools)";
-                    } else {
-                        // Try basic math evaluation
-                        try {
-                            // Very basic: just check if it's a number
-                            double val = std::stod(expr);
-                            result = std::to_string(val);
-                        } catch (...) {
-                            // Return as-is or error
-                            result = "[ZepraScript VM not connected - expression: " + expr + "]";
+                        result = "";
+                    }
+#ifdef USE_WEBCORE
+                    else if (g_scriptContext) {
+                        // Wire console handler to this tab
+                        g_scriptContext->setConsoleHandler(
+                            [activeTab](const std::string& level, const std::string& msg) {
+                                if (activeTab) activeTab->logConsole("[" + level + "] " + msg);
+                            });
+                        
+                        auto evalResult = g_scriptContext->evaluate(expr, "<devtools>");
+                        if (evalResult.success) {
+                            result = evalResult.value;
+                        } else {
+                            result = evalResult.error;
                         }
+                    }
+#endif
+                    else {
+                        result = "[ScriptContext not available]";
                     }
                     
                     if (!result.empty()) {
@@ -4261,9 +4412,9 @@ void handleKeyPress(NXRender::KeyCode key, const std::string& text, bool ctrl, b
             if (tab.id == g_activeTabId) { tab.scrollY = 10000; break; }
         }
     } else if (key == KeyCode::Escape) {
-        // Close console first, then context menu, then exit
-        if (g_contextMenuVisible) {
-            g_contextMenuVisible = false;
+        // Close context menu first, then console
+        if (g_mouseHandler.getContextMenu().visible) {
+            g_mouseHandler.getContextMenu().hide();
         } else if (g_consoleVisible) {
             g_consoleVisible = false;
         } else {
@@ -4391,12 +4542,11 @@ void handleNXEvent(const NXRender::Event& event) {
                  ::g_mouseHandler.handleLeftClick(x, y); 
                  g_mouseDown = true;
              } else if (event.mouse.button == NXRender::MouseButton::Right) {
-                 if (g_contextMenuVisible) {
-                     g_contextMenuVisible = false;
+                 auto& ctxMenu = g_mouseHandler.getContextMenu();
+                 if (ctxMenu.visible) {
+                     ctxMenu.hide();
                  } else {
-                     g_contextMenuVisible = true;
-                     g_contextMenuX = x;
-                     g_contextMenuY = y;
+                     g_mouseHandler.handleRightClick(x, y);
                  }
              }
         } else if (event.type == NXRender::EventType::MouseUp) {
@@ -4500,7 +4650,27 @@ int zepra_main(int argc, char** argv) { // Clean Main - callable from main.cpp
 
     // Initialize Components
     ::g_mouseHandler.onCopy([](const std::string& text) {
-        std::cout << "[Clipboard] Copy: " << text << std::endl;
+        ZepraBrowser::Clipboard::instance().copy(text);
+        std::cout << "[Clipboard] Copied: " << text.substr(0, 50) << std::endl;
+    });
+
+    ::g_mouseHandler.onPaste([]() -> std::string {
+        return ZepraBrowser::Clipboard::instance().paste();
+    });
+
+    ::g_mouseHandler.onNavigate([](int direction) {
+        if (direction == 0) {
+            onNavigate(g_currentUrl);  // Reload
+        }
+        // TODO: history stack for back/forward
+    });
+
+    ::g_mouseHandler.onReload([]() {
+        onNavigate(g_currentUrl);
+    });
+
+    ::g_mouseHandler.onInspect([](float, float) {
+        g_consoleVisible = !g_consoleVisible;
     });
 
     ::g_mouseHandler.onGetText([](float x, float y, float w, float h) -> std::string {
