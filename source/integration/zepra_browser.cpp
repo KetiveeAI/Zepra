@@ -990,6 +990,7 @@ void parseWithWebCore(const std::string& html) {
     }
     
     // Create layout root (Modular LayoutBox)
+    g_focusedBox = nullptr;
     g_layoutRoot = std::make_unique<LayoutBox>();
     g_layoutRoot->type = LayoutType::Block;
     g_layoutRoot->paddingLeft = 8;
@@ -1578,67 +1579,106 @@ void buildLayoutFromDOM(DOMElement* element, LayoutBox* parentBox, bool inLink,
                         inputBox->placeholder = inputType;
                     }
                     
-                    const CSSComputedStyle* style = g_cssEngine->getComputedStyle(childElement);
+                    const CSSComputedStyle* style = g_cssEngine ? g_cssEngine->getComputedStyle(childElement) : nullptr;
                     if (style) {
+                        // Typography — always from CSS
                         inputBox->color = cssColorToRGB(style->color);
                         inputBox->fontSize = style->fontSize > 0 ? style->fontSize : 14;
+                        
+                        // Background — CSS value or UA default
                         if (!style->backgroundColor.isTransparent()) {
                             inputBox->bgColor = cssColorToRGB(style->backgroundColor);
                         } else {
-                            inputBox->bgColor = 0x2A2A2A; // Dark default for text inputs
+                            inputBox->bgColor = 0xFFFFFF;
                         }
                         inputBox->hasBgColor = true;
-                        inputBox->paddingTop = style->paddingTop.value > 0 ? style->paddingTop.value : 6;
-                        inputBox->paddingBottom = style->paddingBottom.value > 0 ? style->paddingBottom.value : 6;
-                        inputBox->paddingLeft = style->paddingLeft.value > 0 ? style->paddingLeft.value : 8;
-                        inputBox->paddingRight = style->paddingRight.value > 0 ? style->paddingRight.value : 8;
-                        // Apply border from CSS or default
-                        if (style->borderTopWidth > 0) {
-                            inputBox->borderTop = style->borderTopWidth;
-                            inputBox->borderRight = style->borderRightWidth;
-                            inputBox->borderBottom = style->borderBottomWidth;
-                            inputBox->borderLeft = style->borderLeftWidth;
+                        
+                        // Padding — always use CSS values (padding:0 from * reset is valid)
+                        inputBox->paddingTop = style->paddingTop.value;
+                        inputBox->paddingBottom = style->paddingBottom.value;
+                        inputBox->paddingLeft = style->paddingLeft.value;
+                        inputBox->paddingRight = style->paddingRight.value;
+                        
+                        // Border — from CSS, with UA fallback only when CSS specifies none
+                        inputBox->borderTop = style->borderTopWidth;
+                        inputBox->borderRight = style->borderRightWidth;
+                        inputBox->borderBottom = style->borderBottomWidth;
+                        inputBox->borderLeft = style->borderLeftWidth;
+                        if (style->borderTopWidth > 0 || style->borderRightWidth > 0 ||
+                            style->borderBottomWidth > 0 || style->borderLeftWidth > 0) {
                             inputBox->borderColor = cssColorToRGB(style->borderTopColor);
                         } else {
-                            inputBox->borderTop = 1; inputBox->borderRight = 1;
-                            inputBox->borderBottom = 1; inputBox->borderLeft = 1;
-                            inputBox->borderColor = 0x555555;
+                            inputBox->borderColor = 0xCCCCCC;
                         }
-                        inputBox->borderRadius = style->borderTopLeftRadius > 0 ? style->borderTopLeftRadius : 3;
+                        
+                        // Border radius — from CSS
+                        inputBox->borderRadius = style->borderTopLeftRadius;
+                        
+                        // Dimensions — CSS first, then size attribute, then type-based defaults
+                        // Store deferred lengths for layout engine to resolve with viewport
+                        if (!style->width.isAuto() && style->width.value > 0) {
+                            inputBox->cssWidth = cssToLayout(style->width);
+                            // Pre-resolve px for immediate use
+                            if (style->width.unit == Zepra::WebCore::CSSLength::Unit::Px)
+                                inputBox->width = style->width.value;
+                            else
+                                inputBox->width = style->width.toPx(style->fontSize, 16.0f, g_width, g_height, 0);
+                        } else {
+                            std::string sizeAttr = childElement->getAttribute("size");
+                            if (!sizeAttr.empty()) {
+                                try { int sz = std::stoi(sizeAttr);
+                                    inputBox->width = sz * inputBox->fontSize * 0.6f + inputBox->paddingLeft + inputBox->paddingRight;
+                                } catch (...) { inputBox->width = 180; }
+                            } else if (inputType == "number" || inputType == "time") {
+                                inputBox->width = 80;
+                            } else if (inputType == "date" || inputType == "month" || inputType == "week" || inputType == "datetime-local") {
+                                inputBox->width = 160;
+                            } else {
+                                inputBox->width = 180;
+                            }
+                        }
+                        
+                        // Max-width constraint (e.g. max-width: 90vw)
+                        if (!style->maxWidth.isAuto() && style->maxWidth.value > 0) {
+                            inputBox->cssMaxWidth = cssToLayout(style->maxWidth);
+                            float maxW = style->maxWidth.toPx(style->fontSize, 16.0f, g_width, g_height, 0);
+                            if (maxW > 0 && inputBox->width > maxW)
+                                inputBox->width = maxW;
+                        }
+                        
+                        // Height — CSS first, then content-based
+                        if (!style->height.isAuto() && style->height.value > 0) {
+                            inputBox->cssHeight = cssToLayout(style->height);
+                            if (style->height.unit == Zepra::WebCore::CSSLength::Unit::Px)
+                                inputBox->height = style->height.value;
+                            else
+                                inputBox->height = style->height.toPx(style->fontSize, 16.0f, g_width, g_height, 0);
+                        } else {
+                            inputBox->height = inputBox->fontSize + inputBox->paddingTop + inputBox->paddingBottom +
+                                               inputBox->borderTop + inputBox->borderBottom;
+                            // Ensure minimum usable height
+                            if (inputBox->height < inputBox->fontSize + 4)
+                                inputBox->height = inputBox->fontSize + 4;
+                        }
                     } else {
+                        // No computed style — safe defaults
                         inputBox->fontSize = 14;
-                        inputBox->color = 0xDDDDDD;
-                        inputBox->bgColor = 0x2A2A2A;
+                        inputBox->color = 0x333333;
+                        inputBox->bgColor = 0xFFFFFF;
                         inputBox->hasBgColor = true;
-                        inputBox->paddingTop = 6; inputBox->paddingBottom = 6;
+                        inputBox->paddingTop = 4; inputBox->paddingBottom = 4;
                         inputBox->paddingLeft = 8; inputBox->paddingRight = 8;
                         inputBox->borderTop = 1; inputBox->borderRight = 1;
                         inputBox->borderBottom = 1; inputBox->borderLeft = 1;
-                        inputBox->borderColor = 0x555555;
+                        inputBox->borderColor = 0xCCCCCC;
                         inputBox->borderRadius = 3;
+                        inputBox->width = 180;
+                        inputBox->height = inputBox->fontSize + inputBox->paddingTop + inputBox->paddingBottom +
+                                           inputBox->borderTop + inputBox->borderBottom;
                     }
                     
                     inputBox->isInput = true;
                     inputBox->inputType = inputType;
-                    
-                    // Size attribute → width
-                    std::string sizeAttr = childElement->getAttribute("size");
-                    if (!sizeAttr.empty()) {
-                        int sz = std::stoi(sizeAttr);
-                        inputBox->width = sz * inputBox->fontSize * 0.6f + inputBox->paddingLeft + inputBox->paddingRight;
-                    } else {
-                        // Default width based on type
-                        if (inputType == "number" || inputType == "time") {
-                            inputBox->width = 80;
-                        } else if (inputType == "date" || inputType == "month" || inputType == "week" || inputType == "datetime-local") {
-                            inputBox->width = 160;
-                        } else {
-                            inputBox->width = 180; // Default text input width
-                        }
-                    }
-                    
-                    inputBox->height = inputBox->fontSize + inputBox->paddingTop + inputBox->paddingBottom + 
-                                       inputBox->borderTop + inputBox->borderBottom;
                     
                     StyledTextLine line;
                     line.text = inputBox->text.empty() ? inputBox->placeholder : inputBox->text;
@@ -3053,9 +3093,12 @@ void render() {
         // Start page rendered through layout engine (DOM-based)
         g_linkHitBoxes.clear();
         g_cursorIsPointer = false;
-        // Layout uses full content width — body CSS controls margins/padding
+        // Ensure root covers at least the visible content area BEFORE layout
+        // so flex justify-content: center has main axis space to distribute
+        if (g_layoutRoot->height < contentH)
+            g_layoutRoot->height = contentH;
         ZepraBrowser::layoutBlock(*g_layoutRoot, contentW, 0);
-        // Ensure root covers at least the visible content area for gradient
+        // Re-check after layout in case content grew beyond viewport
         if (g_layoutRoot->height < contentH)
             g_layoutRoot->height = contentH;
         float scrollY = 0;
@@ -3871,6 +3914,7 @@ void onSelectTab(int tabId) {
     }
     
     // Rebuild layout root from cached styled lines
+    g_focusedBox = nullptr;
     g_layoutRoot = std::make_unique<LayoutBox>();
     g_layoutRoot->type = LayoutType::Block;
     g_layoutRoot->width = g_width;

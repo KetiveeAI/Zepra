@@ -212,13 +212,13 @@ public:
     BoxSizing boxSizing = BoxSizing::ContentBox;
     float opacity = 1.0f;
 
-    // Dimensions
-    CSSLength width;
-    CSSLength height;
-    CSSLength minWidth;
-    CSSLength minHeight;
-    CSSLength maxWidth;
-    CSSLength maxHeight;
+    // Dimensions — default to auto per CSS spec (not 0px)
+    CSSLength width = CSSLength::auto_();
+    CSSLength height = CSSLength::auto_();
+    CSSLength minWidth = CSSLength::auto_();
+    CSSLength minHeight = CSSLength::auto_();
+    CSSLength maxWidth = CSSLength::auto_();
+    CSSLength maxHeight = CSSLength::auto_();
 
     // Margin
     CSSLength marginTop;
@@ -258,10 +258,10 @@ public:
     // Positioning
     // =========================================================================
 
-    CSSLength top;
-    CSSLength right;
-    CSSLength bottom;
-    CSSLength left;
+    CSSLength top = CSSLength::auto_();
+    CSSLength right = CSSLength::auto_();
+    CSSLength bottom = CSSLength::auto_();
+    CSSLength left = CSSLength::auto_();
     int zIndex = 0;
     bool zIndexAuto = true;
 
@@ -277,7 +277,7 @@ public:
     JustifyAlign alignSelf = JustifyAlign::Start;
     float flexGrow = 0;
     float flexShrink = 1;
-    CSSLength flexBasis;
+    CSSLength flexBasis = CSSLength::auto_();
     int order = 0;
 
     // =========================================================================
@@ -311,7 +311,7 @@ public:
     // Background
     // =========================================================================
 
-    CSSColor backgroundColor;
+    CSSColor backgroundColor = CSSColor::transparent();
     std::string backgroundImage;
     std::string backgroundPosition;
     std::string backgroundSize;

@@ -179,6 +179,8 @@ void layoutBlock(LayoutBox& box, float containingWidth, float startY) {
         float freeSpace = containerMainSize - totalMainSize - totalGap;
         if (freeSpace < 0) freeSpace = 0;
         
+        
+        
         // Pass 2: Distribute space per justify-content
         float mainOffset = 0;
         float itemSpacing = flexGap;
@@ -245,7 +247,7 @@ void layoutBlock(LayoutBox& box, float containingWidth, float startY) {
     for (auto& child : box.children) {
         if (child.type == LayoutType::None) continue;
         
-        if (child.type == LayoutType::Block) {
+        if (child.type == LayoutType::Block || child.type == LayoutType::Flex) {
             // Block elements: stack vertically
             // Flush any inline content first
             if (lineHeight > 0) {
@@ -304,15 +306,64 @@ void layoutBlock(LayoutBox& box, float containingWidth, float startY) {
         }
     }
     } // end else (block/inline flow)
+    
+    // Apply text-align: center/right to inline children
+    if (box.textAlign > 0 && contentWidth > 0) {
+        // Group children into lines by Y position and shift their X
+        float currentLineY = -1;
+        float lineMaxRight = 0;
+        std::vector<LayoutBox*> lineChildren;
+        
+        auto flushLine = [&]() {
+            if (lineChildren.empty()) return;
+            float lineContentWidth = lineMaxRight - (box.paddingLeft + box.borderLeft);
+            float shift = 0;
+            if (box.textAlign == 1) // center
+                shift = (contentWidth - lineContentWidth) / 2.0f;
+            else if (box.textAlign == 2) // right
+                shift = contentWidth - lineContentWidth;
+            if (shift > 0) {
+                for (auto* lc : lineChildren) {
+                    if (lc->type != LayoutType::Block && lc->type != LayoutType::Flex)
+                        lc->x += shift;
+                }
+            }
+            lineChildren.clear();
+        };
+        
+        for (auto& child : box.children) {
+            if (child.type == LayoutType::None) continue;
+            if (child.type == LayoutType::Block || child.type == LayoutType::Flex) {
+                flushLine();
+                currentLineY = -1;
+                continue;
+            }
+            if (child.y != currentLineY) {
+                flushLine();
+                currentLineY = child.y;
+                lineMaxRight = 0;
+            }
+            lineChildren.push_back(&child);
+            lineMaxRight = std::max(lineMaxRight, child.x + child.width);
+        }
+        flushLine();
+    }
+    
     // Add remaining line height
     if (lineHeight > 0) {
         childY += lineHeight;
     }
     
     // Calculate height from children (auto height)
+    // For auto-height boxes, use children's computed height but never shrink below
+    // a pre-resolved min-height (e.g. flex column pre-resolve sets height from min-height)
     float computedHeight = childY + box.paddingBottom + box.borderBottom;
-    if (box.height <= 0 || (box.cssHeight.isAuto() || !box.cssHeight.isSet())) {
-        box.height = computedHeight;
+    if (box.cssHeight.isAuto() || !box.cssHeight.isSet()) {
+        if (box.height <= 0) {
+            box.height = computedHeight;
+        } else {
+            box.height = std::max(box.height, computedHeight);
+        }
     }
     
     // Apply min/max height constraints
