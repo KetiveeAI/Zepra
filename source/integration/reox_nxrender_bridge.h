@@ -145,7 +145,8 @@ static inline RxNode* rx_node_create(RxNodeType type) {
     node->id = rx_bridge->next_node_id++;
     node->type = type;
     node->state = RX_STATE_DIRTY;
-    node->background = (NxColor){0, 0, 0, 0};
+    NxColor bg_color = {0, 0, 0, 0};
+    node->background = bg_color;
     node->foreground = nx_theme_get_text_color(rx_bridge->theme);
     return node;
 }
@@ -306,7 +307,8 @@ static inline void rx_render_node(RxNode* node) {
                         btn_bg.b = btn_bg.b < 230 ? btn_bg.b + 25 : 255;
                     }
                     nx_gpu_fill_rounded_rect(rx_bridge->gpu, rect, btn_bg, 6.0f);
-                    text_color = (NxColor){255, 255, 255, 255};
+                    NxColor tc = {255, 255, 255, 255};
+                    text_color = tc;
                 }
                 
                 /* Center text (approximate) */
@@ -318,9 +320,10 @@ static inline void rx_render_node(RxNode* node) {
             
         case RX_NODE_CHECKBOX: {
             NxRect box = { node->x + 4, node->y + (node->height - 20) / 2, 20, 20 };
+            NxColor dark_gray = {60, 60, 62, 255};
             NxColor box_color = node->value > 0.5 ? 
                 nx_theme_get_primary_color(rx_bridge->theme) : 
-                (NxColor){60, 60, 62, 255};
+                dark_gray;
             nx_gpu_fill_rounded_rect(rx_bridge->gpu, box, box_color, 4);
             
             if (node->text) {
@@ -333,7 +336,8 @@ static inline void rx_render_node(RxNode* node) {
         case RX_NODE_SLIDER: {
             /* Track */
             NxRect track = { node->x + 8, node->y + node->height / 2 - 2, node->width - 16, 4 };
-            nx_gpu_fill_rounded_rect(rx_bridge->gpu, track, (NxColor){60, 60, 62, 255}, 2);
+            NxColor dark_gray = {60, 60, 62, 255};
+            nx_gpu_fill_rounded_rect(rx_bridge->gpu, track, dark_gray, 2);
             
             /* Fill */
             float fill_w = (node->width - 16) * node->value;
@@ -342,13 +346,15 @@ static inline void rx_render_node(RxNode* node) {
             
             /* Thumb */
             float thumb_x = node->x + 8 + fill_w;
-            nx_gpu_fill_circle(rx_bridge->gpu, thumb_x, node->y + node->height / 2, 8, (NxColor){255, 255, 255, 255});
+            NxColor white_col = {255, 255, 255, 255};
+            nx_gpu_fill_circle(rx_bridge->gpu, thumb_x, node->y + node->height / 2, 8, white_col);
             break;
         }
         
         case RX_NODE_DIVIDER: {
             NxRect line = { node->x, node->y + node->height / 2, node->width, 1 };
-            nx_gpu_fill_rect(rx_bridge->gpu, line, (NxColor){60, 60, 62, 255});
+            NxColor dark_gray = {60, 60, 62, 255};
+            nx_gpu_fill_rect(rx_bridge->gpu, line, dark_gray);
             break;
         }
         

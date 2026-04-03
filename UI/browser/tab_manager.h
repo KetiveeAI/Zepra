@@ -231,7 +231,7 @@ public:
     void setTabCrashedCallback(std::function<void(const TabEntry&)> cb);
     
     // UI Integration (for main loop)
-    bool handleEvent(const SDL_Event& event) { return false; }  // Stub
+    bool handleEvent(const SDL_Event& /*event*/) { return false; }  // Stub
     void update() {}  // Stub
     void render() {}  // Stub
     void refreshCurrentTab() { reloadActiveTab(); }

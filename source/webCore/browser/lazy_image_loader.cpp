@@ -11,6 +11,8 @@
 #include <chrono>
 #include <cstring>
 #include <algorithm>
+#include <fstream>
+#include <iterator>
 // HTTP client for fetching images
 #include "http_client.hpp"
 
@@ -132,9 +134,21 @@ void LazyImageLoader::pollCompleted(std::vector<ImageResult>& results, int maxRe
     {
         std::lock_guard<std::mutex> lock(rawMutex_);
         for (auto& raw : rawImages_) {
-            // Guard against stale box pointer
             if (!raw.box) continue;
             
+            // SVG data (tagged with negative width)
+            if (raw.width < 0) {
+                raw.box->svgData = std::string(raw.pixels.begin(), raw.pixels.end());
+                raw.box->text = "";
+                raw.box->width = (float)(-raw.width);
+                raw.box->height = (float)raw.height;
+                raw.box->isImage = true;
+                std::cout << "[LazyImageLoader] SVG applied to box: " 
+                          << raw.box->width << "x" << raw.box->height << std::endl;
+                continue;
+            }
+            
+            // Raster image — create GPU texture
             if (textureCreator_ && !raw.pixels.empty()) {
                 uint32_t texId = textureCreator_(raw.width, raw.height, raw.pixels.data());
                 
@@ -142,7 +156,7 @@ void LazyImageLoader::pollCompleted(std::vector<ImageResult>& results, int maxRe
                     raw.box->textureId = texId;
                     raw.box->width = (float)raw.width;
                     raw.box->height = (float)raw.height;
-                    raw.box->text = ""; // Clear placeholder
+                    raw.box->text = "";
                     
                     std::cout << "[LazyImageLoader] Texture created: " << raw.width 
                               << "x" << raw.height << std::endl;
@@ -217,36 +231,69 @@ ImageResult LazyImageLoader::loadImage(const PendingImage& pending) {
     }
     
     try {
-        // Fetch image data
-        Zepra::Networking::HttpClientConfig config;
-        config.connectTimeoutMs = 10000;
-        config.readTimeoutMs = 30000;
-        config.followRedirects = true;
-        config.maxRedirects = 10;
-        config.verifySsl = false;
-        config.userAgent = "ZepraBrowser/1.0 (NeolyxOS)";
+        std::vector<uint8_t> data;
+        std::string contentType;
         
-        Zepra::Networking::HttpClient client(config);
-        Zepra::Networking::HttpRequest request(Zepra::Networking::HttpMethod::GET, pending.url);
-        
-        auto response = client.send(request);
-        
-        if (!response.isSuccess()) {
-            result.error = response.error();
-            if (pending.box) {
-                pending.box->text = "[IMG: Load Failed]";
-                pending.box->color = 0xFF0000;
+        // Handle file:// URLs — read from local filesystem
+        if (pending.url.substr(0, 7) == "file://") {
+            std::string filePath = pending.url.substr(7);
+            // Try relative to RESOURCE_PATH first
+            std::ifstream file(filePath, std::ios::binary);
+            if (!file.is_open()) {
+                // Try with RESOURCE_PATH prefix
+                std::string altPath = std::string(RESOURCE_PATH) + "/" + filePath;
+                // Strip "resources/" prefix if present since RESOURCE_PATH already points there
+                if (filePath.find("resources/") == 0) {
+                    altPath = std::string(RESOURCE_PATH) + "/" + filePath.substr(10);
+                }
+                file.open(altPath, std::ios::binary);
             }
-            return result;
+            if (!file.is_open()) {
+                result.error = "File not found: " + filePath;
+                if (pending.box) {
+                    std::lock_guard<std::mutex> lock(rawMutex_);
+                    // Don't write to box from worker - just log
+                }
+                return result;
+            }
+            data = std::vector<uint8_t>((std::istreambuf_iterator<char>(file)),
+                                         std::istreambuf_iterator<char>());
+            // Detect content type from extension
+            if (filePath.rfind(".svg") == filePath.length() - 4) {
+                contentType = "image/svg+xml";
+            } else if (filePath.rfind(".png") == filePath.length() - 4) {
+                contentType = "image/png";
+            } else if (filePath.rfind(".jpg") == filePath.length() - 4 ||
+                       filePath.rfind(".jpeg") == filePath.length() - 5) {
+                contentType = "image/jpeg";
+            }
+        } else {
+            // HTTP fetch
+            Zepra::Networking::HttpClientConfig config;
+            config.connectTimeoutMs = 10000;
+            config.readTimeoutMs = 30000;
+            config.followRedirects = true;
+            config.maxRedirects = 10;
+            config.verifySsl = false;
+            config.userAgent = "ZepraBrowser/1.0 (NeolyxOS)";
+            
+            Zepra::Networking::HttpClient client(config);
+            Zepra::Networking::HttpRequest request(Zepra::Networking::HttpMethod::GET, pending.url);
+            
+            auto response = client.send(request);
+            
+            if (!response.isSuccess()) {
+                result.error = response.error();
+                return result;
+            }
+            
+            data = response.body();
+            contentType = response.header("Content-Type");
         }
         
-        const auto& data = response.body();
+        
         if (data.empty()) {
             result.error = "Empty response";
-            if (pending.box) {
-                pending.box->text = "[IMG: Empty]";
-                pending.box->color = 0xFF0000;
-            }
             return result;
         }
         // =====================================================================
@@ -261,7 +308,6 @@ ImageResult LazyImageLoader::loadImage(const PendingImage& pending) {
         std::string detectedFormat = "unknown";
         
         // Tier 1: Content-Type header (most reliable - Firefox primary method)
-        std::string contentType = response.header("Content-Type");
         std::transform(contentType.begin(), contentType.end(), contentType.begin(), ::tolower);
         
         if (contentType.find("image/svg") != std::string::npos ||
@@ -377,40 +423,47 @@ ImageResult LazyImageLoader::loadImage(const PendingImage& pending) {
         std::cout << "[LazyImageLoader] Format detected: " << detectedFormat 
                   << " (CT: " << (contentType.empty() ? "none" : contentType.substr(0, 30)) << ")" << std::endl;
         
-        // Handle SVG — store data for main-thread NxSVG rendering
+        // Handle SVG — queue data for main-thread processing (never write box from worker)
         if (isSvg) {
-            if (pending.box) {
-                // Store raw SVG for main-thread rendering via NxSVG
-                pending.box->svgData = std::string(data.begin(), data.end());
-                pending.box->text = "";  // Clear loading text
-                
-                // Parse viewBox for sizing (quick extraction)
-                std::string svgStr = pending.box->svgData;
-                float svgW = 24, svgH = 24;
-                auto vbPos = svgStr.find("viewBox");
-                if (vbPos != std::string::npos) {
-                    auto qStart = svgStr.find('"', vbPos);
-                    auto qEnd = svgStr.find('"', qStart + 1);
-                    if (qStart != std::string::npos && qEnd != std::string::npos) {
-                        std::string vb = svgStr.substr(qStart + 1, qEnd - qStart - 1);
-                        float vx, vy, vw, vh;
-                        if (sscanf(vb.c_str(), "%f %f %f %f", &vx, &vy, &vw, &vh) == 4) {
-                            svgW = vw; svgH = vh;
-                        }
+            // Parse viewBox for sizing (quick extraction)
+            std::string svgStr(data.begin(), data.end());
+            float svgW = 24, svgH = 24;
+            auto vbPos = svgStr.find("viewBox");
+            if (vbPos != std::string::npos) {
+                auto qStart = svgStr.find('"', vbPos);
+                auto qEnd = svgStr.find('"', qStart + 1);
+                if (qStart != std::string::npos && qEnd != std::string::npos) {
+                    std::string vb = svgStr.substr(qStart + 1, qEnd - qStart - 1);
+                    float vx, vy, vw, vh;
+                    if (sscanf(vb.c_str(), "%f %f %f %f", &vx, &vy, &vw, &vh) == 4) {
+                        svgW = vw; svgH = vh;
                     }
                 }
-                
-                // Constrain to reasonable size
-                if (svgW > 256) { svgH *= 256 / svgW; svgW = 256; }
-                if (svgH > 256) { svgW *= 256 / svgH; svgH = 256; }
-                pending.box->width = svgW;
-                pending.box->height = svgH;
-                pending.box->isImage = true;
             }
+            
+            // Constrain to reasonable size
+            if (svgW > 256) { svgH *= 256 / svgW; svgW = 256; }
+            if (svgH > 256) { svgW *= 256 / svgH; svgH = 256; }
+            
+            // Queue SVG data for main thread (do NOT write to box here)
+            {
+                std::lock_guard<std::mutex> lock(rawMutex_);
+                RawImage raw;
+                raw.box = pending.box;
+                raw.width = (int)svgW;
+                raw.height = (int)svgH;
+                // Store SVG XML as pixel data marker (main thread detects this)
+                raw.pixels.assign(data.begin(), data.end());
+                // Tag as SVG by setting negative width (main thread checks this)
+                raw.width = -(int)svgW;  // Negative = SVG flag
+                raw.height = (int)svgH;
+                rawImages_.push_back(std::move(raw));
+            }
+            
             result.success = true;
-            result.width = (int)pending.box->width;
-            result.height = (int)pending.box->height;
-            std::cout << "[LazyImageLoader] SVG stored for NxSVG rendering: " 
+            result.width = (int)svgW;
+            result.height = (int)svgH;
+            std::cout << "[LazyImageLoader] SVG queued for main thread: " 
                       << pending.url.substr(pending.url.rfind('/') + 1) << std::endl;
             return result;
         }

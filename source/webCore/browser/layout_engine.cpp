@@ -125,6 +125,15 @@ void layoutBlock(LayoutBox& box, float containingWidth, float startY) {
     if (contentWidth < 0) contentWidth = 0;
     
     // Flex containers: pre-loop pass handles all children at once
+    // Resolve container height BEFORE layout if explicitly set or min-height applies
+    // This is critical for flex containers using justify-content centering
+    if (box.cssHeight.isSet() && !box.cssHeight.isAuto()) {
+        box.height = std::max(box.height, box.cssHeight.resolve(0, box.fontSize, vpW, vpH));
+    }
+    if (box.cssMinHeight.isSet() && !box.cssMinHeight.isAuto()) {
+        box.height = std::max(box.height, box.cssMinHeight.resolve(0, box.fontSize, vpW, vpH));
+    }
+    
     if (box.type == LayoutType::Flex) {
         float flexGap = box.gap;
         

@@ -2159,12 +2159,12 @@ void circle(float cx, float cy, float rad, uint32_t c, uint8_t a = 255) {
 
 void gradient(float x, float y, float w, float h, uint32_t c1, uint32_t c2) {
     g_nxGpu.fillRectGradient(NXRender::Rect(x, y, w, h), 
-                              NXRender::Color(c1), NXRender::Color(c2), 
+                              NXRender::Color(c1).withAlpha(255), NXRender::Color(c2).withAlpha(255), 
                               false);  // vertical gradient
 }
 
 void border(float x, float y, float w, float h, float thick, uint32_t c) {
-    g_nxGpu.strokeRect(NXRender::Rect(x, y, w, h), NXRender::Color(c), thick);
+    g_nxGpu.strokeRect(NXRender::Rect(x, y, w, h), NXRender::Color(c).withAlpha(255), thick);
 }
 
 void texture(float x, float y, float w, float h, uint32_t textureId) {
@@ -2352,6 +2352,9 @@ static std::vector<PinnedPage> g_pinnedPages;
 static std::vector<Shortcut> g_shortcuts;
 static std::vector<std::string> g_recentPages;  // Last 10 visited URLs
 
+#include "../UI/browser/top_navigation.hpp"
+
+#if 0 // Old UI implementation extracted to UI/browser/top_navigation.hpp
 // Tab Item
 void renderTab(const Tab& tab, float x, float y, float w, bool active) {
     bool hover = hit(x, y, w, TAB_HEIGHT - 4);
@@ -2607,6 +2610,7 @@ void renderTopBar() {
     // Mobile/tablet icon
     svg("tablet.svg", rightX, y, 24, 0x6B5B7B);
 }
+#endif // Old UI implementation extracted
 
 // ============================================================================
 // FLOATING RIGHT SIDEBAR
@@ -3169,9 +3173,7 @@ void render() {
                 svg("search.svg", centerX - 24, centerY - 44, 48, 0xBBBBBB);
                 
                 // Title
-                nxfont::FontManager::instance().loadSystemFont(24);
-                text("Nothing Found", centerX - 70, centerY + 50, 0x333333);
-                nxfont::FontManager::instance().loadSystemFont(14);
+                text("Nothing Found", centerX - 70, centerY + 50, 0x333333, 24);
                 
                 // Subtitle
                 text("We couldn't find what you're looking for.", centerX - 130, centerY + 80, 0x888888);
@@ -3858,6 +3860,10 @@ void onNewTab() {
     g_activeTabId = tab.id;
     g_currentUrl = "zepra://start";
     g_searchQuery = "";
+    
+    // Clear layout cache to force fresh render of start page
+    g_layoutRoot = nullptr;
+    g_document = nullptr;
 }
 
 void onCloseTab(int tabId) {
@@ -3990,59 +3996,115 @@ void onNavigate(const std::string& input) {
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
-  background: linear-gradient(135deg, #EDE0F0, #F5E6F8, #E8D5EB);
+  background: linear-gradient(135deg, #DEBCEE, #EBC8FA, #DFBDF0); /* Smooth purple/pink like screenshot */
   font-family: sans-serif;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  color: #333;
+  color: #000;
 }
-.center { text-align: center; margin-top: 80px; }
-.logo { width: 120px; height: 120px; margin: 0 auto 16px; }
-.brand { font-size: 18px; color: #6B5B95; margin-bottom: 32px; font-weight: 500; }
-.search-box {
-  width: 500px; max-width: 90vw; height: 48px;
-  border-radius: 24px; border: 1px solid #D0C0D2;
-  background: #fff; padding: 0 20px;
-  font-size: 14px; color: #333;
+.center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+.logo-container {
+  width: 100%;
+  margin-bottom: 24px;
+}
+.logo-text {
+  text-align: center;
+  width: 100%;
+}
+.logo-text img {
+  width: 86px;
+  height: 86px;
+  border-radius: 20px;
+}
+.search-pill {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  background: #fff;
+  border-radius: 32px;
+  height: 54px;
+  width: 700px;
+  max-width: 90vw;
+  padding: 0 16px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08); /* Soft shadow */
+}
+.pill-left, .pill-right {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  width: 80px;
+}
+.pill-right {
+  justify-content: flex-end;
+}
+.action-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 12px;
+  background: #F0F0F0;
+  color: #555;
+  font-size: 11px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 8px;
+}
+.search-input {
+  width: 480px; /* Explicit width instead of flex: 1 */
+  border: none;
   outline: none;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 700;
+  color: #000; /* Bold black text */
+  text-align: center;
+  padding: 0;
 }
-.search-box:focus { border-color: #9B59B6; box-shadow: 0 0 0 3px rgba(155,89,182,0.15); }
-.shortcuts {
-  display: flex; gap: 16px; margin-top: 40px;
-  flex-wrap: wrap; justify-content: center;
+.search-input::placeholder {
+  color: #000;
+  font-weight: 700;
 }
-.shortcut {
-  width: 80px; height: 80px;
-  border-radius: 12px; background: rgba(255,255,255,0.7);
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  font-size: 11px; color: #666;
-  cursor: pointer; text-decoration: none;
+.waveform { font-size: 16px; font-weight: bold; margin-right: 12px; color: #555; }
+.arrow-up {
+  width: 28px;
+  height: 28px;
+  background: #000;
+  color: #fff;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: bold;
 }
-.shortcut:hover { background: rgba(255,255,255,0.95); }
-.shortcut-icon { font-size: 24px; margin-bottom: 6px; }
 </style>
 </head>
 <body>
 <div class="center">
-  <div class="brand">Zepra</div>
-  <input class="search-box" type="text" placeholder="Search the web..." autofocus />
-  <div class="shortcuts">
-    <a class="shortcut" href="https://ketivee.com">
-      <span class="shortcut-icon">K</span>
-      <span>Ketivee</span>
-    </a>
-    <a class="shortcut" href="https://github.com">
-      <span class="shortcut-icon">G</span>
-      <span>GitHub</span>
-    </a>
-    <a class="shortcut" href="https://youtube.com">
-      <span class="shortcut-icon">Y</span>
-      <span>YouTube</span>
-    </a>
+  <div class="logo-container">
+    <div class="logo-text"><img src="file://resources/icons/zepra.svg" /></div>
+  </div>
+  <div class="search-pill">
+    <div class="pill-left">
+      <div class="action-btn">+</div>
+      <div class="action-btn">T</div>
+    </div>
+    <input class="search-input" type="text" placeholder="Let's give your dream life. What you create today?" autofocus />
+    <div class="pill-right">
+      <span class="waveform">|||</span>
+      <div class="arrow-up">^</div>
+    </div>
   </div>
 </div>
 </body>
@@ -4228,92 +4290,29 @@ void handleClick(float mx, float my) {
         return;
     }
     
-    // First, check what was clicked and handle focus properly
-    bool clickedAddressBar = false;
-    bool clickedSearchBox = false;
-    
-    // Calculate address bar bounds - MUST match renderNavBar() search pill
-    float barWidth = (float)g_width;
-    float searchBarWidth = std::min(500.0f, barWidth - 280);
-    float searchBarX = (barWidth - searchBarWidth) / 2;
-    float searchBarY = (TOPBAR_HEIGHT - 28) / 2 - 4;
-    
-    if (hit(searchBarX, searchBarY, searchBarWidth, 36)) {
-        clickedAddressBar = true;
-    }
-    
-    // Calculate search box bounds (on start page)
-    bool isStart = g_currentUrl == "zepra://start" || g_currentUrl.empty();
-    if (isStart) {
-        float contentX = getSidebarOffset();
-        float contentW = g_width - contentX;
-        float centerX = contentX + contentW / 2;
-        float barX = centerX - 250;
-        float barY = TOPBAR_HEIGHT + (g_height - TOPBAR_HEIGHT) / 2 + 20;
-        if (hit(barX, barY, 500, 56)) {
-            clickedSearchBox = true;
-        }
-    }
-    
-    // Handle focus changes
-    if (clickedAddressBar) {
-        if (!g_addressFocused) {
-            g_addressFocused = true;
-            g_searchFocused = false;
-            // Copy current URL to input buffer for editing
-            g_addressInput = (g_currentUrl == "zepra://start") ? "" : g_currentUrl;
-        }
+    // === UNIFIED TOP BAR CLICK HANDLING ===
+    if (handleTopBarClick(mx, my)) {
         return;
     }
     
-    if (clickedSearchBox) {
-        if (!g_searchFocused) {
-            g_searchFocused = true;
-            g_addressFocused = false;
-        }
-        return;
-    }
-    
-    // Clicked elsewhere - unfocus inputs
+    // === HTML BODY INPUT HANDLING ===
     g_addressFocused = false;
     g_searchFocused = false;
     g_focusedBox = nullptr;
     
-    // Check web content layout tree for inputs
+    // Check web content layout tree for inputs (HTML-rendered search box)
     if (my > TOPBAR_HEIGHT && g_layoutRoot) {
         LayoutBox* clicked = findBoxAt(g_layoutRoot.get(), mx, my);
         if (clicked && clicked->isInput) {
             g_focusedBox = clicked;
+            // The HTML start page acts as the main search driver (zepra://start)
+            if (g_currentUrl == "zepra://start" || g_currentUrl.empty()) {
+                g_searchFocused = true;
+            }
             std::cout << "[Browser] Focused input type=" << clicked->inputType << std::endl;
-            // TODO: Blink cursor
             return;
         }
     }
-    
-    // Tab bar clicks
-    float tabX = g_sidebarVisible ? SIDEBAR_WIDTH + 8 : 50;
-    for (const Tab& tab : g_tabs) {
-        // Close button
-        if (hit(tabX + 180 - 24, 10, 16, 16)) {
-            onCloseTab(tab.id);
-            return;
-        }
-        // Tab select
-        if (my < TAB_HEIGHT && mx >= tabX && mx < tabX + 180) {
-            onSelectTab(tab.id);
-            return;
-        }
-        tabX += 184;
-    }
-    
-    // New tab button
-    if (my < TAB_HEIGHT && mx >= tabX && mx < tabX + 28) {
-        onNewTab();
-        return;
-    }
-    
-    
-    
 #ifdef USE_WEBCORE
     // Check for link clicks in content area
     for (const auto& linkBox : g_linkHitBoxes) {
