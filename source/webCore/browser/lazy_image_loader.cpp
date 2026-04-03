@@ -237,36 +237,29 @@ ImageResult LazyImageLoader::loadImage(const PendingImage& pending) {
         // Handle file:// URLs — read from local filesystem
         if (pending.url.substr(0, 7) == "file://") {
             std::string filePath = pending.url.substr(7);
-            // Try relative to RESOURCE_PATH first
             std::ifstream file(filePath, std::ios::binary);
             if (!file.is_open()) {
-                // Try with RESOURCE_PATH prefix
-                std::string altPath = std::string(RESOURCE_PATH) + "/" + filePath;
-                // Strip "resources/" prefix if present since RESOURCE_PATH already points there
-                if (filePath.find("resources/") == 0) {
-                    altPath = std::string(RESOURCE_PATH) + "/" + filePath.substr(10);
+                // Try stripping leading slash if present
+                if (!filePath.empty() && filePath[0] == '/') {
+                    file.open(filePath.substr(1), std::ios::binary);
                 }
-                file.open(altPath, std::ios::binary);
             }
             if (!file.is_open()) {
                 result.error = "File not found: " + filePath;
-                if (pending.box) {
-                    std::lock_guard<std::mutex> lock(rawMutex_);
-                    // Don't write to box from worker - just log
-                }
                 return result;
             }
             data = std::vector<uint8_t>((std::istreambuf_iterator<char>(file)),
                                          std::istreambuf_iterator<char>());
             // Detect content type from extension
-            if (filePath.rfind(".svg") == filePath.length() - 4) {
+            std::string lower = filePath;
+            std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+            if (lower.rfind(".svg") == lower.length() - 4)
                 contentType = "image/svg+xml";
-            } else if (filePath.rfind(".png") == filePath.length() - 4) {
+            else if (lower.rfind(".png") == lower.length() - 4)
                 contentType = "image/png";
-            } else if (filePath.rfind(".jpg") == filePath.length() - 4 ||
-                       filePath.rfind(".jpeg") == filePath.length() - 5) {
+            else if (lower.rfind(".jpg") == lower.length() - 4 ||
+                     lower.rfind(".jpeg") == lower.length() - 5)
                 contentType = "image/jpeg";
-            }
         } else {
             // HTTP fetch
             Zepra::Networking::HttpClientConfig config;

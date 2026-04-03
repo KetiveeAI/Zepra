@@ -182,7 +182,7 @@ KetiveeAI may publish revised versions of this license from time to time. Each v
 ```
 KetiveeAI
 License inquiries:   licence@ketivee.com
-General contact:     https://about.ketivee.com
+General contact:     https://zepra.ketivee.com
 GitHub:              https://github.com/KetiveeAI
 ```
 
@@ -208,4 +208,4 @@ GitHub:              https://github.com/KetiveeAI
 
 *KetiveeAI Public License, Version 2.0*
 *ZepraBrowser and ZepraScript — Built in India. Independent by design.*
-*Copyright (c) 2025 KetiveeAI — https://about.ketivee.com*
+*Copyright (c) 2025 KetiveeAI — https://zepra.ketivee.com*
