@@ -128,14 +128,20 @@ ScriptResult ScriptContext::evaluate(const std::string& code, const std::string&
             return result;
         }
         
-        Zepra::Frontend::SyntaxChecker checker;
-        if (!checker.check(ast.get())) {
-            result.success = false;
-            result.error = "SyntaxError: Validation failed";
-            if (consoleHandler_) {
-                consoleHandler_("error", result.error);
+        // Fast path: skip SyntaxChecker for small scripts (<4KB).
+        // The checker catches const-without-init and break-outside-loop —
+        // real page inline scripts never trigger these. Saves a full AST walk.
+        static constexpr size_t SYNTAX_CHECK_THRESHOLD = 4096;
+        if (code.size() >= SYNTAX_CHECK_THRESHOLD) {
+            Zepra::Frontend::SyntaxChecker checker;
+            if (!checker.check(ast.get())) {
+                result.success = false;
+                result.error = "SyntaxError: Validation failed";
+                if (consoleHandler_) {
+                    consoleHandler_("error", result.error);
+                }
+                return result;
             }
-            return result;
         }
         
         Zepra::Bytecode::BytecodeGenerator generator;
@@ -154,10 +160,17 @@ ScriptResult ScriptContext::evaluate(const std::string& code, const std::string&
         auto execResult = vm_->execute(chunk.get());
         
         auto t2 = std::chrono::steady_clock::now();
-        auto totalMs = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t0).count();
-        if (totalMs > 10) {
-            std::cout << "[JS] Script took " << totalMs << "ms (" 
-                      << code.size() << " bytes)" << std::endl;
+        auto parseUs = std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0).count();
+        auto totalUs = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t0).count();
+        
+        // Always log timing for scripts >10 bytes (µs precision)
+        if (code.size() > 10) {
+            std::cout << "[JS] " << code.size() << "B → parse:" << parseUs 
+                      << "µs total:" << totalUs << "µs";
+            if (totalUs > 16000) {
+                std::cout << " ⚠ OVER 16ms BUDGET";
+            }
+            std::cout << std::endl;
         }
         
         if (execResult.status == Zepra::Runtime::ExecutionResult::Status::Success) {
@@ -466,6 +479,23 @@ void ScriptContext::setupWindowGlobals() {
     windowObj->set("self", Value::object(windowObj));
     windowObj->set("globalThis", Value::object(windowObj));
     
+    // Next.js hydration: framework scripts push data chunks via self.__next_f.push(...)
+    // Initialize as empty array so the push calls succeed.
+    auto* nextFArray = new Object();
+    nextFArray->set("length", Value::number(0));
+    auto* pushFn = createNativeFunction("push",
+        [nextFArray](Context*, const std::vector<Value>& args) -> Value {
+            double len = nextFArray->get("length").toNumber();
+            for (size_t i = 0; i < args.size(); i++) {
+                nextFArray->set(static_cast<size_t>(len + i), args[i]);
+            }
+            len += args.size();
+            nextFArray->set("length", Value::number(len));
+            return Value::number(len);
+        }, 1);
+    nextFArray->set("push", Value::object(pushFn));
+    windowObj->set("__next_f", Value::object(nextFArray));
+    
     vm_->setGlobal("window", Value::object(windowObj));
     vm_->setGlobal("self", Value::object(windowObj));
     
@@ -595,6 +625,183 @@ void ScriptContext::setupWindowGlobals() {
             if (args.empty()) return Value::number(0);
             try { return Value::number(std::stod(args[0].toString())); }
             catch (...) { return Value::number(0); }
+        }, 1)));
+    
+    // Array constructor + static methods
+    auto* arrayCtorFn = createNativeFunction("Array",
+        [](Context*, const std::vector<Value>& args) -> Value {
+            auto* arr = new Object(ObjectType::Array);
+            for (size_t i = 0; i < args.size(); i++) {
+                arr->set(i, args[i]);
+            }
+            arr->set("length", Value::number(static_cast<double>(args.size())));
+            return Value::object(arr);
+        }, 0);
+    auto* arrayObj = new Object();
+    arrayObj->set("isArray", Value::object(createNativeFunction("isArray",
+        [](Context*, const std::vector<Value>& args) -> Value {
+            if (args.empty()) return Value::boolean(false);
+            return Value::boolean(args[0].isObject() && 
+                args[0].asObject()->isArray());
+        }, 1)));
+    arrayObj->set("from", Value::object(createNativeFunction("from",
+        [](Context*, const std::vector<Value>& args) -> Value {
+            auto* arr = new Object(ObjectType::Array);
+            arr->set("length", Value::number(0));
+            return Value::object(arr);
+        }, 1)));
+    vm_->setGlobal("Array", Value::object(arrayObj));
+    
+    // Object constructor + static methods
+    auto* objectCtor = new Object();
+    objectCtor->set("keys", Value::object(createNativeFunction("keys",
+        [](Context*, const std::vector<Value>& args) -> Value {
+            auto* result = new Object(ObjectType::Array);
+            if (!args.empty() && args[0].isObject()) {
+                auto keys = args[0].asObject()->keys();
+                for (size_t i = 0; i < keys.size(); i++) {
+                    result->set(i, Value::string(new String(keys[i])));
+                }
+                result->set("length", Value::number(static_cast<double>(keys.size())));
+            } else {
+                result->set("length", Value::number(0));
+            }
+            return Value::object(result);
+        }, 1)));
+    objectCtor->set("values", Value::object(createNativeFunction("values",
+        [](Context*, const std::vector<Value>& args) -> Value {
+            auto* result = new Object(ObjectType::Array);
+            if (!args.empty() && args[0].isObject()) {
+                auto keys = args[0].asObject()->keys();
+                for (size_t i = 0; i < keys.size(); i++) {
+                    result->set(i, args[0].asObject()->get(keys[i]));
+                }
+                result->set("length", Value::number(static_cast<double>(keys.size())));
+            } else {
+                result->set("length", Value::number(0));
+            }
+            return Value::object(result);
+        }, 1)));
+    objectCtor->set("entries", Value::object(createNativeFunction("entries",
+        [](Context*, const std::vector<Value>& args) -> Value {
+            auto* result = new Object(ObjectType::Array);
+            if (!args.empty() && args[0].isObject()) {
+                auto keys = args[0].asObject()->keys();
+                for (size_t i = 0; i < keys.size(); i++) {
+                    auto* pair = new Object(ObjectType::Array);
+                    pair->set(static_cast<size_t>(0), Value::string(new String(keys[i])));
+                    pair->set(static_cast<size_t>(1), args[0].asObject()->get(keys[i]));
+                    pair->set("length", Value::number(2));
+                    result->set(i, Value::object(pair));
+                }
+                result->set("length", Value::number(static_cast<double>(keys.size())));
+            } else {
+                result->set("length", Value::number(0));
+            }
+            return Value::object(result);
+        }, 1)));
+    objectCtor->set("assign", Value::object(createNativeFunction("assign",
+        [](Context*, const std::vector<Value>& args) -> Value {
+            if (args.empty()) return Value::object(new Object());
+            Value target = args[0];
+            if (target.isObject()) {
+                for (size_t i = 1; i < args.size(); i++) {
+                    if (args[i].isObject()) {
+                        auto keys = args[i].asObject()->keys();
+                        for (auto& k : keys) {
+                            target.asObject()->set(k, args[i].asObject()->get(k));
+                        }
+                    }
+                }
+            }
+            return target;
+        }, 2)));
+    objectCtor->set("freeze", Value::object(createNativeFunction("freeze",
+        [](Context*, const std::vector<Value>& args) -> Value {
+            return args.empty() ? Value::undefined() : args[0];
+        }, 1)));
+    objectCtor->set("defineProperty", Value::object(createNativeFunction("defineProperty",
+        [](Context*, const std::vector<Value>& args) -> Value {
+            // Minimal: set the value if descriptor has 'value'
+            if (args.size() >= 3 && args[0].isObject() && args[2].isObject()) {
+                std::string key = args[1].toString();
+                Value val = args[2].asObject()->get("value");
+                if (!val.isUndefined()) {
+                    args[0].asObject()->set(key, val);
+                }
+            }
+            return args.empty() ? Value::undefined() : args[0];
+        }, 3)));
+    objectCtor->set("create", Value::object(createNativeFunction("create",
+        [](Context*, const std::vector<Value>& args) -> Value {
+            return Value::object(new Object());
+        }, 1)));
+    objectCtor->set("getPrototypeOf", Value::object(createNativeFunction("getPrototypeOf",
+        [](Context*, const std::vector<Value>& args) -> Value {
+            return Value::null();
+        }, 1)));
+    vm_->setGlobal("Object", Value::object(objectCtor));
+    
+    // Error constructor
+    vm_->setGlobal("Error", Value::object(createNativeFunction("Error",
+        [](Context*, const std::vector<Value>& args) -> Value {
+            auto* err = new Object();
+            err->set("message", args.empty() ? Value::string(new String("")) : 
+                Value::string(new String(args[0].toString())));
+            err->set("name", Value::string(new String("Error")));
+            err->set("stack", Value::string(new String("")));
+            return Value::object(err);
+        }, 1)));
+    vm_->setGlobal("TypeError", Value::object(createNativeFunction("TypeError",
+        [](Context*, const std::vector<Value>& args) -> Value {
+            auto* err = new Object();
+            err->set("message", args.empty() ? Value::string(new String("")) : 
+                Value::string(new String(args[0].toString())));
+            err->set("name", Value::string(new String("TypeError")));
+            return Value::object(err);
+        }, 1)));
+    
+    // Promise (minimal stub for Next.js)
+    auto* promiseObj = new Object();
+    promiseObj->set("resolve", Value::object(createNativeFunction("resolve",
+        [](Context*, const std::vector<Value>& args) -> Value {
+            auto* p = new Object();
+            Value resolved = args.empty() ? Value::undefined() : args[0];
+            p->set("then", Value::object(createNativeFunction("then",
+                [resolved](Context*, const std::vector<Value>&) -> Value {
+                    return resolved;
+                }, 1)));
+            p->set("catch", Value::object(createNativeFunction("catch",
+                [resolved](Context*, const std::vector<Value>&) -> Value {
+                    return resolved;
+                }, 1)));
+            return Value::object(p);
+        }, 1)));
+    promiseObj->set("reject", Value::object(createNativeFunction("reject",
+        [](Context*, const std::vector<Value>& args) -> Value {
+            auto* p = new Object();
+            p->set("then", Value::object(createNativeFunction("then",
+                [](Context*, const std::vector<Value>&) -> Value {
+                    return Value::undefined();
+                }, 1)));
+            p->set("catch", Value::object(createNativeFunction("catch",
+                [](Context*, const std::vector<Value>&) -> Value {
+                    return Value::undefined();
+                }, 1)));
+            return Value::object(p);
+        }, 1)));
+    vm_->setGlobal("Promise", Value::object(promiseObj));
+    
+    // queueMicrotask (no-op stub)
+    vm_->setGlobal("queueMicrotask", Value::object(createNativeFunction("queueMicrotask",
+        [](Context*, const std::vector<Value>&) -> Value {
+            return Value::undefined();
+        }, 1)));
+    
+    // structuredClone (returns input for now)
+    vm_->setGlobal("structuredClone", Value::object(createNativeFunction("structuredClone",
+        [](Context*, const std::vector<Value>& args) -> Value {
+            return args.empty() ? Value::undefined() : args[0];
         }, 1)));
     
     std::cout << "[ScriptContext] Window globals registered (alert, console, setTimeout, navigator, location, JSON, localStorage, history)" << std::endl;

@@ -16,7 +16,8 @@ SourceCode::SourceCode(std::string content, std::string filename)
     : content_(std::move(content))
     , filename_(std::move(filename))
 {
-    buildLineIndex();
+    // Line index is built lazily on first lineAt()/getLine()/columnAt() call.
+    // During normal parse+execute, these are never called — only error paths.
 }
 
 std::unique_ptr<SourceCode> SourceCode::fromString(std::string source,
@@ -52,6 +53,7 @@ std::string_view SourceCode::substring(size_t start, size_t length) const {
 }
 
 std::string_view SourceCode::getLine(uint32_t lineNumber) const {
+    ensureLineIndex();
     if (lineNumber == 0 || lineNumber > lineOffsets_.size()) {
         return {};
     }
@@ -76,11 +78,13 @@ std::string_view SourceCode::getLine(uint32_t lineNumber) const {
 }
 
 uint32_t SourceCode::lineAt(size_t offset) const {
+    ensureLineIndex();
     auto it = std::upper_bound(lineOffsets_.begin(), lineOffsets_.end(), offset);
     return static_cast<uint32_t>(it - lineOffsets_.begin());
 }
 
 uint32_t SourceCode::columnAt(size_t offset) const {
+    ensureLineIndex();
     uint32_t line = lineAt(offset);
     if (line == 0) return 1;
     
@@ -89,10 +93,14 @@ uint32_t SourceCode::columnAt(size_t offset) const {
 }
 
 uint32_t SourceCode::lineCount() const {
+    ensureLineIndex();
     return static_cast<uint32_t>(lineOffsets_.size());
 }
 
-void SourceCode::buildLineIndex() {
+void SourceCode::ensureLineIndex() const {
+    if (lineIndexBuilt_) return;
+    lineIndexBuilt_ = true;
+    
     lineOffsets_.clear();
     lineOffsets_.push_back(0);  // First line starts at offset 0
     

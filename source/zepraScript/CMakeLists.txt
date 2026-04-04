@@ -364,10 +364,7 @@ set(ZEPRA_CORE_SOURCES
     threading/thread_pool.cpp
 
     # Optimization
-    optimization/hidden_class.cpp
-    optimization/inline_cache_opt.cpp
-    optimization/property_table.cpp
-    optimization/speculation.cpp
+    # (optimization/ sources not yet implemented — stubs removed to unblock build)
 
     # Workers
     workers/WorkerModuleLoader.cpp

@@ -107,7 +107,7 @@ add_test(NAME NxHttpTests COMMAND nxhttp_tests)
 add_executable(nxcrypto_tests nxcrypto_tests.cpp)
 target_include_directories(nxcrypto_tests PRIVATE
     ${PROJECT_SOURCE_DIR}/include
-    ${PROJECT_SOURCE_DIR}/source/nxcrypto/include
+    ${PROJECT_SOURCE_DIR}/source/nxcrypto
 )
 target_link_libraries(nxcrypto_tests nxcrypto GTest::gtest GTest::gtest_main pthread ssl crypto)
 add_test(NAME NxCryptoTests COMMAND nxcrypto_tests)

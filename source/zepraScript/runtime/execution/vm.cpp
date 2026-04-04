@@ -88,26 +88,33 @@ ExecutionResult VM::execute(const Bytecode::BytecodeChunk* chunk) {
 }
 
 void VM::run() {
-    while (ip_ < chunk_->code().size() && !isYielding_ && !terminationRequested_) {
-        // Periodic limit check and GC safe-point (every N instructions)
-        instructionCounter_++;
-        if (instructionCounter_ >= LIMIT_CHECK_INTERVAL) {
-            instructionCounter_ = 0;
-            
-            // Resource monitor check
-            if (resourceMonitor_) {
-                resourceMonitor_->addInstructions(LIMIT_CHECK_INTERVAL);
+    // Cache code pointer and size — avoids virtual dispatch per iteration
+    const auto& codeVec = chunk_->code();
+    const size_t codeSize = codeVec.size();
+    
+    // Fast path: no resource monitor or GC heap → skip periodic checks entirely
+    const bool needsPeriodicChecks = (resourceMonitor_ != nullptr) || (gcHeap_ != nullptr);
+    
+    while (__builtin_expect(ip_ < codeSize, 1)) {
+        if (__builtin_expect(isYielding_ || terminationRequested_, 0)) break;
+        
+        if (needsPeriodicChecks) {
+            instructionCounter_++;
+            if (__builtin_expect(instructionCounter_ >= LIMIT_CHECK_INTERVAL, 0)) {
+                instructionCounter_ = 0;
                 
-                if (!resourceMonitor_->checkLimits()) {
-                    terminationRequested_ = true;
-                    throw SecurityError(SecurityError::Type::Timeout, 
-                        "Execution limit exceeded");
+                if (resourceMonitor_) {
+                    resourceMonitor_->addInstructions(LIMIT_CHECK_INTERVAL);
+                    if (!resourceMonitor_->checkLimits()) {
+                        terminationRequested_ = true;
+                        throw SecurityError(SecurityError::Type::Timeout, 
+                            "Execution limit exceeded");
+                    }
                 }
-            }
-            
-            // GC safe-point — let collector run if needed
-            if (gcHeap_) {
-                gcHeap_->maybeCollect();
+                
+                if (gcHeap_) {
+                    gcHeap_->maybeCollect();
+                }
             }
         }
         
@@ -123,232 +130,9 @@ bool VM::shouldTerminate() const {
 }
 
 void VM::dispatch(Opcode op) {
-
-#if defined(__GNUC__) || defined(__clang__)
-    // ==========================================================================
-    // COMPUTED GOTO DISPATCH TABLE
-    // GCC/Clang extension: &&label gives the address of a label.
-    // Eliminates branch prediction overhead of switch-case dispatch.
-    // ==========================================================================
-    static const void* dispatchTable[] = {
-        &&lbl_NOP,           // 0x00 OP_NOP
-        &&lbl_POP,           // 0x01 OP_POP
-        &&lbl_DUP,           // 0x02 OP_DUP
-        &&lbl_SWAP,          // 0x03 OP_SWAP
-        &&lbl_CONSTANT,      // 0x04 OP_CONSTANT
-        &&lbl_CONSTANT_LONG, // 0x05 OP_CONSTANT_LONG
-        &&lbl_NIL,           // 0x06 OP_NIL
-        &&lbl_TRUE,          // 0x07 OP_TRUE
-        &&lbl_FALSE,         // 0x08 OP_FALSE
-        &&lbl_ZERO,          // 0x09 OP_ZERO
-        &&lbl_ONE,           // 0x0A OP_ONE
-        &&lbl_ADD,           // 0x0B OP_ADD
-        &&lbl_SUBTRACT,      // 0x0C OP_SUBTRACT
-        &&lbl_MULTIPLY,      // 0x0D OP_MULTIPLY
-        &&lbl_DIVIDE,        // 0x0E OP_DIVIDE
-        &&lbl_MODULO,        // 0x0F OP_MODULO
-        &&lbl_POWER,         // 0x10 OP_POWER
-        &&lbl_NEGATE,        // 0x11 OP_NEGATE
-        &&lbl_INCREMENT,     // 0x12 OP_INCREMENT
-        &&lbl_DECREMENT,     // 0x13 OP_DECREMENT
-        &&lbl_BITWISE_AND,   // 0x14 OP_BITWISE_AND
-        &&lbl_BITWISE_OR,    // 0x15 OP_BITWISE_OR
-        &&lbl_BITWISE_XOR,   // 0x16 OP_BITWISE_XOR
-        &&lbl_BITWISE_NOT,   // 0x17 OP_BITWISE_NOT
-        &&lbl_LEFT_SHIFT,    // 0x18 OP_LEFT_SHIFT
-        &&lbl_RIGHT_SHIFT,   // 0x19 OP_RIGHT_SHIFT
-        &&lbl_UNSIGNED_RIGHT_SHIFT, // 0x1A OP_UNSIGNED_RIGHT_SHIFT
-        &&lbl_EQUAL,         // 0x1B OP_EQUAL
-        &&lbl_STRICT_EQUAL,  // 0x1C OP_STRICT_EQUAL
-        &&lbl_NOT_EQUAL,     // 0x1D OP_NOT_EQUAL
-        &&lbl_STRICT_NOT_EQUAL, // 0x1E OP_STRICT_NOT_EQUAL
-        &&lbl_LESS,          // 0x1F OP_LESS
-        &&lbl_LESS_EQUAL,    // 0x20 OP_LESS_EQUAL
-        &&lbl_GREATER,       // 0x21 OP_GREATER
-        &&lbl_GREATER_EQUAL, // 0x22 OP_GREATER_EQUAL
-        &&lbl_NOT,           // 0x23 OP_NOT
-        &&lbl_AND,           // 0x24 OP_AND
-        &&lbl_OR,            // 0x25 OP_OR
-        &&lbl_NULLISH,       // 0x26 OP_NULLISH
-        &&lbl_TYPEOF,        // 0x27 OP_TYPEOF
-        &&lbl_INSTANCEOF,    // 0x28 OP_INSTANCEOF
-        &&lbl_IN,            // 0x29 OP_IN
-        &&lbl_GET_LOCAL,     // 0x2A OP_GET_LOCAL
-        &&lbl_SET_LOCAL,     // 0x2B OP_SET_LOCAL
-        &&lbl_GET_GLOBAL,    // 0x2C OP_GET_GLOBAL
-        &&lbl_SET_GLOBAL,    // 0x2D OP_SET_GLOBAL
-        &&lbl_DEFINE_GLOBAL, // 0x2E OP_DEFINE_GLOBAL
-        &&lbl_GET_UPVALUE,   // 0x2F OP_GET_UPVALUE
-        &&lbl_SET_UPVALUE,   // 0x30 OP_SET_UPVALUE
-        &&lbl_CLOSE_UPVALUE, // 0x31 OP_CLOSE_UPVALUE
-        &&lbl_GET_PROPERTY,  // 0x32 OP_GET_PROPERTY
-        &&lbl_SET_PROPERTY,  // 0x33 OP_SET_PROPERTY
-        &&lbl_GET_ELEMENT,   // 0x34 OP_GET_ELEMENT
-        &&lbl_SET_ELEMENT,   // 0x35 OP_SET_ELEMENT
-        &&lbl_DELETE_PROPERTY, // 0x36 OP_DELETE_PROPERTY
-        &&lbl_CREATE_OBJECT, // 0x37 OP_CREATE_OBJECT
-        &&lbl_CREATE_ARRAY,  // 0x38 OP_CREATE_ARRAY
-        &&lbl_INIT_PROPERTY, // 0x39 OP_INIT_PROPERTY
-        &&lbl_INIT_ELEMENT,  // 0x3A OP_INIT_ELEMENT
-        &&lbl_SPREAD,        // 0x3B OP_SPREAD
-        &&lbl_JUMP,          // 0x3C OP_JUMP
-        &&lbl_JUMP_IF_FALSE, // 0x3D OP_JUMP_IF_FALSE
-        &&lbl_JUMP_IF_TRUE,  // 0x3E OP_JUMP_IF_TRUE
-        &&lbl_JUMP_IF_NIL,   // 0x3F OP_JUMP_IF_NIL
-        &&lbl_LOOP,          // 0x40 OP_LOOP
-        &&lbl_SWITCH,        // 0x41 OP_SWITCH
-        &&lbl_CASE,          // 0x42 OP_CASE
-        &&lbl_CALL,          // 0x43 OP_CALL
-        &&lbl_CALL_METHOD,   // 0x44 OP_CALL_METHOD
-        &&lbl_RETURN,        // 0x45 OP_RETURN
-        &&lbl_CLOSURE,       // 0x46 OP_CLOSURE
-        &&lbl_NEW,           // 0x47 OP_NEW
-        &&lbl_INHERIT,       // 0x48 OP_INHERIT
-        &&lbl_DEFINE_METHOD, // 0x49 OP_DEFINE_METHOD
-        &&lbl_DEFINE_STATIC, // 0x4A OP_DEFINE_STATIC
-        &&lbl_DEFINE_GETTER, // 0x4B OP_DEFINE_GETTER
-        &&lbl_DEFINE_SETTER, // 0x4C OP_DEFINE_SETTER
-        &&lbl_SUPER_CALL,    // 0x4D OP_SUPER_CALL
-        &&lbl_SUPER_GET,     // 0x4E OP_SUPER_GET
-        &&lbl_THROW,         // 0x4F OP_THROW
-        &&lbl_TRY_BEGIN,     // 0x50 OP_TRY_BEGIN
-        &&lbl_TRY_END,       // 0x51 OP_TRY_END
-        &&lbl_CATCH,         // 0x52 OP_CATCH
-        &&lbl_FINALLY,       // 0x53 OP_FINALLY
-        &&lbl_GET_ITERATOR,  // 0x54 OP_GET_ITERATOR
-        &&lbl_ITERATOR_NEXT, // 0x55 OP_ITERATOR_NEXT
-        &&lbl_FOR_IN,        // 0x56 OP_FOR_IN
-        &&lbl_FOR_OF,        // 0x57 OP_FOR_OF
-        &&lbl_YIELD,         // 0x58 OP_YIELD
-        &&lbl_AWAIT,         // 0x59 OP_AWAIT
-        &&lbl_DEBUGGER,      // 0x5A OP_DEBUGGER
-        &&lbl_LINE,          // 0x5B OP_LINE
-        &&lbl_IMPORT,        // 0x5C OP_IMPORT
-        &&lbl_EXPORT,        // 0x5D OP_EXPORT
-        &&lbl_IMPORT_BINDING,// 0x5E OP_IMPORT_BINDING
-        &&lbl_END,           // 0x5F OP_END
-    };
-
-    if (static_cast<uint8_t>(op) <= static_cast<uint8_t>(Opcode::OP_END)) {
-        goto *dispatchTable[static_cast<uint8_t>(op)];
-    }
-    return; // Unknown opcode
-
-    // Label definitions — each maps to the corresponding case body below
-    // The actual handler code follows after the #else switch-case block
-    lbl_NOP: return;
-    // Fall through to switch for handler code — the labels just jump into
-    // the same handler blocks. We use a unified approach: labels jump to
-    // case handlers via the switch fallthrough trick, but since we can't
-    // mix goto labels with case labels cleanly, we use the simpler approach
-    // of just calling the switch with the computed op.
-    // This gives us the benefit of the jump table for dispatch entry while
-    // keeping the switch for the actual handler code.
-
-    // Direct dispatch: jump to switch handler via reentry
-#define CGOTO_HANDLER(LABEL, OPCODE) \
-    LABEL: goto switch_entry;
-
-    CGOTO_HANDLER(lbl_POP, OP_POP)
-    CGOTO_HANDLER(lbl_DUP, OP_DUP)
-    CGOTO_HANDLER(lbl_SWAP, OP_SWAP)
-    CGOTO_HANDLER(lbl_CONSTANT, OP_CONSTANT)
-    CGOTO_HANDLER(lbl_CONSTANT_LONG, OP_CONSTANT_LONG)
-    CGOTO_HANDLER(lbl_NIL, OP_NIL)
-    CGOTO_HANDLER(lbl_TRUE, OP_TRUE)
-    CGOTO_HANDLER(lbl_FALSE, OP_FALSE)
-    CGOTO_HANDLER(lbl_ZERO, OP_ZERO)
-    CGOTO_HANDLER(lbl_ONE, OP_ONE)
-    CGOTO_HANDLER(lbl_ADD, OP_ADD)
-    CGOTO_HANDLER(lbl_SUBTRACT, OP_SUBTRACT)
-    CGOTO_HANDLER(lbl_MULTIPLY, OP_MULTIPLY)
-    CGOTO_HANDLER(lbl_DIVIDE, OP_DIVIDE)
-    CGOTO_HANDLER(lbl_MODULO, OP_MODULO)
-    CGOTO_HANDLER(lbl_POWER, OP_POWER)
-    CGOTO_HANDLER(lbl_NEGATE, OP_NEGATE)
-    CGOTO_HANDLER(lbl_INCREMENT, OP_INCREMENT)
-    CGOTO_HANDLER(lbl_DECREMENT, OP_DECREMENT)
-    CGOTO_HANDLER(lbl_BITWISE_AND, OP_BITWISE_AND)
-    CGOTO_HANDLER(lbl_BITWISE_OR, OP_BITWISE_OR)
-    CGOTO_HANDLER(lbl_BITWISE_XOR, OP_BITWISE_XOR)
-    CGOTO_HANDLER(lbl_BITWISE_NOT, OP_BITWISE_NOT)
-    CGOTO_HANDLER(lbl_LEFT_SHIFT, OP_LEFT_SHIFT)
-    CGOTO_HANDLER(lbl_RIGHT_SHIFT, OP_RIGHT_SHIFT)
-    CGOTO_HANDLER(lbl_UNSIGNED_RIGHT_SHIFT, OP_UNSIGNED_RIGHT_SHIFT)
-    CGOTO_HANDLER(lbl_EQUAL, OP_EQUAL)
-    CGOTO_HANDLER(lbl_STRICT_EQUAL, OP_STRICT_EQUAL)
-    CGOTO_HANDLER(lbl_NOT_EQUAL, OP_NOT_EQUAL)
-    CGOTO_HANDLER(lbl_STRICT_NOT_EQUAL, OP_STRICT_NOT_EQUAL)
-    CGOTO_HANDLER(lbl_LESS, OP_LESS)
-    CGOTO_HANDLER(lbl_LESS_EQUAL, OP_LESS_EQUAL)
-    CGOTO_HANDLER(lbl_GREATER, OP_GREATER)
-    CGOTO_HANDLER(lbl_GREATER_EQUAL, OP_GREATER_EQUAL)
-    CGOTO_HANDLER(lbl_NOT, OP_NOT)
-    CGOTO_HANDLER(lbl_AND, OP_AND)
-    CGOTO_HANDLER(lbl_OR, OP_OR)
-    CGOTO_HANDLER(lbl_NULLISH, OP_NULLISH)
-    CGOTO_HANDLER(lbl_TYPEOF, OP_TYPEOF)
-    CGOTO_HANDLER(lbl_INSTANCEOF, OP_INSTANCEOF)
-    CGOTO_HANDLER(lbl_IN, OP_IN)
-    CGOTO_HANDLER(lbl_GET_LOCAL, OP_GET_LOCAL)
-    CGOTO_HANDLER(lbl_SET_LOCAL, OP_SET_LOCAL)
-    CGOTO_HANDLER(lbl_GET_GLOBAL, OP_GET_GLOBAL)
-    CGOTO_HANDLER(lbl_SET_GLOBAL, OP_SET_GLOBAL)
-    CGOTO_HANDLER(lbl_DEFINE_GLOBAL, OP_DEFINE_GLOBAL)
-    CGOTO_HANDLER(lbl_GET_UPVALUE, OP_GET_UPVALUE)
-    CGOTO_HANDLER(lbl_SET_UPVALUE, OP_SET_UPVALUE)
-    CGOTO_HANDLER(lbl_CLOSE_UPVALUE, OP_CLOSE_UPVALUE)
-    CGOTO_HANDLER(lbl_GET_PROPERTY, OP_GET_PROPERTY)
-    CGOTO_HANDLER(lbl_SET_PROPERTY, OP_SET_PROPERTY)
-    CGOTO_HANDLER(lbl_GET_ELEMENT, OP_GET_ELEMENT)
-    CGOTO_HANDLER(lbl_SET_ELEMENT, OP_SET_ELEMENT)
-    CGOTO_HANDLER(lbl_DELETE_PROPERTY, OP_DELETE_PROPERTY)
-    CGOTO_HANDLER(lbl_CREATE_OBJECT, OP_CREATE_OBJECT)
-    CGOTO_HANDLER(lbl_CREATE_ARRAY, OP_CREATE_ARRAY)
-    CGOTO_HANDLER(lbl_INIT_PROPERTY, OP_INIT_PROPERTY)
-    CGOTO_HANDLER(lbl_INIT_ELEMENT, OP_INIT_ELEMENT)
-    CGOTO_HANDLER(lbl_SPREAD, OP_SPREAD)
-    CGOTO_HANDLER(lbl_JUMP, OP_JUMP)
-    CGOTO_HANDLER(lbl_JUMP_IF_FALSE, OP_JUMP_IF_FALSE)
-    CGOTO_HANDLER(lbl_JUMP_IF_TRUE, OP_JUMP_IF_TRUE)
-    CGOTO_HANDLER(lbl_JUMP_IF_NIL, OP_JUMP_IF_NIL)
-    CGOTO_HANDLER(lbl_LOOP, OP_LOOP)
-    CGOTO_HANDLER(lbl_SWITCH, OP_SWITCH)
-    CGOTO_HANDLER(lbl_CASE, OP_CASE)
-    CGOTO_HANDLER(lbl_CALL, OP_CALL)
-    CGOTO_HANDLER(lbl_CALL_METHOD, OP_CALL_METHOD)
-    CGOTO_HANDLER(lbl_RETURN, OP_RETURN)
-    CGOTO_HANDLER(lbl_CLOSURE, OP_CLOSURE)
-    CGOTO_HANDLER(lbl_NEW, OP_NEW)
-    CGOTO_HANDLER(lbl_INHERIT, OP_INHERIT)
-    CGOTO_HANDLER(lbl_DEFINE_METHOD, OP_DEFINE_METHOD)
-    CGOTO_HANDLER(lbl_DEFINE_STATIC, OP_DEFINE_STATIC)
-    CGOTO_HANDLER(lbl_DEFINE_GETTER, OP_DEFINE_GETTER)
-    CGOTO_HANDLER(lbl_DEFINE_SETTER, OP_DEFINE_SETTER)
-    CGOTO_HANDLER(lbl_SUPER_CALL, OP_SUPER_CALL)
-    CGOTO_HANDLER(lbl_SUPER_GET, OP_SUPER_GET)
-    CGOTO_HANDLER(lbl_THROW, OP_THROW)
-    CGOTO_HANDLER(lbl_TRY_BEGIN, OP_TRY_BEGIN)
-    CGOTO_HANDLER(lbl_TRY_END, OP_TRY_END)
-    CGOTO_HANDLER(lbl_CATCH, OP_CATCH)
-    CGOTO_HANDLER(lbl_FINALLY, OP_FINALLY)
-    CGOTO_HANDLER(lbl_GET_ITERATOR, OP_GET_ITERATOR)
-    CGOTO_HANDLER(lbl_ITERATOR_NEXT, OP_ITERATOR_NEXT)
-    CGOTO_HANDLER(lbl_FOR_IN, OP_FOR_IN)
-    CGOTO_HANDLER(lbl_FOR_OF, OP_FOR_OF)
-    CGOTO_HANDLER(lbl_YIELD, OP_YIELD)
-    CGOTO_HANDLER(lbl_AWAIT, OP_AWAIT)
-    CGOTO_HANDLER(lbl_DEBUGGER, OP_DEBUGGER)
-    CGOTO_HANDLER(lbl_LINE, OP_LINE)
-    CGOTO_HANDLER(lbl_IMPORT, OP_IMPORT)
-    CGOTO_HANDLER(lbl_EXPORT, OP_EXPORT)
-    CGOTO_HANDLER(lbl_IMPORT_BINDING, OP_IMPORT_BINDING)
-    lbl_END: return;
-
-#undef CGOTO_HANDLER
-    switch_entry:
-#endif // __GNUC__
-
+    // Direct switch dispatch — GCC/Clang generate a jump table for dense
+    // switch on uint8_t, so this is equivalent to computed goto without
+    // the indirection overhead of the previous broken label→switch_entry path.
     switch (op) {
         case Opcode::OP_NOP:
             break;
@@ -1951,14 +1735,14 @@ void VM::dispatch(Opcode op) {
 
 // Stack operations
 void VM::push(Value value) {
-    if (stack_.size() >= ZEPRA_MAX_CALL_STACK_DEPTH * 256) {
+    if (__builtin_expect(stack_.size() >= ZEPRA_MAX_CALL_STACK_DEPTH * 256, 0)) {
         throw std::runtime_error("Stack overflow");
     }
     stack_.push_back(value);
 }
 
 Value VM::pop() {
-    if (stack_.empty()) {
+    if (__builtin_expect(stack_.empty(), 0)) {
         return Value::undefined();
     }
     Value v = stack_.back();
@@ -1967,7 +1751,7 @@ Value VM::pop() {
 }
 
 Value VM::peek(size_t distance) const {
-    if (distance >= stack_.size()) {
+    if (__builtin_expect(distance >= stack_.size(), 0)) {
         return Value::undefined();
     }
     return stack_[stack_.size() - 1 - distance];
@@ -1979,14 +1763,15 @@ void VM::popN(size_t count) {
     }
 }
 
-// Helper read methods
+// Helper read methods — use direct vector access
 uint8_t VM::readByte() {
-    return chunk_->at(ip_++);
+    return chunk_->code()[ip_++];
 }
 
 uint16_t VM::readShort() {
-    uint8_t high = readByte();
-    uint8_t low = readByte();
+    const auto& code = chunk_->code();
+    uint8_t high = code[ip_++];
+    uint8_t low = code[ip_++];
     return (high << 8) | low;
 }
 

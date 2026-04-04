@@ -38,7 +38,7 @@ public:
     /**
      * @brief Check if at end of file
      */
-    bool isEof() const { return offset_ >= source_->length(); }
+    bool isEof() const { return offset_ >= srcLen_; }
     
     /**
      * @brief Get current position
@@ -118,6 +118,8 @@ private:
     bool isIdentifierPart(char c) const;
     
     const SourceCode* source_;
+    const char* src_;          // Cached raw pointer into source content
+    size_t srcLen_;            // Cached source length
     size_t offset_ = 0;
     SourceLocation location_;
     SourceLocation tokenStart_;

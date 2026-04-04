@@ -8,6 +8,7 @@
 #include "frontend/lexer.hpp"
 #include <cctype>
 #include <cstdlib>
+#include <cstring>
 #include <unordered_map>
 
 namespace Zepra::Frontend {
@@ -68,6 +69,8 @@ const std::unordered_map<std::string_view, TokenType> keywords = {
 
 Lexer::Lexer(const SourceCode* source)
     : source_(source)
+    , src_(source->content().data())
+    , srcLen_(source->content().size())
     , offset_(0)
     , location_{1, 1, 0}
     , tokenStart_{1, 1, 0}
@@ -75,13 +78,13 @@ Lexer::Lexer(const SourceCode* source)
 }
 
 char Lexer::current() const {
-    if (offset_ >= source_->length()) return '\0';
-    return source_->at(offset_);
+    if (offset_ >= srcLen_) return '\0';
+    return src_[offset_];
 }
 
 char Lexer::peek(size_t ahead) const {
-    if (offset_ + ahead >= source_->length()) return '\0';
-    return source_->at(offset_ + ahead);
+    if (offset_ + ahead >= srcLen_) return '\0';
+    return src_[offset_ + ahead];
 }
 
 char Lexer::advance() {
@@ -210,12 +213,12 @@ Token Lexer::scanNumber() {
     size_t start = offset_ - 1;
     
     // Handle hex, octal, binary
-    if (source_->at(start) == '0' && offset_ < source_->length()) {
+    if (src_[start] == '0' && offset_ < srcLen_) {
         char next = current();
         if (next == 'x' || next == 'X') {
             advance();
             while (isHexDigit(current())) advance();
-            std::string value = std::string(source_->substring(start, offset_ - start));
+            std::string value(src_ + start, offset_ - start);
             Token token = makeToken(TokenType::Number, value);
             token.numericValue = std::strtol(value.c_str() + 2, nullptr, 16);
             return token;
@@ -223,7 +226,7 @@ Token Lexer::scanNumber() {
         if (next == 'b' || next == 'B') {
             advance();
             while (current() == '0' || current() == '1') advance();
-            std::string value = std::string(source_->substring(start, offset_ - start));
+            std::string value(src_ + start, offset_ - start);
             Token token = makeToken(TokenType::Number, value);
             token.numericValue = std::strtol(value.c_str() + 2, nullptr, 2);
             return token;
@@ -231,7 +234,7 @@ Token Lexer::scanNumber() {
         if (next == 'o' || next == 'O') {
             advance();
             while (current() >= '0' && current() <= '7') advance();
-            std::string value = std::string(source_->substring(start, offset_ - start));
+            std::string value(src_ + start, offset_ - start);
             Token token = makeToken(TokenType::Number, value);
             token.numericValue = std::strtol(value.c_str() + 2, nullptr, 8);
             return token;
@@ -254,7 +257,7 @@ Token Lexer::scanNumber() {
         while (isDigit(current())) advance();
     }
     
-    std::string value = std::string(source_->substring(start, offset_ - start));
+    std::string value(src_ + start, offset_ - start);
     Token token = makeToken(TokenType::Number, value);
     token.numericValue = std::strtod(value.c_str(), nullptr);
     return token;
@@ -362,15 +365,82 @@ Token Lexer::scanIdentifierOrKeyword() {
         advance();
     }
     
-    std::string value = std::string(source_->substring(start, offset_ - start));
+    size_t len = offset_ - start;
+    const char* s = src_ + start;
     
-    // Check if keyword
-    auto it = keywords.find(value);
-    if (it != keywords.end()) {
-        return makeToken(it->second, value);
+    // Fast keyword lookup: dispatch on length, then compare.
+    // Zero allocations, zero hashing — just memcmp against literals.
+    TokenType kwType = TokenType::Identifier;
+    
+    switch (len) {
+        case 2:
+            if (s[0] == 'i' && s[1] == 'f') kwType = TokenType::If;
+            else if (s[0] == 'i' && s[1] == 'n') kwType = TokenType::In;
+            else if (s[0] == 'd' && s[1] == 'o') kwType = TokenType::Do;
+            else if (s[0] == 'a' && s[1] == 's') kwType = TokenType::As;
+            else if (s[0] == 'o' && s[1] == 'f') kwType = TokenType::Of;
+            break;
+        case 3:
+            if (memcmp(s, "var", 3) == 0) kwType = TokenType::Var;
+            else if (memcmp(s, "let", 3) == 0) kwType = TokenType::Let;
+            else if (memcmp(s, "for", 3) == 0) kwType = TokenType::For;
+            else if (memcmp(s, "new", 3) == 0) kwType = TokenType::New;
+            else if (memcmp(s, "try", 3) == 0) kwType = TokenType::Try;
+            else if (memcmp(s, "get", 3) == 0) kwType = TokenType::Get;
+            else if (memcmp(s, "set", 3) == 0) kwType = TokenType::Set;
+            break;
+        case 4:
+            if (memcmp(s, "this", 4) == 0) kwType = TokenType::This;
+            else if (memcmp(s, "else", 4) == 0) kwType = TokenType::Else;
+            else if (memcmp(s, "case", 4) == 0) kwType = TokenType::Case;
+            else if (memcmp(s, "void", 4) == 0) kwType = TokenType::Void;
+            else if (memcmp(s, "with", 4) == 0) kwType = TokenType::With;
+            else if (memcmp(s, "null", 4) == 0) kwType = TokenType::Null;
+            else if (memcmp(s, "true", 4) == 0) kwType = TokenType::True;
+            else if (memcmp(s, "from", 4) == 0) kwType = TokenType::From;
+            break;
+        case 5:
+            if (memcmp(s, "const", 5) == 0) kwType = TokenType::Const;
+            else if (memcmp(s, "while", 5) == 0) kwType = TokenType::While;
+            else if (memcmp(s, "break", 5) == 0) kwType = TokenType::Break;
+            else if (memcmp(s, "catch", 5) == 0) kwType = TokenType::Catch;
+            else if (memcmp(s, "throw", 5) == 0) kwType = TokenType::Throw;
+            else if (memcmp(s, "class", 5) == 0) kwType = TokenType::Class;
+            else if (memcmp(s, "super", 5) == 0) kwType = TokenType::Super;
+            else if (memcmp(s, "async", 5) == 0) kwType = TokenType::Async;
+            else if (memcmp(s, "await", 5) == 0) kwType = TokenType::Await;
+            else if (memcmp(s, "yield", 5) == 0) kwType = TokenType::Yield;
+            else if (memcmp(s, "false", 5) == 0) kwType = TokenType::False;
+            break;
+        case 6:
+            if (memcmp(s, "return", 6) == 0) kwType = TokenType::Return;
+            else if (memcmp(s, "switch", 6) == 0) kwType = TokenType::Switch;
+            else if (memcmp(s, "delete", 6) == 0) kwType = TokenType::Delete;
+            else if (memcmp(s, "typeof", 6) == 0) kwType = TokenType::Typeof;
+            else if (memcmp(s, "import", 6) == 0) kwType = TokenType::Import;
+            else if (memcmp(s, "export", 6) == 0) kwType = TokenType::Export;
+            else if (memcmp(s, "static", 6) == 0) kwType = TokenType::Static;
+            break;
+        case 7:
+            if (memcmp(s, "default", 7) == 0) kwType = TokenType::Default;
+            else if (memcmp(s, "finally", 7) == 0) kwType = TokenType::Finally;
+            else if (memcmp(s, "extends", 7) == 0) kwType = TokenType::Extends;
+            break;
+        case 8:
+            if (memcmp(s, "continue", 8) == 0) kwType = TokenType::Continue;
+            else if (memcmp(s, "function", 8) == 0) kwType = TokenType::Function;
+            else if (memcmp(s, "debugger", 8) == 0) kwType = TokenType::Debugger;
+            break;
+        case 9:
+            if (memcmp(s, "undefined", 9) == 0) kwType = TokenType::Undefined;
+            break;
+        case 10:
+            if (memcmp(s, "instanceof", 10) == 0) kwType = TokenType::Instanceof;
+            break;
     }
     
-    return makeToken(TokenType::Identifier, value);
+    std::string value(s, len);
+    return makeToken(kwType, std::move(value));
 }
 
 Token Lexer::scanTemplate() {
@@ -434,7 +504,7 @@ Token Lexer::scanTemplate() {
 }
 
 Token Lexer::scanOperator() {
-    char c = source_->at(offset_ - 1);
+    char c = src_[offset_ - 1];
     
     switch (c) {
         // Single character
@@ -661,7 +731,7 @@ const char* Token::typeName(TokenType type) {
 }
 
 bool isKeyword(std::string_view str) {
-    return keywords.find(str) != keywords.end();
+    return keywords.count(str) > 0;
 }
 
 TokenType keywordType(std::string_view str) {

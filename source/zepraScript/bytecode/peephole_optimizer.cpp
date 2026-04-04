@@ -16,73 +16,42 @@ OptimizationStats PeepholeOptimizer::optimize(BytecodeChunk* chunk) {
     
     if (!chunk) return stats;
     
-    // Get mutable access to bytecode
-    // Note: BytecodeChunk needs a mutableCode() method or we work with a copy
-    // For now, we'll note patterns that could be optimized
-    // Full in-place optimization requires BytecodeChunk modification
-    
-    const auto& code = chunk->code();
+    // Get a mutable copy of the bytecode for in-place optimization.
+    // BytecodeChunk exposes const& code(), so we copy, modify, write back.
+    std::vector<uint8_t> code(chunk->code().begin(), chunk->code().end());
     size_t originalSize = code.size();
+    bool modified = false;
     
-    // Single pass - identify optimization opportunities
+    // Single pass — apply all rewrite rules
     for (size_t i = 0; i + 1 < code.size(); ++i) {
-        Opcode current = static_cast<Opcode>(code[i]);
-        Opcode next = static_cast<Opcode>(code[i + 1]);
+        // Skip NOPs from previous rewrites
+        if (static_cast<Opcode>(code[i]) == Opcode::OP_NOP) continue;
         
-        // Pattern: OP_DUP followed by OP_POP = redundant
-        if (current == Opcode::OP_DUP && next == Opcode::OP_POP) {
+        if (eliminateRedundantPushPop(code, i)) {
             stats.redundantPops++;
-            stats.totalBytesRemoved += 2;
+            modified = true;
+            continue;
         }
         
-        // Pattern: Any push followed immediately by OP_POP
-        if (next == Opcode::OP_POP) {
-            // Check if current is a side-effect-free operation
-            if (current == Opcode::OP_CONSTANT || 
-                current == Opcode::OP_NIL ||
-                current == Opcode::OP_TRUE ||
-                current == Opcode::OP_FALSE ||
-                current == Opcode::OP_ZERO ||
-                current == Opcode::OP_ONE ||
-                current == Opcode::OP_GET_LOCAL) {
-                stats.redundantPops++;
-                // Account for operand bytes
-                if (current == Opcode::OP_CONSTANT || 
-                    current == Opcode::OP_GET_LOCAL) {
-                    stats.totalBytesRemoved += 3; // opcode + operand + pop
-                    i++; // Skip operand
-                } else {
-                    stats.totalBytesRemoved += 2;
-                }
+        if (eliminateDeadJump(code, i)) {
+            stats.deadJumps++;
+            modified = true;
+            continue;
+        }
+        
+        if (foldConstantOps(code, i)) {
+            stats.constantFolding++;
+            modified = true;
+            continue;
+        }
+    }
+    
+    // Count bytes removed (NOPs inserted)
+    if (modified) {
+        for (size_t i = 0; i < code.size(); ++i) {
+            if (static_cast<Opcode>(code[i]) == Opcode::OP_NOP) {
+                stats.totalBytesRemoved++;
             }
-        }
-        
-        // Pattern: OP_JUMP with offset 0 (jump to next instruction)
-        if (current == Opcode::OP_JUMP && i + 2 < code.size()) {
-            uint16_t offset = (static_cast<uint16_t>(code[i + 1]) << 8) | code[i + 2];
-            if (offset == 0) {
-                stats.deadJumps++;
-                stats.totalBytesRemoved += 3;
-            }
-        }
-        
-        // Pattern: OP_ZERO followed by OP_ADD = no-op (adding 0)
-        if (current == Opcode::OP_ZERO && next == Opcode::OP_ADD) {
-            stats.constantFolding++;
-            stats.totalBytesRemoved += 2;
-        }
-        
-        // Pattern: OP_ONE followed by OP_ADD = OP_INCREMENT
-        if (current == Opcode::OP_ONE && next == Opcode::OP_ADD) {
-            stats.constantFolding++;
-            // This one replaces 2 ops with 1, so 1 byte saved
-            stats.totalBytesRemoved += 1;
-        }
-        
-        // Pattern: OP_ONE followed by OP_SUBTRACT = OP_DECREMENT
-        if (current == Opcode::OP_ONE && next == Opcode::OP_SUBTRACT) {
-            stats.constantFolding++;
-            stats.totalBytesRemoved += 1;
         }
     }
     

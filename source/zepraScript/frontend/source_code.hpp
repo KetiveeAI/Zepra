@@ -68,11 +68,12 @@ public:
 private:
     SourceCode(std::string content, std::string filename);
     
-    void buildLineIndex();
+    void ensureLineIndex() const;
     
     std::string content_;
     std::string filename_;
-    std::vector<size_t> lineOffsets_;  // Offset of each line start
+    mutable std::vector<size_t> lineOffsets_;  // Offset of each line start
+    mutable bool lineIndexBuilt_ = false;
 };
 
 } // namespace Zepra::Frontend

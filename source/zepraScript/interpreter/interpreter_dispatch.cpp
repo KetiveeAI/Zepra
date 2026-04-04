@@ -278,8 +278,7 @@ private:
         };
 
 #define DISPATCH() do { \
-    if (frame.ip >= frame.codeLength) goto L_ReturnUndefined; \
-    stats_.instructionsExecuted++; \
+    if (__builtin_expect(frame.ip >= frame.codeLength, 0)) goto L_ReturnUndefined; \
     goto *dispatchTable[static_cast<uint8_t>(frame.code[frame.ip].opcode)]; \
 } while(0)
 
@@ -289,10 +288,11 @@ private:
 
 L_Nop: NEXT();
 
-L_LoadConst:
-        // R(A) = constant pool[Bx] — handled by embedding host.
-        R[frame.code[frame.ip].a].asBits = frame.code[frame.ip].bx;
+L_LoadConst: {
+        const auto& instr = frame.code[frame.ip];
+        R[instr.a].asBits = instr.bx;
         NEXT();
+}
 
 L_LoadNull:
         R[frame.code[frame.ip].a].asBits = 0;
@@ -310,50 +310,57 @@ L_LoadFalse:
         R[frame.code[frame.ip].a].asBits = 0x7FF8000000000003ULL;
         NEXT();
 
-L_LoadInt:
-        R[frame.code[frame.ip].a].asDouble = static_cast<double>(frame.code[frame.ip].sbx);
+L_LoadInt: {
+        const auto& instr = frame.code[frame.ip];
+        R[instr.a].asDouble = static_cast<double>(instr.sbx);
         NEXT();
+}
 
-L_Move:
-        R[frame.code[frame.ip].a] = R[frame.code[frame.ip].b];
+L_Move: {
+        const auto& instr = frame.code[frame.ip];
+        R[instr.a] = R[instr.b];
         NEXT();
+}
 
-L_Add:
-        R[frame.code[frame.ip].a].asDouble =
-            R[frame.code[frame.ip].b].asDouble + R[frame.code[frame.ip].c].asDouble;
+L_Add: {
+        const auto& instr = frame.code[frame.ip];
+        R[instr.a].asDouble = R[instr.b].asDouble + R[instr.c].asDouble;
         NEXT();
+}
 
-L_Sub:
-        R[frame.code[frame.ip].a].asDouble =
-            R[frame.code[frame.ip].b].asDouble - R[frame.code[frame.ip].c].asDouble;
+L_Sub: {
+        const auto& instr = frame.code[frame.ip];
+        R[instr.a].asDouble = R[instr.b].asDouble - R[instr.c].asDouble;
         NEXT();
+}
 
-L_Mul:
-        R[frame.code[frame.ip].a].asDouble =
-            R[frame.code[frame.ip].b].asDouble * R[frame.code[frame.ip].c].asDouble;
+L_Mul: {
+        const auto& instr = frame.code[frame.ip];
+        R[instr.a].asDouble = R[instr.b].asDouble * R[instr.c].asDouble;
         NEXT();
+}
 
 L_Div: {
-        double divisor = R[frame.code[frame.ip].c].asDouble;
-        R[frame.code[frame.ip].a].asDouble =
-            R[frame.code[frame.ip].b].asDouble / divisor;
+        const auto& instr = frame.code[frame.ip];
+        R[instr.a].asDouble = R[instr.b].asDouble / R[instr.c].asDouble;
         NEXT();
 }
 
 L_Mod: {
-        double b = R[frame.code[frame.ip].b].asDouble;
-        double c = R[frame.code[frame.ip].c].asDouble;
-        R[frame.code[frame.ip].a].asDouble = b - static_cast<int64_t>(b / c) * c;
+        const auto& instr = frame.code[frame.ip];
+        double b = R[instr.b].asDouble;
+        double c = R[instr.c].asDouble;
+        R[instr.a].asDouble = b - static_cast<int64_t>(b / c) * c;
         NEXT();
 }
 
 L_Exp: {
-        double base = R[frame.code[frame.ip].b].asDouble;
-        double exp = R[frame.code[frame.ip].c].asDouble;
+        const auto& instr = frame.code[frame.ip];
+        double base = R[instr.b].asDouble;
+        double exp = R[instr.c].asDouble;
         double result = 1.0;
         if (exp == 0.0) { result = 1.0; }
         else {
-            // Use repeated squaring for integer exponents.
             int64_t iexp = static_cast<int64_t>(exp);
             if (static_cast<double>(iexp) == exp && iexp >= 0) {
                 result = 1.0;
@@ -367,13 +374,15 @@ L_Exp: {
                 result = __builtin_pow(base, exp);
             }
         }
-        R[frame.code[frame.ip].a].asDouble = result;
+        R[instr.a].asDouble = result;
         NEXT();
 }
 
-L_Neg:
-        R[frame.code[frame.ip].a].asDouble = -R[frame.code[frame.ip].b].asDouble;
+L_Neg: {
+        const auto& instr = frame.code[frame.ip];
+        R[instr.a].asDouble = -R[instr.b].asDouble;
         NEXT();
+}
 
 L_Inc:
         R[frame.code[frame.ip].a].asDouble += 1.0;
@@ -383,23 +392,29 @@ L_Dec:
         R[frame.code[frame.ip].a].asDouble -= 1.0;
         NEXT();
 
-L_BitAnd:
-        R[frame.code[frame.ip].a].asDouble = static_cast<double>(
-            static_cast<int32_t>(R[frame.code[frame.ip].b].asDouble) &
-            static_cast<int32_t>(R[frame.code[frame.ip].c].asDouble));
+L_BitAnd: {
+        const auto& instr = frame.code[frame.ip];
+        R[instr.a].asDouble = static_cast<double>(
+            static_cast<int32_t>(R[instr.b].asDouble) &
+            static_cast<int32_t>(R[instr.c].asDouble));
         NEXT();
+}
 
-L_BitOr:
-        R[frame.code[frame.ip].a].asDouble = static_cast<double>(
-            static_cast<int32_t>(R[frame.code[frame.ip].b].asDouble) |
-            static_cast<int32_t>(R[frame.code[frame.ip].c].asDouble));
+L_BitOr: {
+        const auto& instr = frame.code[frame.ip];
+        R[instr.a].asDouble = static_cast<double>(
+            static_cast<int32_t>(R[instr.b].asDouble) |
+            static_cast<int32_t>(R[instr.c].asDouble));
         NEXT();
+}
 
-L_BitXor:
-        R[frame.code[frame.ip].a].asDouble = static_cast<double>(
-            static_cast<int32_t>(R[frame.code[frame.ip].b].asDouble) ^
-            static_cast<int32_t>(R[frame.code[frame.ip].c].asDouble));
+L_BitXor: {
+        const auto& instr = frame.code[frame.ip];
+        R[instr.a].asDouble = static_cast<double>(
+            static_cast<int32_t>(R[instr.b].asDouble) ^
+            static_cast<int32_t>(R[instr.c].asDouble));
         NEXT();
+}
 
 L_BitNot:
         R[frame.code[frame.ip].a].asDouble = static_cast<double>(
