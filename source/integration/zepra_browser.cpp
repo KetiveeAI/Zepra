@@ -51,6 +51,7 @@
 #include "nxsvg.h"
 #include "nxfont.h"
 #include "reox_nxrender_bridge.h"
+#include "../nxrender-cpp/nxpdf/nx_pdf.h"
 
 // ===========================================================================
 // SECTION 3: WEBCORE - Optional DOM/CSS/JavaScript Engine
@@ -1102,8 +1103,7 @@ void parseWithWebCore(const std::string& html) {
                       << std::endl;
         }
     }
-    
-    // DIRECT DOM -> LAYOUT (Firefox Frame Tree Pattern)
+     
     // Build LayoutBox tree directly from DOM
     if (g_document->body()) {
         buildLayoutFromDOM(g_document->body(), g_layoutRoot.get(), false, "", "");
@@ -3031,13 +3031,47 @@ void render() {
         g_addressInput = g_displayUrl;
         
         if (loadedError.empty()) {
-            g_pageContent = loadedContent;
             g_pageTitle = loadedTitle;
             
+            // Check if it's a PDF payload
+            bool isPdf = false;
+            if (loadedUrl.length() > 4) {
+                std::string ext = loadedUrl.substr(loadedUrl.length() - 4);
+                std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+                if (ext == ".pdf") isPdf = true;
+            }
+            
+            if (isPdf) {
+                std::cout << "[Browser] PDF Document intercepted. Processing natively..." << std::endl;
+                auto pdfDoc = nxrender::pdf::Document::OpenFromMemory(loadedContent);
+                if (pdfDoc && pdfDoc->GetPageCount() > 0) {
+                    std::string extractedText = "";
+                    for (int i = 0; i < pdfDoc->GetPageCount(); i++) {
+                        extractedText += pdfDoc->ExtractText(i) + "\n\n";
+                    }
+                    
+                    // Inject isolated extracted text directly as an HTML interface view natively resolving WebCore bound cleanly
+                    std::string pdfHtml = "<html><head><title>" + loadedTitle + "</title></head><body><h1>PDF Extracted View</h1><pre style='white-space: pre-wrap; word-wrap: break-word;'>";
+                    pdfHtml += decodeHtmlEntities(extractedText); // encode natively
+                    pdfHtml += "</pre></body></html>";
+                    
+                    g_pageContent = pdfHtml;
 #ifdef USE_WEBCORE
-            // Parse content (now on main thread, safe for DOM)
-            parseWithWebCore(loadedContent);
+                    parseWithWebCore(pdfHtml);
 #endif
+                } else {
+                    g_pageContent = "<html><body><h2>Failed to parse native PDF.</h2></body></html>";
+#ifdef USE_WEBCORE
+                    parseWithWebCore(g_pageContent);
+#endif
+                }
+            } else {
+                g_pageContent = loadedContent;
+#ifdef USE_WEBCORE
+                // Parse content (now on main thread, safe for DOM)
+                parseWithWebCore(loadedContent);
+#endif
+            }
             std::cout << "[Browser] Async load complete: " << loadedUrl << " (" << loadedContent.size() << " bytes)" << std::endl;
         } else {
             g_pageContent = "";

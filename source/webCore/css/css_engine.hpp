@@ -1,3 +1,5 @@
+// Copyright (c) 2025 KetiveeAI. All rights reserved.
+// Licensed under KPL-2.0. See LICENSE file for details.
 /**
  * @file css_engine.hpp
  * @brief CSS cascade, style resolution, and engine
@@ -87,6 +89,35 @@ public:
     
     /// Calculate specificity of a selector
     Selector::Specificity calculateSpecificity(const std::string& selector);
+
+    /// Invalidate selector index (call when stylesheets change)
+    void invalidateIndex() { indexed_ = false; }
+
+private:
+    /// Per-rule entry for the selector index
+    struct IndexedRule {
+        const CSSStyleRule* rule;
+        StyleOrigin origin;
+        size_t order;
+    };
+    
+    /// Selector index — maps class/tag/id tokens to candidate rule indices
+    struct SelectorIndex {
+        std::unordered_map<std::string, std::vector<size_t>> byClass;
+        std::unordered_map<std::string, std::vector<size_t>> byTag;
+        std::unordered_map<std::string, std::vector<size_t>> byId;
+        std::vector<size_t> universal; // complex selectors needing full match
+    };
+
+    /// Build the selector index from all stylesheets
+    void buildIndex(const std::vector<std::pair<CSSStyleSheet*, StyleOrigin>>& sheets);
+    
+    /// Extract the rightmost key selector tokens for indexing
+    void indexSelector(const std::string& selector, size_t ruleIdx);
+
+    bool indexed_ = false;
+    SelectorIndex index_;
+    std::vector<IndexedRule> indexedRules_;
 };
 
 /**

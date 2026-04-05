@@ -762,8 +762,17 @@ void ScriptContext::setupWindowGlobals() {
         }, 1)));
     
     // Promise (minimal stub for Next.js)
-    auto* promiseObj = new Object();
-    promiseObj->set("resolve", Value::object(createNativeFunction("resolve",
+    auto* promiseCtor = createNativeFunction("Promise",
+        [](Context*, const std::vector<Value>& args) -> Value {
+            auto* p = new Object();
+            p->set("then", Value::object(createNativeFunction("then",
+                [](Context*, const std::vector<Value>&) -> Value { return Value::undefined(); }, 1)));
+            p->set("catch", Value::object(createNativeFunction("catch",
+                [](Context*, const std::vector<Value>&) -> Value { return Value::undefined(); }, 1)));
+            return Value::object(p);
+        }, 1);
+    
+    promiseCtor->set("resolve", Value::object(createNativeFunction("resolve",
         [](Context*, const std::vector<Value>& args) -> Value {
             auto* p = new Object();
             Value resolved = args.empty() ? Value::undefined() : args[0];
@@ -777,7 +786,8 @@ void ScriptContext::setupWindowGlobals() {
                 }, 1)));
             return Value::object(p);
         }, 1)));
-    promiseObj->set("reject", Value::object(createNativeFunction("reject",
+        
+    promiseCtor->set("reject", Value::object(createNativeFunction("reject",
         [](Context*, const std::vector<Value>& args) -> Value {
             auto* p = new Object();
             p->set("then", Value::object(createNativeFunction("then",
@@ -790,7 +800,60 @@ void ScriptContext::setupWindowGlobals() {
                 }, 1)));
             return Value::object(p);
         }, 1)));
-    vm_->setGlobal("Promise", Value::object(promiseObj));
+
+    promiseCtor->set("all", Value::object(createNativeFunction("all",
+        [](Context*, const std::vector<Value>& args) -> Value {
+            auto* p = new Object();
+            p->set("then", Value::object(createNativeFunction("then",
+                [](Context*, const std::vector<Value>&) -> Value { return Value::undefined(); }, 1)));
+            p->set("catch", Value::object(createNativeFunction("catch",
+                [](Context*, const std::vector<Value>&) -> Value { return Value::undefined(); }, 1)));
+            return Value::object(p);
+        }, 1)));
+
+    promiseCtor->set("race", Value::object(createNativeFunction("race",
+        [](Context*, const std::vector<Value>& args) -> Value {
+            auto* p = new Object();
+            p->set("then", Value::object(createNativeFunction("then",
+                [](Context*, const std::vector<Value>&) -> Value { return Value::undefined(); }, 1)));
+            p->set("catch", Value::object(createNativeFunction("catch",
+                [](Context*, const std::vector<Value>&) -> Value { return Value::undefined(); }, 1)));
+            return Value::object(p);
+        }, 1)));
+
+    vm_->setGlobal("Promise", Value::object(promiseCtor));
+    
+    // Symbol
+    vm_->setGlobal("Symbol", Value::object(createNativeFunction("Symbol",
+        [](Context*, const std::vector<Value>& args) -> Value {
+            auto* sym = new Object();
+            sym->set("description", args.empty() ? Value::undefined() : args[0]);
+            return Value::object(sym);
+        }, 0)));
+
+    // Map
+    vm_->setGlobal("Map", Value::object(createNativeFunction("Map",
+        [](Context*, const std::vector<Value>& args) -> Value {
+            auto* m = new Object();
+            m->set("set", Value::object(createNativeFunction("set",
+                [](Context*, const std::vector<Value>&) -> Value { return Value::undefined(); }, 2)));
+            m->set("get", Value::object(createNativeFunction("get",
+                [](Context*, const std::vector<Value>&) -> Value { return Value::undefined(); }, 1)));
+            m->set("has", Value::object(createNativeFunction("has",
+                [](Context*, const std::vector<Value>&) -> Value { return Value::boolean(false); }, 1)));
+            return Value::object(m);
+        }, 0)));
+
+    // Set
+    vm_->setGlobal("Set", Value::object(createNativeFunction("Set",
+        [](Context*, const std::vector<Value>& args) -> Value {
+            auto* s = new Object();
+            s->set("add", Value::object(createNativeFunction("add",
+                [](Context*, const std::vector<Value>&) -> Value { return Value::undefined(); }, 1)));
+            s->set("has", Value::object(createNativeFunction("has",
+                [](Context*, const std::vector<Value>&) -> Value { return Value::boolean(false); }, 1)));
+            return Value::object(s);
+        }, 0)));
     
     // queueMicrotask (no-op stub)
     vm_->setGlobal("queueMicrotask", Value::object(createNativeFunction("queueMicrotask",

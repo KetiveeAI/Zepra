@@ -65,6 +65,7 @@ StyleResolver::~StyleResolver() = default;
 
 void StyleResolver::addStyleSheet(std::shared_ptr<CSSStyleSheet> sheet, StyleOrigin origin) {
     stylesheets_.push_back({std::move(sheet), origin});
+    cascade_.invalidateIndex();
 }
 
 void StyleResolver::addUserAgentStyleSheet() {

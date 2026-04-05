@@ -131,6 +131,14 @@ target_link_libraries(nxrender_tests
 add_test(NAME NxRenderTests COMMAND nxrender_tests)
 
 # =============================================================================
+# NxPdf Test Runner
+# =============================================================================
+add_executable(nxpdf_test nxpdf_test.cpp)
+target_include_directories(nxpdf_test PRIVATE ${PROJECT_SOURCE_DIR}/source/nxrender-cpp)
+target_link_libraries(nxpdf_test nxrender pthread z Freetype::Freetype)
+add_test(NAME NxPdfTest COMMAND nxpdf_test)
+
+# =============================================================================
 # ZepraEngine Tests
 # =============================================================================
 add_executable(zepra_engine_tests

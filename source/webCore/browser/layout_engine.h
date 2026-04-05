@@ -116,7 +116,7 @@ struct LayoutBox {
     
     // Style properties for rendering
     uint32_t color = 0x000000;
-    uint32_t bgColor = 0xFFFFFF;
+    uint32_t bgColor = 0x00000000;
     uint32_t borderColor = 0x000000;
     float fontSize = 16.0f;
     bool bold = false;

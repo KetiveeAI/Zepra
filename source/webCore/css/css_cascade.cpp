@@ -15,6 +15,7 @@
 #include "browser/dom.hpp"
 #include <algorithm>
 #include <iostream>
+#include <sstream>
 
 namespace Zepra::WebCore {
 
@@ -94,12 +95,78 @@ std::vector<MatchedRule> CSSCascade::collectMatchingRulesWithOrigins(
     const std::vector<std::pair<CSSStyleSheet*, StyleOrigin>>& sheets
 ) {
     std::vector<MatchedRule> matched;
-    size_t ruleOrder = 0;
     
     if (!element) return matched;
     
-    static constexpr size_t MAX_RULES_PER_SHEET = 10000;
-    static constexpr size_t MAX_MATCHED_RULES = 500;
+    // Build index on first call (or after invalidation)
+    if (!indexed_) {
+        buildIndex(sheets);
+    }
+    
+    // Collect candidate rule indices from the index
+    std::vector<bool> checked(indexedRules_.size(), false);
+    auto tryMatch = [&](size_t idx) {
+        if (idx >= indexedRules_.size() || checked[idx]) return;
+        checked[idx] = true;
+        const auto& ir = indexedRules_[idx];
+        if (selectorMatches(element, ir.rule->selectorText())) {
+            MatchedRule match;
+            match.rule = ir.rule;
+            match.origin = ir.origin;
+            match.specificity = calculateSpecificity(ir.rule->selectorText());
+            match.order = ir.order;
+            matched.push_back(match);
+        }
+    };
+    
+    // Lookup by element's classes
+    std::string classes = element->getAttribute("class");
+    if (!classes.empty()) {
+        std::istringstream ss(classes);
+        std::string cls;
+        while (ss >> cls) {
+            auto it = index_.byClass.find(cls);
+            if (it != index_.byClass.end()) {
+                for (size_t idx : it->second) tryMatch(idx);
+            }
+        }
+    }
+    
+    // Lookup by tag name
+    std::string tag = element->tagName();
+    std::transform(tag.begin(), tag.end(), tag.begin(), ::tolower);
+    {
+        auto it = index_.byTag.find(tag);
+        if (it != index_.byTag.end()) {
+            for (size_t idx : it->second) tryMatch(idx);
+        }
+    }
+    
+    // Lookup by ID
+    std::string id = element->getAttribute("id");
+    if (!id.empty()) {
+        auto it = index_.byId.find(id);
+        if (it != index_.byId.end()) {
+            for (size_t idx : it->second) tryMatch(idx);
+        }
+    }
+    
+    // Always check universal/complex selectors
+    for (size_t idx : index_.universal) tryMatch(idx);
+    
+    return matched;
+}
+
+void CSSCascade::buildIndex(
+    const std::vector<std::pair<CSSStyleSheet*, StyleOrigin>>& sheets
+) {
+    index_.byClass.clear();
+    index_.byTag.clear();
+    index_.byId.clear();
+    index_.universal.clear();
+    indexedRules_.clear();
+    
+    size_t ruleOrder = 0;
     
     for (const auto& [sheet, origin] : sheets) {
         if (!sheet || !sheet->cssRules()) continue;
@@ -107,31 +174,117 @@ std::vector<MatchedRule> CSSCascade::collectMatchingRulesWithOrigins(
         CSSRuleList* rules = sheet->cssRules();
         size_t ruleCount = rules->length();
         
-        // Skip sheets with too many rules — O(n) matching becomes too expensive
-        if (ruleCount > MAX_RULES_PER_SHEET) {
-            // Still match first 2000 rules (usually the base/reset layer)
-            ruleCount = 2000;
-        }
-        
         for (size_t i = 0; i < ruleCount; i++) {
             const CSSRule* rule = rules->item(i);
             const CSSStyleRule* styleRule = dynamic_cast<const CSSStyleRule*>(rule);
             if (!styleRule) continue;
             
-            if (selectorMatches(element, styleRule->selectorText())) {
-                MatchedRule match;
-                match.rule = styleRule;
-                match.origin = origin;
-                match.specificity = calculateSpecificity(styleRule->selectorText());
-                match.order = ruleOrder++;
-                matched.push_back(match);
-                
-                if (matched.size() >= MAX_MATCHED_RULES) return matched;
-            }
+            size_t ruleIdx = indexedRules_.size();
+            indexedRules_.push_back({styleRule, origin, ruleOrder++});
+            indexSelector(styleRule->selectorText(), ruleIdx);
         }
     }
     
-    return matched;
+    indexed_ = true;
+}
+
+void CSSCascade::indexSelector(const std::string& selector, size_t ruleIdx) {
+    // Extract the rightmost (key) compound selector for indexing.
+    // For "div > .foo .bar" the key selector is ".bar".
+    // We extract class, id, and tag tokens from the rightmost part.
+    
+    // Find rightmost compound: split by whitespace and combinators, take last
+    std::string key;
+    size_t last = selector.size();
+    // Walk backwards past trailing whitespace
+    while (last > 0 && (selector[last-1] == ' ' || selector[last-1] == '\t')) last--;
+    // Walk backwards to find start of last compound selector
+    size_t start = last;
+    int parenDepth = 0;
+    while (start > 0) {
+        char c = selector[start - 1];
+        if (c == ')') { parenDepth++; start--; continue; }
+        if (c == '(') { parenDepth--; start--; continue; }
+        if (parenDepth > 0) { start--; continue; }
+        if (c == ' ' || c == '>' || c == '+' || c == '~') break;
+        start--;
+    }
+    key = selector.substr(start, last - start);
+    
+    // Now extract tokens from key selector
+    bool indexed = false;
+    size_t k = 0;
+    size_t klen = key.size();
+    
+    while (k < klen) {
+        if (key[k] == '.') {
+            // Class selector
+            k++;
+            std::string className;
+            while (k < klen) {
+                if (key[k] == '\\' && k + 1 < klen) {
+                    className += key[k + 1];
+                    k += 2;
+                } else if (std::isalnum(key[k]) || key[k] == '-' || key[k] == '_') {
+                    className += key[k];
+                    k++;
+                } else {
+                    break;
+                }
+            }
+            if (!className.empty()) {
+                index_.byClass[className].push_back(ruleIdx);
+                indexed = true;
+            }
+        } else if (key[k] == '#') {
+            // ID selector
+            k++;
+            std::string idVal;
+            while (k < klen && (std::isalnum(key[k]) || key[k] == '-' || key[k] == '_')) {
+                idVal += key[k++];
+            }
+            if (!idVal.empty()) {
+                index_.byId[idVal].push_back(ruleIdx);
+                indexed = true;
+            }
+        } else if (key[k] == '[' || key[k] == ':') {
+            // Attribute or pseudo selector — skip over
+            if (key[k] == '[') {
+                while (k < klen && key[k] != ']') k++;
+                if (k < klen) k++;
+            } else {
+                k++;
+                if (k < klen && key[k] == ':') k++; // pseudo-element
+                while (k < klen && (std::isalnum(key[k]) || key[k] == '-')) k++;
+                if (k < klen && key[k] == '(') {
+                    int depth = 1; k++;
+                    while (k < klen && depth > 0) {
+                        if (key[k] == '(') depth++;
+                        else if (key[k] == ')') depth--;
+                        k++;
+                    }
+                }
+            }
+        } else if (key[k] == '*') {
+            k++;
+        } else if (std::isalnum(key[k]) || key[k] == '-' || key[k] == '_') {
+            // Tag selector
+            std::string tagName;
+            while (k < klen && (std::isalnum(key[k]) || key[k] == '-' || key[k] == '_')) {
+                tagName += key[k++];
+            }
+            std::transform(tagName.begin(), tagName.end(), tagName.begin(), ::tolower);
+            index_.byTag[tagName].push_back(ruleIdx);
+            indexed = true;
+        } else {
+            k++;
+        }
+    }
+    
+    // If we couldn't extract any indexable token, add to universal list
+    if (!indexed) {
+        index_.universal.push_back(ruleIdx);
+    }
 }
 
 void CSSCascade::sortByCascade(std::vector<MatchedRule>& rules) {

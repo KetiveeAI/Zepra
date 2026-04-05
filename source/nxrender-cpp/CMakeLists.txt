@@ -57,13 +57,44 @@ set(NXRENDER_SOURCES
     nxrender.cpp
 )
 
+# PDF Backend Configuration
+option(NXPDF_USE_BUILTIN "Use built-in nxpdf library (ships with Zepra)" ON)
+option(NXPDF_USE_OS "Use NeolyxOS syscall/IPC for PDF rendering" OFF)
+
+if(NXPDF_USE_BUILTIN)
+    list(APPEND NXRENDER_SOURCES
+        nxpdf/nx_pdf.cpp
+        nxpdf/parser/nx_pdf_lexer.cpp
+        nxpdf/parser/nx_pdf_xref.cpp
+        nxpdf/parser/nx_pdf_objects.cpp
+        nxpdf/parser/nx_pdf_document.cpp
+        nxpdf/renderer/nx_pdf_page.cpp
+        nxpdf/renderer/nx_pdf_content.cpp
+        nxpdf/renderer/nx_pdf_graphics.cpp
+        nxpdf/renderer/nx_pdf_text.cpp
+        nxpdf/fonts/nx_pdf_font.cpp
+        nxpdf/fonts/nx_pdf_tounicode.cpp
+        nxpdf/images/nx_pdf_image.cpp
+        nxpdf/editor/nx_pdf_edit.cpp
+        nxpdf/editor/nx_pdf_annot.cpp
+        nxpdf/editor/nx_pdf_writer.cpp
+    )
+endif()
+
 # Create library
 add_library(nxrender STATIC ${NXRENDER_SOURCES})
 
 # Include directories
 target_include_directories(nxrender PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/nxpdf
 )
+
+if(NXPDF_USE_BUILTIN)
+    target_compile_definitions(nxrender PUBLIC NXPDF_USE_BUILTIN)
+elseif(NXPDF_USE_OS)
+    target_compile_definitions(nxrender PUBLIC NXPDF_USE_OS)
+endif()
 
 # Include C library headers for bridge (from nxrender_c)
 target_include_directories(nxrender PRIVATE
