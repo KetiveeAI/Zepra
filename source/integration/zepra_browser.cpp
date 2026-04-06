@@ -2253,7 +2253,7 @@ static void initLayoutEngine() {
         layout_gfx_rrect,
         layout_gfx_gradient,
         // SVG rendering callback: parse and render via NxSVG
-        [](float x, float y, float size, const std::string& svgData) {
+        [](float x, float y, float w, float h, const std::string& svgData) {
             // Generate a unique key from the SVG data hash
             std::hash<std::string> hasher;
             std::string key = "web_svg_" + std::to_string(hasher(svgData));
@@ -2264,7 +2264,8 @@ static void initLayoutEngine() {
             }
             
             // Render at position with size
-            g_svg.draw(key, x, y, size);
+            float renderSize = std::min(w, h);
+            g_svg.draw(key, x, y, renderSize);
         }
     );
     
@@ -3224,7 +3225,7 @@ void render() {
     }
     
     // Draw scrollbar
-    if (g_layoutRoot) {
+    if (g_layoutRoot && g_activeTabId >= 0 && g_tabs[g_activeTabId].url != "zepra://start") {
         float viewportHeight = contentH;
         float pageHeight = g_layoutRoot->height + 40; // Add padding at the bottom
         if (pageHeight > viewportHeight) {

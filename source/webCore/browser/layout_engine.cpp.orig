@@ -187,7 +187,7 @@ void layoutBlock(LayoutBox& box, float containingWidth, float startY) {
             
             // Flex items in a row normally shrink-to-fit unless width is set
             LayoutType oldType = child.type;
-            if (box.flexDirection == 0 && (child.type == LayoutType::Block || child.type == LayoutType::Flex) && (!child.cssWidth.isSet() || child.cssWidth.isAuto())) {
+            if (box.flexDirection == 0 && child.type == LayoutType::Block && (!child.cssWidth.isSet() || child.cssWidth.isAuto())) {
                  child.type = LayoutType::InlineBlock; // Force shrink-to-fit measurement
             }
             
@@ -369,33 +369,14 @@ void layoutBlock(LayoutBox& box, float containingWidth, float startY) {
                 lineHeight = 0;
             }
             
-            child.x = childX + lineWidth + child.marginLeft;
-            child.y = childY + child.marginTop;
+            child.x = childX + lineWidth;
+            child.y = childY;
             
-            lineWidth += child.width + child.marginLeft + child.marginRight + 4; // Spacing
-            lineHeight = std::max(lineHeight, child.height + child.marginTop + child.marginBottom);
+            lineWidth += child.width + 4; // Spacing
+            lineHeight = std::max(lineHeight, child.height);
         }
-    }
-    
-    // Add height of the last inline line
-    if (lineHeight > 0) {
-        childY += lineHeight;
     }
     } // end else (block/inline flow)
-    
-    // Shrink-to-fit for InlineBlock wrappers (MUST be before text-align so we don't include huge X shifts)
-    if (box.type == LayoutType::InlineBlock || box.type == LayoutType::Inline) {
-        float maxRight = 0;
-        for (const auto& child : box.children) {
-            maxRight = std::max(maxRight, child.x + child.width + child.marginRight);
-        }
-        float tightWidth = maxRight + box.paddingRight + box.borderRight;
-        if (tightWidth > 0 && tightWidth < box.width) {
-            box.width = tightWidth;
-            // Also need to update contentWidth so text-align uses the new smaller width!
-            contentWidth = box.width - box.paddingLeft - box.paddingRight - box.borderLeft - box.borderRight;
-        }
-    }
     
     // Apply text-align: center/right to inline children
     if (box.textAlign > 0 && contentWidth > 0) {
@@ -473,7 +454,6 @@ void layoutBlock(LayoutBox& box, float containingWidth, float startY) {
         box.height = std::max(box.height, box.fontSize + box.paddingTop + box.paddingBottom + 4);
     }
     
-
     if (box.type == LayoutType::Inline || box.type == LayoutType::InlineBlock) {
         printf("[Layout Debug] Inline element id=%d width=%f height=%f x=%f y=%f\n", 
             (int)box.type, box.width, box.height, (double)box.x, (double)box.y);
@@ -483,18 +463,6 @@ void layoutBlock(LayoutBox& box, float containingWidth, float startY) {
 // =============================================================================
 // PAINTING
 // =============================================================================
-
-static void dumpLayoutTree(const LayoutBox& box, int depth = 0) {
-    static FILE* fp = nullptr;
-    if (depth == 0) fp = fopen("/tmp/layout_dump.txt", "w");
-    if (fp) {
-        for (int i=0; i<depth; i++) fprintf(fp, "  ");
-        fprintf(fp, "Type:%d xy=(%.1f, %.1f) wh=(%.1f, %.1f) text='%s'\n", 
-            (int)box.type, box.x, box.y, box.width, box.height, box.text.c_str());
-        for (const auto& c : box.children) dumpLayoutTree(c, depth + 1);
-        if (depth == 0) { fclose(fp); fp = nullptr; }
-    }
-}
 
 void paintBox(const LayoutBox& box, float offsetX, float offsetY,
               float viewportHeight, float scrollY) {
@@ -516,8 +484,8 @@ void paintBox(const LayoutBox& box, float offsetX, float offsetY,
         box.screenX = screenX2;
         box.screenY = screenY2;
         for (const auto& child : box.children) {
-            paintBox(child, screenX2,
-                     screenY2,
+            paintBox(child, screenX2 + box.paddingLeft + box.borderLeft,
+                     screenY2 + box.paddingTop + box.borderTop,
                      viewportHeight, 0);
         }
         return;
@@ -576,6 +544,7 @@ void paintBox(const LayoutBox& box, float offsetX, float offsetY,
                     
                     if (!token.empty() && token.find("to ") == std::string::npos && token.find("deg") == std::string::npos) {
                         Zepra::WebCore::CSSColor col = Zepra::WebCore::CSSColor::parse(token);
+                        uint32_t c = (col.r << 16) | (col.g << 8) | col.b; // Assuming BGR or RGB depending on gfx
                         // Actually Zepra colors are RGB in UI but s_gfx uses 0xRRGGBB
                         colors.push_back((col.r << 16) | (col.g << 8) | col.b);
                     }
@@ -643,8 +612,10 @@ void paintBox(const LayoutBox& box, float offsetX, float offsetY,
             drawColor = 0x999999;
         }
         
+        // Apply text-align offset
         if (box.textAlign > 0 && s_text_width && !drawText.empty()) {
             float textW = s_text_width(drawText, box.fontSize);
+            float availW = box.width - box.paddingLeft - box.paddingRight;
             if (box.textAlign == 1) textX = screenX + (box.width - textW) / 2.0f;
             else if (box.textAlign == 2) textX = screenX + box.width - box.paddingRight - textW;
         }
@@ -678,8 +649,8 @@ void paintBox(const LayoutBox& box, float offsetX, float offsetY,
     
     // Paint children
     for (const auto& child : box.children) {
-        paintBox(child, screenX,
-                 screenY,
+        paintBox(child, screenX + box.paddingLeft + box.borderLeft,
+                 screenY + box.paddingTop + box.borderTop,
                  viewportHeight, 0);
     }
 }

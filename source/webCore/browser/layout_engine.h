@@ -206,7 +206,7 @@ void setLayoutCallbacks(
 void setLayoutCallbacks2(
     void (*gfx_rrect)(float x, float y, float w, float h, float radius, uint32_t color, uint8_t alpha),
     void (*gfx_gradient)(float x, float y, float w, float h, uint32_t c1, uint32_t c2),
-    void (*gfx_svg)(float x, float y, float size, const std::string& svgData) = nullptr
+    void (*gfx_svg)(float x, float y, float w, float h, const std::string& svgData) = nullptr
 );
 
 /**

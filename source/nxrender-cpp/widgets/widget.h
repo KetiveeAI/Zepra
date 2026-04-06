@@ -10,6 +10,7 @@
 #include "../nxgfx/primitives.h"
 #include "../nxgfx/color.h"
 #include "../input/events.h"
+#include "../layout/flexbox.h"
 #include <string>
 #include <vector>
 #include <memory>
@@ -81,6 +82,10 @@ public:
     Color backgroundColor() const { return backgroundColor_; }
     void setBackgroundColor(const Color& color) { backgroundColor_ = color; }
     
+    // Flexbox Properties
+    const FlexItemProps& flexProps() const { return flexProps_; }
+    void setFlexProps(const FlexItemProps& props) { flexProps_ = props; }
+    
     // ==========================================================================
     // Rendering
     // ==========================================================================
@@ -135,6 +140,7 @@ protected:
     Color backgroundColor_ = Color::transparent();
     Widget* parent_ = nullptr;
     std::vector<std::unique_ptr<Widget>> children_;
+    FlexItemProps flexProps_;
     
 private:
     static WidgetId nextId_;

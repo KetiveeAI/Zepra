@@ -52,9 +52,13 @@ void BlockLayout::layout(std::vector<Widget*>& children, const Rect& container,
         float childAvailWidth = contentWidth - childMargin.left - childMargin.right;
         Size childSize = child->measure(Size(childAvailWidth, container.height));
 
-        // Block-level: child fills available width unless it has intrinsic width
-        float childWidth = std::min(childSize.width, childAvailWidth);
-        if (childWidth <= 0) childWidth = childAvailWidth;
+        // Block-level: child typically fills available width. 
+        // We assume widgets in a block layout want to expand horizontally.
+        float childWidth = childAvailWidth;
+        if (childSize.width > childAvailWidth) {
+            // Only allow shrinking if constraint is violated, though normally blocks don't overflow
+            childWidth = childAvailWidth; 
+        }
 
         float childX = contentX + childMargin.left;
         float childY = contentY + yOffset;

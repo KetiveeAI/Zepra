@@ -45,7 +45,8 @@ enum class AlignItems {
     FlexEnd,
     Center,
     Stretch,
-    Baseline
+    Baseline,
+    Auto
 };
 
 /**
@@ -105,7 +106,7 @@ struct FlexItemProps {
     float flexGrow = 0;
     float flexShrink = 1;
     float flexBasis = -1;  // -1 = auto
-    AlignItems alignSelf = AlignItems::Stretch;
+    AlignItems alignSelf = AlignItems::Auto;
     int order = 0;
 };
 

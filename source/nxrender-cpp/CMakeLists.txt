@@ -11,9 +11,21 @@ set(NXRENDER_SOURCES
     nxgfx/context.cpp
     nxgfx/context3d.cpp
     nxgfx/text.cpp
+    nxgfx/math/matrix.cpp
+    nxgfx/math/quaternion.cpp
+    nxgfx/math/transform2d.cpp
+    nxgfx/math/transform3d.cpp
+    nxgfx/path/path.cpp
+    nxgfx/path/path_builder.cpp
+    nxgfx/path/tessellator.cpp
+    nxgfx/path/stroke.cpp
     
     # core
     core/compositor.cpp
+    core/damage_tracker.cpp
+    core/layer_tree_host.cpp
+    core/render_tile.cpp
+    core/tile_manager.cpp
     core/surface.cpp
     
     # widgets
