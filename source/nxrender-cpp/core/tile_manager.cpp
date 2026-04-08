@@ -17,30 +17,67 @@ void TileManager::setBounds(int width, int height) {
     width_ = width;
     height_ = height;
 
-    int newCols = std::ceil((float)width / tileSize_);
-    int newRows = std::ceil((float)height / tileSize_);
+    cols_ = std::ceil((float)width / tileSize_);
+    rows_ = std::ceil((float)height / tileSize_);
+    
+    evictOffscreenTiles();
+    allocateVisibleTiles();
+}
 
-    if (newCols == cols_ && newRows == rows_) return;
+void TileManager::setViewportOffset(int x, int y) {
+    if (viewerX_ == x && viewerY_ == y) return;
+    viewerX_ = x;
+    viewerY_ = y;
+    
+    evictOffscreenTiles();
+    allocateVisibleTiles();
+}
 
-    cols_ = newCols;
-    rows_ = newRows;
+void TileManager::evictOffscreenTiles() {
+    // Keep tiles strictly inside a padded viewport (e.g., 2 tiles padding)
+    int startCol = std::max(0, (viewerX_ / tileSize_) - 2);
+    int startRow = std::max(0, (viewerY_ / tileSize_) - 2);
+    // Use dynamic viewport bounds (width_, height_) instead of hardcoded 1080p
+    int endCol = std::min(cols_ - 1, ((viewerX_ + width_) / tileSize_) + 2);
+    int endRow = std::min(rows_ - 1, ((viewerY_ + height_) / tileSize_) + 2);
 
-    tiles_.clear();
-    tiles_.reserve(cols_ * rows_);
+    auto it = tiles_.begin();
+    while (it != tiles_.end()) {
+        uint64_t key = it->first;
+        int tx = static_cast<int>(key & 0xFFFFFFFF);
+        int ty = static_cast<int>(key >> 32);
+        
+        if (tx < startCol || tx > endCol || ty < startRow || ty > endRow) {
+            it = tiles_.erase(it);
+        } else {
+            ++it;
+        }
+    }
+}
 
-    for (int y = 0; y < rows_; ++y) {
-        for (int x = 0; x < cols_; ++x) {
-            tiles_.push_back(std::make_unique<RenderTile>(
-                x * tileSize_, y * tileSize_, 
-                tileSize_, tileSize_
-            ));
+void TileManager::allocateVisibleTiles() {
+    int startCol = std::max(0, (viewerX_ / tileSize_) - 1);
+    int startRow = std::max(0, (viewerY_ / tileSize_) - 1);
+    // Use dynamic viewport bounds (width_, height_) corresponding to window
+    int endCol = std::min(cols_ - 1, ((viewerX_ + width_) / tileSize_) + 1);
+    int endRow = std::min(rows_ - 1, ((viewerY_ + height_) / tileSize_) + 1);
+
+    for (int y = startRow; y <= endRow; ++y) {
+        for (int x = startCol; x <= endCol; ++x) {
+            uint64_t key = (static_cast<uint64_t>(y) << 32) | static_cast<uint32_t>(x);
+            if (tiles_.find(key) == tiles_.end()) {
+                tiles_[key] = std::make_unique<RenderTile>(
+                    x * tileSize_, y * tileSize_, 
+                    tileSize_, tileSize_
+                );
+            }
         }
     }
 }
 
 std::vector<RenderTile*> TileManager::getTilesIntersecting(const Rect& rect) {
     std::vector<RenderTile*> result;
-    if (tiles_.empty() || rect.width <= 0 || rect.height <= 0) return result;
+    if (rect.width <= 0 || rect.height <= 0) return result;
 
     int startCol = std::max(0, static_cast<int>(rect.x / tileSize_));
     int startRow = std::max(0, static_cast<int>(rect.y / tileSize_));
@@ -49,7 +86,15 @@ std::vector<RenderTile*> TileManager::getTilesIntersecting(const Rect& rect) {
 
     for (int y = startRow; y <= endRow; ++y) {
         for (int x = startCol; x <= endCol; ++x) {
-            result.push_back(tiles_[y * cols_ + x].get());
+            uint64_t key = (static_cast<uint64_t>(y) << 32) | static_cast<uint32_t>(x);
+            if (tiles_.find(key) == tiles_.end()) {
+                // Ensure tile is lazily allocated if needed for damage region
+                tiles_[key] = std::make_unique<RenderTile>(
+                    x * tileSize_, y * tileSize_, 
+                    tileSize_, tileSize_
+                );
+            }
+            result.push_back(tiles_[key].get());
         }
     }
 
@@ -64,9 +109,9 @@ void TileManager::invalidateRect(const Rect& rect) {
 }
 
 void TileManager::composite(GpuContext* ctx) const {
-    for (const auto& tile : tiles_) {
+    for (const auto& pair : tiles_) {
         // Only draws if isReady() is true inside draw()
-        tile->draw(ctx, tile->bounds());
+        pair.second->draw(ctx, pair.second->bounds());
     }
 }
 

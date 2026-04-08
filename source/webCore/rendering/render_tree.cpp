@@ -4,6 +4,7 @@
  */
 
 #include "rendering/render_tree.hpp"
+#include "rendering/paint_context.hpp"
 #include <algorithm>
 #include <iostream>
 #include <cstdlib>
@@ -294,6 +295,9 @@ void RenderImage::layout(float containerWidth) {
 }
 
 void RenderImage::paint(PaintContext& ctx) {
+    if (textureId_ > 0) {
+        ctx.drawTexture(textureId_, boxModel_.contentBox);
+    }
     clearNeedsPaint();
 }
 
@@ -324,6 +328,9 @@ void RenderVideo::layout(float containerWidth) {
 }
 
 void RenderVideo::paint(PaintContext& ctx) {
+    if (textureId_ > 0) {
+        ctx.drawTexture(textureId_, boxModel_.contentBox);
+    }
     clearNeedsPaint();
 }
 

@@ -43,6 +43,14 @@ public:
     Widget* rootWidget() const { return rootWidget_; }
     void setRootWidget(Widget* widget) { rootWidget_ = widget; }
     
+    // Hierarchy
+    Layer* parent() const { return parent_; }
+    const std::vector<Layer*>& children() const { return children_; }
+    
+    void addChild(Layer* child);
+    void removeChild(Layer* child);
+    void clearChildren();
+    
     // Damage tracking
     void invalidate(const Rect& region);
     void invalidateAll();
@@ -57,6 +65,9 @@ private:
     Rect bounds_;
     Widget* rootWidget_ = nullptr;
     std::vector<Rect> damageRects_;
+    
+    Layer* parent_ = nullptr;
+    std::vector<Layer*> children_;
 };
 
 /**

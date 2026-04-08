@@ -5,6 +5,7 @@
 
 #include "nxgfx/primitives.h"
 #include <vector>
+#include <cstdint>
 
 namespace NXRender {
 class GpuContext;
@@ -34,12 +35,7 @@ private:
     Rect bounds_;
     bool isReady_ = false;
     
-    // Native OpenGL handles
-    unsigned int fbo_ = 0;
-    unsigned int texture_ = 0;
-    
-    void initFbo();
-    void releaseFbo();
+    uint32_t renderTarget_ = 0;
 };
 
 } // namespace NXRender

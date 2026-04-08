@@ -762,13 +762,13 @@ TEST(Widget, HitTest) {
     Widget* cptr = child.get();
     parent.addChild(std::move(child));
 
-    Widget* hit = parent.hitTest(75, 75);
+    Widget* hit = dynamic_cast<Widget*>(parent.hitTestDeep(75, 75));
     EXPECT_EQ(hit, cptr);
 
-    Widget* hitParent = parent.hitTest(10, 10);
+    Widget* hitParent = dynamic_cast<Widget*>(parent.hitTestDeep(10, 10));
     EXPECT_EQ(hitParent, &parent);
 
-    Widget* miss = parent.hitTest(300, 300);
+    Widget* miss = dynamic_cast<Widget*>(parent.hitTestDeep(300, 300));
     EXPECT_EQ(miss, nullptr);
 }
 
@@ -776,7 +776,7 @@ TEST(Widget, HitTestInvisible) {
     Widget w;
     w.setBounds(Rect(0, 0, 100, 100));
     w.setVisible(false);
-    EXPECT_EQ(w.hitTest(50, 50), nullptr);
+    EXPECT_EQ(w.hitTestDeep(50, 50), nullptr);
 }
 
 TEST(Widget, UniqueIds) {

@@ -10,8 +10,49 @@
 #include <GL/gl.h>
 #include <cmath>
 #include <vector>
+#include <unordered_map>
+
+#ifdef _WIN32
+    #include <windows.h>
+    #define GET_GL_PROC(type, name) type name = (type)wglGetProcAddress(#name)
+#else
+    #include <GL/glx.h>
+    #define GET_GL_PROC(type, name) type name = (type)glXGetProcAddress((const GLubyte*)#name)
+#endif
 
 namespace NXRender {
+
+// OpenGL FBO pointers
+typedef void (*PFNGLGENFRAMEBUFFERSPROC)(GLsizei n, GLuint *framebuffers);
+typedef void (*PFNGLBINDFRAMEBUFFERPROC)(GLenum target, GLuint framebuffer);
+typedef void (*PFNGLFRAMEBUFFERTEXTURE2DPROC)(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
+typedef GLenum (*PFNGLCHECKFRAMEBUFFERSTATUSPROC)(GLenum target);
+typedef void (*PFNGLDELETEFRAMEBUFFERSPROC)(GLsizei n, const GLuint *framebuffers);
+
+static PFNGLGENFRAMEBUFFERSPROC nx_glGenFramebuffers = nullptr;
+static PFNGLBINDFRAMEBUFFERPROC nx_glBindFramebuffer = nullptr;
+static PFNGLFRAMEBUFFERTEXTURE2DPROC nx_glFramebufferTexture2D = nullptr;
+static PFNGLCHECKFRAMEBUFFERSTATUSPROC nx_glCheckFramebufferStatus = nullptr;
+static PFNGLDELETEFRAMEBUFFERSPROC nx_glDeleteFramebuffers = nullptr;
+
+static void loadGLExtensions() {
+    static bool loaded = false;
+    if (loaded) return;
+    loaded = true;
+    
+    GET_GL_PROC(PFNGLGENFRAMEBUFFERSPROC, glGenFramebuffers);
+    GET_GL_PROC(PFNGLBINDFRAMEBUFFERPROC, glBindFramebuffer);
+    GET_GL_PROC(PFNGLFRAMEBUFFERTEXTURE2DPROC, glFramebufferTexture2D);
+    GET_GL_PROC(PFNGLCHECKFRAMEBUFFERSTATUSPROC, glCheckFramebufferStatus);
+    GET_GL_PROC(PFNGLDELETEFRAMEBUFFERSPROC, glDeleteFramebuffers);
+    
+    nx_glGenFramebuffers = glGenFramebuffers;
+    nx_glBindFramebuffer = glBindFramebuffer;
+    nx_glFramebufferTexture2D = glFramebufferTexture2D;
+    nx_glCheckFramebufferStatus = glCheckFramebufferStatus;
+    nx_glDeleteFramebuffers = glDeleteFramebuffers;
+}
+
 
 // Global GPU context
 static GpuContext* g_gpuContext = nullptr;
@@ -23,6 +64,7 @@ GpuContext* gpu() {
 // Implementation details
 struct GpuContext::Impl {
     std::vector<Rect> clipStack;
+    std::unordered_map<TextureId, GLuint> fbos;
     
     void glColor(const Color& c) {
         glColor4ub(c.r, c.g, c.b, c.a);
@@ -508,6 +550,58 @@ void GpuContext::drawTexture(TextureId texture, const Rect& src, const Rect& des
 void GpuContext::destroyTexture(TextureId texture) {
     if (texture) {
         glDeleteTextures(1, &texture);
+        destroyRenderTarget(texture);
+    }
+}
+
+// ==========================================================================
+// Render Targets
+// ==========================================================================
+
+GpuContext::TextureId GpuContext::createRenderTarget(int width, int height) {
+    loadGLExtensions();
+    if (!nx_glGenFramebuffers) return 0;
+    
+    unsigned int texId;
+    glGenTextures(1, &texId);
+    glBindTexture(GL_TEXTURE_2D, texId);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    GLuint fbo;
+    nx_glGenFramebuffers(1, &fbo);
+    nx_glBindFramebuffer(0x8D40 /* GL_FRAMEBUFFER */, fbo);
+    nx_glFramebufferTexture2D(0x8D40, 0x8CE0 /* GL_COLOR_ATTACHMENT0 */, GL_TEXTURE_2D, texId, 0);
+    
+    nx_glBindFramebuffer(0x8D40, 0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    
+    impl_->fbos[texId] = fbo;
+    return texId;
+}
+
+void GpuContext::setRenderTarget(TextureId target) {
+    if (!nx_glBindFramebuffer) return;
+    
+    if (target == 0) {
+        nx_glBindFramebuffer(0x8D40, 0);
+        glViewport(0, 0, width_, height_);
+    } else {
+        auto it = impl_->fbos.find(target);
+        if (it != impl_->fbos.end()) {
+            nx_glBindFramebuffer(0x8D40, it->second);
+        }
+    }
+}
+
+void GpuContext::destroyRenderTarget(TextureId target) {
+    auto it = impl_->fbos.find(target);
+    if (it != impl_->fbos.end() && nx_glDeleteFramebuffers) {
+        nx_glDeleteFramebuffers(1, &it->second);
+        impl_->fbos.erase(it);
     }
 }
 

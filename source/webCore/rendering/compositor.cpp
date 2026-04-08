@@ -6,6 +6,7 @@
 #include "rendering/compositor.hpp"
 #include <algorithm>
 #include <cstring>
+#include "../../nxrender-cpp/nxrender_cpp.h" // Hook native backend
 
 namespace Zepra::WebCore {
 
@@ -199,13 +200,19 @@ CompositorLayer* Compositor::layerAtPoint(float x, float y) {
 }
 
 uint32_t Compositor::allocateTexture(int width, int height) {
-    if (!backend_) return 0;
-    textureMemory_ += width * height * 4; // RGBA
-    return 0; // Backend handles actual allocation
+    auto* ctx = NXRender::gpuContext();
+    if (!ctx) return 0;
+    
+    textureMemory_ += width * height * 4; // RGBA assumption
+    // Create native FBO target 
+    return ctx->createRenderTarget(width, height);
 }
 
 void Compositor::freeTexture(uint32_t id) {
-    // Backend handles deallocation
+    auto* ctx = NXRender::gpuContext();
+    if (ctx && id > 0) {
+        ctx->destroyRenderTarget(id);
+    }
 }
 
 } // namespace Zepra::WebCore

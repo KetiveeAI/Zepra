@@ -26,6 +26,7 @@
 #include <mutex>
 #include <algorithm>
 #include <iostream>
+#include <cstring>
 
 namespace Zepra::Networking {
 
@@ -169,29 +170,48 @@ public:
             return response;
         }
         
-        // Create socket
-        int sock = socket(AF_INET, SOCK_STREAM, 0);
-        if (sock < 0) {
-            response.setError("Failed to create socket");
-            return response;
+        // Loop over addresses to connect robustly
+        int sock = -1;
+        bool connected = false;
+        
+        for (const auto& addrStr : dns.addresses) {
+            bool isIPv6 = addrStr.find(':') != std::string::npos;
+            sock = socket(isIPv6 ? AF_INET6 : AF_INET, SOCK_STREAM, 0);
+            if (sock < 0) continue;
+            
+            // Set socket options
+            struct timeval timeout;
+            timeout.tv_sec = config_.connectTimeoutMs / 1000;
+            timeout.tv_usec = (config_.connectTimeoutMs % 1000) * 1000;
+            setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+            setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
+            
+            // Connect
+            if (isIPv6) {
+                struct sockaddr_in6 errAddr;
+                memset(&errAddr, 0, sizeof(errAddr));
+                errAddr.sin6_family = AF_INET6;
+                errAddr.sin6_port = htons(port);
+                inet_pton(AF_INET6, addrStr.c_str(), &errAddr.sin6_addr);
+                if (connect(sock, (struct sockaddr*)&errAddr, sizeof(errAddr)) == 0) {
+                    connected = true; break;
+                }
+            } else {
+                struct sockaddr_in errAddr;
+                memset(&errAddr, 0, sizeof(errAddr));
+                errAddr.sin_family = AF_INET;
+                errAddr.sin_port = htons(port);
+                inet_pton(AF_INET, addrStr.c_str(), &errAddr.sin_addr);
+                if (connect(sock, (struct sockaddr*)&errAddr, sizeof(errAddr)) == 0) {
+                    connected = true; break;
+                }
+            }
+            close(sock);
+            sock = -1;
         }
         
-        // Set socket options
-        struct timeval timeout;
-        timeout.tv_sec = config_.connectTimeoutMs / 1000;
-        timeout.tv_usec = (config_.connectTimeoutMs % 1000) * 1000;
-        setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
-        setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
-        
-        // Connect
-        struct sockaddr_in serverAddr;
-        serverAddr.sin_family = AF_INET;
-        serverAddr.sin_port = htons(port);
-        inet_pton(AF_INET, dns.addresses[0].c_str(), &serverAddr.sin_addr);
-        
-        if (connect(sock, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) < 0) {
-            close(sock);
-            response.setError("Connection failed");
+        if (!connected || sock < 0) {
+            response.setError("Connection failed to all resolved IPs");
             return response;
         }
         

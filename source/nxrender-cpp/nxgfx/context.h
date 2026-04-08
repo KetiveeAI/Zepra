@@ -122,6 +122,11 @@ public:
     void drawTexture(TextureId texture, const Rect& src, const Rect& dest);
     void destroyTexture(TextureId texture);
     
+    // Render Targets
+    TextureId createRenderTarget(int width, int height);
+    void setRenderTarget(TextureId target);
+    void destroyRenderTarget(TextureId target);
+    
 private:
     int width_ = 0;
     int height_ = 0;

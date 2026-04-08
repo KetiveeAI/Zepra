@@ -62,8 +62,10 @@ void LayerTreeHost::computeLayerDamageRecursive(Layer* layer, const Rect& parent
         layer->clearDamage();
     }
     
-    // In a full implementation, layer would have children.
-    // For now we map damage upward.
+    // Recurse into true children array
+    for (Layer* child : layer->children()) {
+        computeLayerDamageRecursive(child, layerClip);
+    }
 }
 
 void LayerTreeHost::sortLayersByZIndex(std::vector<Layer*>& layerList) {
@@ -103,14 +105,21 @@ void LayerTreeHost::rasterizeLayerRecursive(Layer* layer, GpuContext* ctx, const
     ctx->pushTransform();
     ctx->translate(layer->bounds().x, layer->bounds().y);
     
-    // Setup Opacity blending if layer provides Alpha < 1.0
-    // Currently NXRender requires global alpha states pushed
-    
     if (layer->rootWidget()) {
         layer->rootWidget()->render(ctx);
     }
     
-    // Rasterize layer children here after sorting
+    // Recursively sort and render children
+    if (!layer->children().empty()) {
+        std::vector<Layer*> sortedLayers = layer->children();
+        sortLayersByZIndex(sortedLayers);
+        
+        // Relative clipping for children
+        Rect childrenClip(0, 0, b1.width, b1.height);
+        for (Layer* child : sortedLayers) {
+            rasterizeLayerRecursive(child, ctx, childrenClip);
+        }
+    }
     
     ctx->popTransform();
 }

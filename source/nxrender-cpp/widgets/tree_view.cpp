@@ -137,7 +137,7 @@ void TreeViewWidget::renderNode(GpuContext* ctx, TreeNode* node, int depth, floa
         }
         
         // Draw real string text natively aligned
-        ctx->drawText(node.label, contentX + 15.0f, nodeY + 16.0f, Color::black(), 14.0f);
+        ctx->drawText(node->label, contentX + 15.0f, nodeY + 16.0f, Color::black(), 14.0f);
     }
     
     currentY += itemHeight_;

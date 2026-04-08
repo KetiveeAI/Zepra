@@ -380,6 +380,7 @@ void layoutBlock(LayoutBox& box, float containingWidth, float startY) {
     // Add height of the last inline line
     if (lineHeight > 0) {
         childY += lineHeight;
+        lineHeight = 0;
     }
     } // end else (block/inline flow)
     

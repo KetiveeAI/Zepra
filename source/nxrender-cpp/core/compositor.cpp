@@ -28,6 +28,33 @@ void Layer::invalidateAll() {
     damageRects_.push_back(bounds_);
 }
 
+void Layer::addChild(Layer* child) {
+    if (child) {
+        if (child->parent_) {
+            child->parent_->removeChild(child);
+        }
+        child->parent_ = this;
+        children_.push_back(child);
+    }
+}
+
+void Layer::removeChild(Layer* child) {
+    if (child) {
+        auto it = std::find(children_.begin(), children_.end(), child);
+        if (it != children_.end()) {
+            (*it)->parent_ = nullptr;
+            children_.erase(it);
+        }
+    }
+}
+
+void Layer::clearChildren() {
+    for (auto* child : children_) {
+        child->parent_ = nullptr;
+    }
+    children_.clear();
+}
+
 // ==========================================================================
 // Compositor
 // ==========================================================================

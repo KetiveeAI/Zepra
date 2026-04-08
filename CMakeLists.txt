@@ -173,8 +173,13 @@ if(USE_NXRENDER)
         source/integration/zepra_browser.cpp
         source/zepraEngine/engine/dev_tools.cpp
         source/zepraEngine/engine/html_parser_stub.cpp
-        source/zepraEngine/media/audio_stub.cpp
-        source/zepraEngine/media/avmedia_stub.cpp
+        source/zepraEngine/media/audio_equalizer.cpp
+        source/zepraEngine/media/browser_audio.cpp
+        source/zepraEngine/media/audio_codec_detector.cpp
+        source/zepraEngine/media/media_pipeline.cpp
+        source/zepraEngine/media/video_player.cpp
+        source/zepraEngine/media/video_processor.cpp
+        source/zepraEngine/media/html_video_element.cpp
         source/zepraEngine/engine/console_log.cpp
         source/zepraEngine/engine/download_manager.cpp
         source/aiEngine/src/search/ketivee_search.cpp
@@ -239,8 +244,13 @@ else()
         source/main.cpp
         source/integration/zepra_browser.cpp
         source/zepraEngine/engine/dev_tools.cpp
-        source/zepraEngine/media/audio_stub.cpp
-        source/zepraEngine/media/avmedia_stub.cpp
+        source/zepraEngine/media/audio_equalizer.cpp
+        source/zepraEngine/media/browser_audio.cpp
+        source/zepraEngine/media/audio_codec_detector.cpp
+        source/zepraEngine/media/media_pipeline.cpp
+        source/zepraEngine/media/video_player.cpp
+        source/zepraEngine/media/video_processor.cpp
+        source/zepraEngine/media/html_video_element.cpp
         source/zepraEngine/engine/html_parser_stub.cpp
         source/zepraEngine/engine/download_manager.cpp
         source/aiEngine/src/search/ketivee_search.cpp

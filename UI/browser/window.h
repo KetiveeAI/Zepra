@@ -4,15 +4,19 @@
 
 #include "common/types.h"
 #include "common/constants.h"
-#include <SDL2/SDL.h>
 #include <memory>
 #include <functional>
-#include "settings/settings_ui.h" // Include the new settings UI header
+#include <vector>
+#include "settings/settings_ui.h" 
+
+// Forward declarations
+namespace NXRender {
+    class GpuContext;
+    class Compositor;
+}
 
 namespace zepra {
 
-// Forward declarations
-class Tab;
 class TabManager;
 
 // Window event types
@@ -35,20 +39,19 @@ struct WindowEvent {
     int x, y;
     int width, height;
     bool focused;
-    int keyCode; // Add keyCode for keyboard events
+    int keyCode;
 
     WindowEvent(WindowEventType type = WindowEventType::NONE) : type(type), width(0), height(0), x(0), y(0), focused(false), keyCode(0) {}
 };
 
-// Window callback types
 using WindowEventCallback = std::function<void(const WindowEvent&)>;
 using RenderCallback = std::function<void()>;
 
-// Window class
+// Window class (Native NXRender wrapper)
 class Window {
 public:
     Window();
-    ~Window();
+    virtual ~Window();
     
     // Window creation and management
     bool create(const String& title, int width, int height, bool fullscreen = false);
@@ -90,14 +93,10 @@ public:
     void showCursor(bool show);
     void setCursor(const String& cursorType);
     
-    // OpenGL context
+    // OpenGL context (Managed by NXRender now, keeping for compatibility signature)
     bool createOpenGLContext(int majorVersion = 3, int minorVersion = 3);
     void makeCurrent();
     void swapBuffers();
-    
-    // Window information
-    SDL_Window* getSDLWindow() const { return window; }
-    SDL_GLContext getGLContext() const { return glContext; }
     
     // Utility methods
     void centerOnScreen();
@@ -106,19 +105,15 @@ public:
     void setResizable(bool resizable);
     bool isResizable() const;
     
-    // UI Integration (for main loop)
-    bool handleEvent(const SDL_Event& event) { handleSDLEvent(event); return false; }
-    void update() {}  // Stub
+    // UI Integration
+    void update() {} 
     void toggleFullscreen() { setFullscreen(!isFullscreen()); }
     void handleResize(int w, int h) { width = w; height = h; }
     
-    // New methods for settings UI
     void toggleSettingsUI();
     ui::SettingsUI& getSettingsUI();
     
-private:
-    SDL_Window* window;
-    SDL_GLContext glContext;
+protected:
     String title;
     int width, height;
     int x, y;
@@ -129,17 +124,9 @@ private:
     bool focused;
     bool resizable;
     
-    // Callbacks
     WindowEventCallback eventCallback;
     RenderCallback renderCallback;
-    ui::SettingsUI m_settingsUI; // Member for settings UI
-    
-    // Event processing helpers
-    void handleSDLEvent(const SDL_Event& event);
-    void updateWindowState();
-    
-    // OpenGL helpers
-    void setupOpenGLAttributes(int majorVersion, int minorVersion);
+    ui::SettingsUI m_settingsUI;
 };
 
 // Window Manager - Manages multiple windows
@@ -148,25 +135,20 @@ public:
     WindowManager();
     ~WindowManager();
     
-    // Window management
     std::shared_ptr<Window> createWindow(const String& title, int width, int height);
     void destroyWindow(std::shared_ptr<Window> window);
     std::vector<std::shared_ptr<Window>> getWindows() const;
     
-    // Global event processing
     void processEvents();
     void renderAll();
     
-    // Global window operations
     void minimizeAll();
     void restoreAll();
     void closeAll();
     
-    // Focus management
     std::shared_ptr<Window> getFocusedWindow() const;
     void setFocusedWindow(std::shared_ptr<Window> window);
     
-    // Configuration
     void setDefaultWindowSize(int width, int height);
     void setDefaultFullscreen(bool fullscreen);
     
@@ -176,7 +158,6 @@ private:
     int defaultWidth, defaultHeight;
     bool defaultFullscreen;
     
-    // Event handling
     void handleWindowEvent(std::shared_ptr<Window> window, const WindowEvent& event);
 };
 
@@ -184,34 +165,28 @@ private:
 class BrowserWindow : public Window {
 public:
     BrowserWindow();
-    ~BrowserWindow();
+    virtual ~BrowserWindow();
     
-    // Browser-specific initialization
     bool initialize(const String& title = BROWSER_NAME);
     
-    // Tab management
     void setTabManager(std::shared_ptr<TabManager> tabManager);
     std::shared_ptr<TabManager> getTabManager() const;
     
-    // Browser UI rendering
     void renderBrowserUI();
     void renderTabBar();
     void renderAddressBar();
     void renderContent();
     void renderSidebar();
     
-    // Browser-specific event handling
     void handleBrowserEvents();
-    void handleKeyboardShortcuts(const SDL_Event& event);
-    void handleMouseNavigation(const SDL_Event& event);
+    void handleKeyboardEvent(const WindowEvent& event);
+    void handleMouseEvent(const WindowEvent& event);
     
-    // Browser window features
     void setHomePage(const String& url);
     String getHomePage() const;
     void setDefaultSearchEngine(const String& engine);
     String getDefaultSearchEngine() const;
     
-    // Browser settings
     void setShowBookmarksBar(bool show);
     bool isShowBookmarksBar() const;
     void setShowStatusBar(bool show);
@@ -229,21 +204,18 @@ private:
     bool showSidebar;
     int sidebarWidth;
 
-    // UI state
     bool addressBarFocused;
     String addressBarText;
     bool isNavigating;
     
-    // Browser-specific rendering
     void renderToolbar();
     void renderBookmarksBar();
     void renderStatusBar();
     void renderDeveloperTools();
     
-    // Input handling
-    void handleAddressBarInput(const SDL_Event& event);
-    void handleTabBarInput(const SDL_Event& event);
-    void handleToolbarInput(const SDL_Event& event);
+    void handleAddressBarInput(const WindowEvent& event);
+    void handleTabBarInput(const WindowEvent& event);
+    void handleToolbarInput(const WindowEvent& event);
 };
 
 } // namespace zepra

@@ -8,7 +8,7 @@
 #include "rendering/paint_context.hpp"
 #include <memory>
 #include <unordered_map>
-#include <SDL2/SDL_ttf.h>
+// Removed SDL_ttf.h for pure native rendering
 
 namespace Zepra::WebCore {
 
@@ -129,8 +129,7 @@ private:
     // Clear color
     Color clearColor_ = Color::white();
     
-    // System font
-    TTF_Font* font_ = nullptr;
+    // System font managed natively by NXRender/NxFont now
     
     // Compositor layers
     std::vector<unsigned int> layerFramebuffers_;

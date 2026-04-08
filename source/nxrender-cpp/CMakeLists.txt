@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Source files
 set(NXRENDER_SOURCES
-    # nxgfx
+    # nxgfx — GPU drawing backend
     nxgfx/color.cpp
     nxgfx/context.cpp
     nxgfx/context3d.cpp
@@ -22,16 +22,24 @@ set(NXRENDER_SOURCES
     nxgfx/path/path_builder.cpp
     nxgfx/path/tessellator.cpp
     nxgfx/path/stroke.cpp
-    
-    # core
+    nxgfx/shader.cpp
+    nxgfx/batch_renderer.cpp
+    nxgfx/texture_atlas.cpp
+    nxgfx/image_decoder.cpp
+
+    # core — rendering pipeline
     core/compositor.cpp
     core/damage_tracker.cpp
     core/layer_tree_host.cpp
     core/render_tile.cpp
     core/tile_manager.cpp
     core/surface.cpp
-    
-    # widgets
+    core/display_list.cpp
+    core/resource_cache.cpp
+    core/frame_scheduler.cpp
+    core/render_pipeline.cpp
+
+    # widgets — UI components
     widgets/widget.cpp
     widgets/datagrid.cpp
     widgets/button.cpp
@@ -41,37 +49,52 @@ set(NXRENDER_SOURCES
     widgets/scrollview.cpp
     widgets/listview.cpp
     widgets/tabview.cpp
-    
-    # layout
+    widgets/tree_view.cpp
+    widgets/menu.cpp
+    widgets/docking_manager.cpp
+    widgets/progress_bar.cpp
+    widgets/tooltip.cpp
+    widgets/dialog.cpp
+    widgets/splitter.cpp
+
+    # layout — CSS-grade layout engine
     layout/flexbox.cpp
     layout/block_layout.cpp
     layout/inline_layout.cpp
     layout/positioned_layout.cpp
     layout/grid.cpp
-    
-    # theme
+
+    # theme — design tokens and widget styles
     theme/theme.cpp
-    
-    # input
+    theme/style_sheet.cpp
+
+    # input — event handling
     input/mouse.cpp
     input/keyboard.cpp
     input/event_router.cpp
     input/focus_manager.cpp
     input/shortcut_manager.cpp
-    
-    # animation
+    input/gesture_recognizer.cpp
+    input/clipboard.cpp
+
+    # animation — keyframes, transitions, interpolators
     animation/animator.cpp
-    
-    # platform
+    animation/keyframe.cpp
+    animation/transition.cpp
+
+    # platform — OS abstraction
     platform/linux_x11.cpp
-    
+    platform/display_info.cpp
+    platform/platform_timer.cpp
+    platform/thread_pool.cpp
+
     # web layer
     web/dom_renderer.cpp
     web/style_resolver.cpp
-    
+
     # bridge to libnxrender.a (C library) - DISABLED: requires external nxgfx C lib
     # nxrender_c_bridge.cpp
-    
+
     # main
     nxrender.cpp
 )
@@ -136,7 +159,7 @@ target_link_libraries(nxrender PUBLIC
 
 # Platform-specific
 if(UNIX AND NOT APPLE)
-    target_link_libraries(nxrender PUBLIC X11)
+    target_link_libraries(nxrender PUBLIC X11 Xrandr pthread)
 endif()
 
 # Install
