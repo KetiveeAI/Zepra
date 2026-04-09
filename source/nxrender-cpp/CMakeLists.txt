@@ -26,6 +26,11 @@ set(NXRENDER_SOURCES
     nxgfx/batch_renderer.cpp
     nxgfx/texture_atlas.cpp
     nxgfx/image_decoder.cpp
+    nxgfx/gradient.cpp
+    nxgfx/filter_pipeline.cpp
+    nxgfx/render_target.cpp
+    nxgfx/clip_stack.cpp
+    nxgfx/text/text_layout.cpp
 
     # core — rendering pipeline
     core/compositor.cpp
@@ -56,6 +61,9 @@ set(NXRENDER_SOURCES
     widgets/tooltip.cpp
     widgets/dialog.cpp
     widgets/splitter.cpp
+    widgets/checkbox.cpp
+    widgets/slider.cpp
+    widgets/dropdown.cpp
 
     # layout — CSS-grade layout engine
     layout/flexbox.cpp
@@ -63,6 +71,8 @@ set(NXRENDER_SOURCES
     layout/inline_layout.cpp
     layout/positioned_layout.cpp
     layout/grid.cpp
+    layout/table_layout.cpp
+    layout/stacking_context.cpp
 
     # theme — design tokens and widget styles
     theme/theme.cpp
@@ -81,12 +91,18 @@ set(NXRENDER_SOURCES
     animation/animator.cpp
     animation/keyframe.cpp
     animation/transition.cpp
+    animation/scroll_physics.cpp
+    animation/spring.cpp
 
     # platform — OS abstraction
     platform/linux_x11.cpp
     platform/display_info.cpp
     platform/platform_timer.cpp
     platform/thread_pool.cpp
+
+    # accessibility
+    accessibility/accessible.cpp
+    accessibility/accessibility_tree.cpp
 
     # web layer
     web/dom_renderer.cpp
@@ -168,7 +184,7 @@ install(TARGETS nxrender
     LIBRARY DESTINATION lib
 )
 
-install(DIRECTORY animation core input layout nxgfx platform theme web widgets
+install(DIRECTORY accessibility animation core input layout nxgfx platform theme web widgets
     DESTINATION include
     FILES_MATCHING PATTERN "*.h"
 )

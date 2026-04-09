@@ -18,6 +18,8 @@ struct Quaternion {
     static Quaternion identity();
     static Quaternion fromAxisAngle(const Vector3& axis, float angle);
     static Quaternion fromEuler(float roll, float pitch, float yaw);
+    static Quaternion slerp(const Quaternion& a, const Quaternion& b, float t);
+    static Quaternion fromMatrix(const Matrix4x4& m);
 
     Quaternion operator*(const Quaternion& q) const;
     Vector3 operator*(const Vector3& v) const;
