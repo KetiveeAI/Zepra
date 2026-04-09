@@ -2,6 +2,8 @@
 // Licensed under KPL-2.0. See LICENSE file for details.
 
 #include "focus_manager.h"
+#include <algorithm>
+#include <vector>
 
 namespace NXRender {
 namespace Input {
@@ -12,6 +14,10 @@ FocusManager::~FocusManager() {
     clearFocus();
 }
 
+// ==================================================================
+// Focus set/clear
+// ==================================================================
+
 void FocusManager::clearFocus() {
     if (!currentFocus_) return;
 
@@ -20,25 +26,28 @@ void FocusManager::clearFocus() {
     currentOrigin_ = FocusOrigin::None;
 
     EventModifiers emptyMods;
-    Event blurEvent(EventType::FocusOut, false); // Focus events typically do not bubble
+    Event blurEvent(EventType::FocusOut, false);
     blurEvent.setTarget(oldFocus);
     blurEvent.setPhase(EventPhase::AtTarget);
     blurEvent.setCurrentTarget(oldFocus);
-    
-    // We manually dispatch it avoiding the tree traversal, strict to the target
+
     if (router_) {
-        // Technically FocusEvent does NOT bubble. The EventRouter dispatchEvent respects this.
         router_->dispatchEvent(oldFocus, blurEvent);
+    }
+
+    // Notify listeners
+    for (auto& listener : focusChangeListeners_) {
+        if (listener) listener(oldFocus, nullptr);
     }
 }
 
 void FocusManager::setFocusedTarget(EventTarget* target, FocusOrigin origin) {
     if (currentFocus_ == target) {
-        // Update origin so rings appear dynamically if a user switches from mouse to keyboard
         currentOrigin_ = origin;
         return;
     }
 
+    EventTarget* oldFocus = currentFocus_;
     clearFocus();
 
     if (target) {
@@ -47,19 +56,89 @@ void FocusManager::setFocusedTarget(EventTarget* target, FocusOrigin origin) {
 
         EventModifiers emptyMods;
         Event focusEvent(EventType::FocusIn, false);
-        
+
         if (router_) {
             router_->dispatchEvent(target, focusEvent);
+        }
+
+        // Notify listeners
+        for (auto& listener : focusChangeListeners_) {
+            if (listener) listener(oldFocus, target);
         }
     }
 }
 
+// ==================================================================
+// Focus chain management
+// ==================================================================
+
+void FocusManager::setFocusChain(const std::vector<EventTarget*>& chain) {
+    focusChain_ = chain;
+}
+
+void FocusManager::addToFocusChain(EventTarget* target) {
+    if (!target) return;
+    // Avoid duplicates
+    for (const auto& t : focusChain_) {
+        if (t == target) return;
+    }
+    focusChain_.push_back(target);
+}
+
+void FocusManager::removeFromFocusChain(EventTarget* target) {
+    focusChain_.erase(
+        std::remove(focusChain_.begin(), focusChain_.end(), target),
+        focusChain_.end()
+    );
+    if (currentFocus_ == target) {
+        clearFocus();
+    }
+}
+
+// ==================================================================
+// Focus traversal
+// ==================================================================
+
 EventTarget* FocusManager::findNextFocusable(EventTarget* current, bool reverse) const {
-    // In a full implementation, this traverses the actual Node tree depth-first.
-    // Since EventTarget is an abstract interface without child traversals defined,
-    // this relies on the broader Window/Widget tree to supply the focus chain.
-    // For now, it returns nullptr unless bound to a concrete DOM/Widget manager.
-    return nullptr; 
+    if (focusChain_.empty()) return nullptr;
+
+    // Find current position in chain
+    int currentIdx = -1;
+    for (size_t i = 0; i < focusChain_.size(); i++) {
+        if (focusChain_[i] == current) {
+            currentIdx = static_cast<int>(i);
+            break;
+        }
+    }
+
+    if (currentIdx < 0) {
+        // Not in chain — return first/last depending on direction
+        return reverse ? focusChain_.back() : focusChain_.front();
+    }
+
+    if (reverse) {
+        // Move backward, wrapping
+        int nextIdx = currentIdx - 1;
+        if (nextIdx < 0) {
+            if (wrapFocus_) {
+                nextIdx = static_cast<int>(focusChain_.size()) - 1;
+            } else {
+                return nullptr;
+            }
+        }
+        return focusChain_[nextIdx];
+    } else {
+        // Move forward, wrapping
+        int nextIdx = currentIdx + 1;
+        if (nextIdx >= static_cast<int>(focusChain_.size())) {
+            if (wrapFocus_) {
+                nextIdx = 0;
+            } else {
+                return nullptr;
+            }
+        }
+        return focusChain_[nextIdx];
+    }
 }
 
 bool FocusManager::requestFocusNext() {
@@ -80,17 +159,50 @@ bool FocusManager::requestFocusPrevious() {
     return false;
 }
 
+// ==================================================================
+// Global key handling
+// ==================================================================
+
 bool FocusManager::handleGlobalKeyEvent(const KeyEvent& event) {
-    // Intercept hardware Tab for strict Focus Management
     if (event.type() == EventType::KeyDown && event.keyString() == "Tab") {
         if (event.modifiers().shift) {
             requestFocusPrevious();
         } else {
             requestFocusNext();
         }
-        return true; // Stop propagation, consumed by FocusManager
+        return true;
     }
+
+    // Escape clears focus
+    if (event.type() == EventType::KeyDown && event.keyString() == "Escape") {
+        clearFocus();
+        return true;
+    }
+
     return false;
+}
+
+// ==================================================================
+// Focus query
+// ==================================================================
+
+bool FocusManager::isFocused(EventTarget* target) const {
+    return currentFocus_ == target && target != nullptr;
+}
+
+int FocusManager::focusChainIndex(EventTarget* target) const {
+    for (size_t i = 0; i < focusChain_.size(); i++) {
+        if (focusChain_[i] == target) return static_cast<int>(i);
+    }
+    return -1;
+}
+
+// ==================================================================
+// Listener management
+// ==================================================================
+
+void FocusManager::addFocusChangeListener(FocusChangeCallback callback) {
+    focusChangeListeners_.push_back(std::move(callback));
 }
 
 } // namespace Input

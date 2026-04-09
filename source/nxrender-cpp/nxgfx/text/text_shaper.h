@@ -35,8 +35,18 @@ public:
 
     bool init();
 
-    // Invokes HarfBuzz natively to resolve ligatures, kerning, and script shaping
+    // Shape a single run with HarfBuzz
     TextRun shape(const std::string& text, const std::string& fontName, bool isBold, bool isItalic, float fontSize, const std::string& lang, bool isRTL);
+
+    // Split text into script-homogeneous runs and shape each
+    std::vector<TextRun> itemize(const std::string& text, const std::string& fontName,
+                                  bool isBold, bool isItalic, float fontSize,
+                                  const std::string& lang);
+
+    // Measurement
+    static float measureWidth(const TextRun& run);
+    static size_t hitTestPosition(const TextRun& run, float x);
+    static float caretOffset(const TextRun& run, size_t clusterIndex);
 
 private:
     hb_buffer_t* hbBuffer_ = nullptr;

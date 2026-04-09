@@ -22,18 +22,26 @@ public:
     bool initialize();
     void shutdown();
 
-    // Registers a font file with a family name and standard style parameters
     bool registerFont(const std::string& family, const std::string& path, bool isBold, bool isItalic);
 
-    // Queries the most appropriate FT_Face for the given characters
     FT_Face getFace(const std::string& family, bool isBold, bool isItalic);
-    
-    // Returns a HarfBuzz wrapper for the given face
     hb_font_t* getHbFont(const std::string& family, bool isBold, bool isItalic, float size);
+
+    // Codepoint coverage
+    bool hasGlyph(const std::string& family, bool isBold, bool isItalic, uint32_t codepoint);
+    std::string findFontForCodepoint(uint32_t codepoint);
+
+    // Statistics
+    size_t registeredFamilyCount() const;
+    size_t cachedFaceCount() const;
 
 private:
     FontFallbackManager();
     ~FontFallbackManager();
+
+    void discoverSystemFonts();
+    void scanFontDirectory(const std::string& dirPath);
+    FT_Face tryFamilyAlias(const std::string& family, bool isBold, bool isItalic);
 
     struct FontRegistration {
         std::string family;

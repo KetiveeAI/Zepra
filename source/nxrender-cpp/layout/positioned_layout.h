@@ -60,19 +60,28 @@ class PositionedLayout {
 public:
     PositionedLayout() = default;
 
-    /**
-     * @brief Apply positioning to a widget
-     * @param widget     Widget to position
-     * @param props      Positioning properties
-     * @param container  Containing block (parent for absolute, viewport for fixed)
-     */
     static void apply(Widget* widget, const PositionedProps& props, const Rect& container);
 
-    /**
-     * @brief Sort widgets by stacking context (z-index)
-     */
+    // Apply with scroll offset (for sticky elements)
+    static void applySticky(Widget* widget, const PositionedProps& props,
+                             const Rect& container, Rect& bounds,
+                             float scrollX, float scrollY);
+
+    // Find the containing block for a positioned widget
+    static Rect findContainingBlock(Widget* widget, PositionType posType);
+
+    // Centering utilities
+    static void centerInContainer(Widget* widget, const Rect& container);
+    static void centerHorizontally(Widget* widget, const Rect& container);
+    static void centerVertically(Widget* widget, const Rect& container);
+
     static void sortByZIndex(std::vector<Widget*>& widgets,
                              const std::vector<PositionedProps>& props);
+
+private:
+    static void applyRelative(Widget* widget, const PositionedProps& props, Rect& bounds);
+    static void applyAbsolute(Widget* widget, const PositionedProps& props,
+                               const Rect& container, Rect& bounds);
 };
 
 } // namespace NXRender

@@ -5,6 +5,8 @@
 
 #include "event.h"
 #include "event_router.h"
+#include <vector>
+#include <functional>
 
 namespace NXRender {
 namespace Input {
@@ -16,6 +18,8 @@ enum class FocusOrigin {
     Programmatic
 };
 
+using FocusChangeCallback = std::function<void(EventTarget* oldTarget, EventTarget* newTarget)>;
+
 class FocusManager {
 public:
     FocusManager(EventRouter* router);
@@ -23,16 +27,28 @@ public:
 
     void setFocusedTarget(EventTarget* target, FocusOrigin origin = FocusOrigin::Programmatic);
     EventTarget* focusedTarget() const { return currentFocus_; }
-    
-    // Core Focus Routing
+
     void clearFocus();
     bool requestFocusNext();
     bool requestFocusPrevious();
 
-    // Determines if outline/ring should be drawn (usually false if clicked)
     bool isKeyboardFocused() const { return currentOrigin_ == FocusOrigin::Keyboard; }
+    bool isFocused(EventTarget* target) const;
 
-    // Binds explicitly to the EventRouter's global dispatch pipeline to intercept Tabs
+    // Focus chain management
+    void setFocusChain(const std::vector<EventTarget*>& chain);
+    void addToFocusChain(EventTarget* target);
+    void removeFromFocusChain(EventTarget* target);
+    int focusChainIndex(EventTarget* target) const;
+    size_t focusChainSize() const { return focusChain_.size(); }
+
+    // Settings
+    void setWrapFocus(bool wrap) { wrapFocus_ = wrap; }
+    bool wrapFocus() const { return wrapFocus_; }
+
+    // Listeners
+    void addFocusChangeListener(FocusChangeCallback callback);
+
     bool handleGlobalKeyEvent(const KeyEvent& event);
 
 private:
@@ -40,7 +56,10 @@ private:
     EventTarget* currentFocus_ = nullptr;
     FocusOrigin currentOrigin_ = FocusOrigin::None;
 
-    // Helper to find next target dynamically without strict indexing.
+    std::vector<EventTarget*> focusChain_;
+    bool wrapFocus_ = true;
+    std::vector<FocusChangeCallback> focusChangeListeners_;
+
     EventTarget* findNextFocusable(EventTarget* current, bool reverse) const;
 };
 

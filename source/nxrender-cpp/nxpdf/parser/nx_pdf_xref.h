@@ -36,14 +36,29 @@ public:
     explicit XRefTable(PdfDocumentParser* parser);
     ~XRefTable() = default;
 
-    // Registers an unparsed byte offset to an object number
     void RegisterObject(int objectNumber, int generation, size_t offset, XRefEntryType type);
-
-    // Resolves and returns the object pointer natively. 
-    // Triggers lazy-load parsing loop if `resolved == false`.
     PdfObject* GetObject(int objectNumber, int generation);
-    
+
+    // Queries
+    bool HasObject(int objectNumber) const;
+    int GetGeneration(int objectNumber) const;
+    size_t GetOffset(int objectNumber) const;
+    bool IsResolved(int objectNumber) const;
+
+    // Iteration
+    std::vector<int> GetAllObjectNumbers() const;
+    int GetMaxObjectNumber() const;
+
+    // Free list
+    void MarkFree(int objectNumber, int nextFreeObj = 0);
+
+    // Bulk operations
+    void ResolveAll();
+
+    // Statistics
     size_t GetCount() const { return table_.size(); }
+    size_t GetResolvedCount() const;
+    size_t GetFreeCount() const;
 
 private:
     PdfDocumentParser* documentParser_;

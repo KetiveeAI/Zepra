@@ -35,8 +35,21 @@ public:
     Size measure(std::vector<Widget*>& children, const Size& available,
                  const EdgeInsets& padding = {});
 
-private:
-    /// Collapsed margin between two adjacent margins
+    // Intrinsic sizing (shrink-to-fit)
+    static float intrinsicMinWidth(std::vector<Widget*>& children,
+                                    const EdgeInsets& padding = {});
+    static float intrinsicMaxWidth(std::vector<Widget*>& children,
+                                    const EdgeInsets& padding = {});
+
+    // Center a child horizontally within container
+    static void centerChild(Widget* child, const Rect& container);
+
+    // Layout with float clearance
+    void layoutWithClearance(std::vector<Widget*>& children,
+                             const Rect& container,
+                             const EdgeInsets& padding,
+                             float clearanceHeight);
+
     static float collapseMargin(float marginA, float marginB);
 };
 

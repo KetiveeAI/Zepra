@@ -73,6 +73,7 @@ set(NXRENDER_SOURCES
     layout/grid.cpp
     layout/table_layout.cpp
     layout/stacking_context.cpp
+    layout/multi_column.cpp
 
     # theme — design tokens and widget styles
     theme/theme.cpp
@@ -107,6 +108,11 @@ set(NXRENDER_SOURCES
     # web layer
     web/dom_renderer.cpp
     web/style_resolver.cpp
+    web/css/property_ids.cpp
+    web/css/value_parser.cpp
+    web/css/cascade.cpp
+    web/box/box_tree.cpp
+    web/paint/paint_ops.cpp
 
     # bridge to libnxrender.a (C library) - DISABLED: requires external nxgfx C lib
     # nxrender_c_bridge.cpp
