@@ -4,6 +4,7 @@
 #pragma once
 
 #include "../css/cascade.h"
+#include "nxgfx/primitives.h"
 #include <memory>
 #include <vector>
 #include <string>
@@ -11,6 +12,10 @@
 
 namespace NXRender {
 namespace Web {
+
+using NXRender::Rect;
+using NXRender::Size;
+using NXRender::Point;
 
 // ==================================================================
 // Box types (CSS 2.1 §9.2)
@@ -131,6 +136,68 @@ public:
     bool isFloating() const;
     bool isReplaced() const;  // img, video, canvas, etc
 
+    // Rect accessors (convenience over LayoutBox)
+    struct EdgeSizes { float top = 0, right = 0, bottom = 0, left = 0; };
+    struct BorderRadii { float topLeft = 0, topRight = 0, bottomRight = 0, bottomLeft = 0; };
+
+    Rect borderRect() const {
+        return Rect(layout_.x, layout_.y, layout_.width, layout_.height);
+    }
+    Rect contentRect() const {
+        return Rect(layout_.contentX, layout_.contentY,
+                    layout_.contentWidth, layout_.contentHeight);
+    }
+    Rect paddingRect() const {
+        return Rect(layout_.x + layout_.borderLeft, layout_.y + layout_.borderTop,
+                    layout_.width - layout_.borderLeft - layout_.borderRight,
+                    layout_.height - layout_.borderTop - layout_.borderBottom);
+    }
+    EdgeSizes padding() const {
+        return {layout_.paddingTop, layout_.paddingRight,
+                layout_.paddingBottom, layout_.paddingLeft};
+    }
+    EdgeSizes borderWidths() const {
+        return {layout_.borderTop, layout_.borderRight,
+                layout_.borderBottom, layout_.borderLeft};
+    }
+    EdgeSizes margins() const {
+        return {layout_.marginTop, layout_.marginRight,
+                layout_.marginBottom, layout_.marginLeft};
+    }
+
+    // Border radius
+    const BorderRadii& borderRadii() const { return radii_; }
+    void setBorderRadii(const BorderRadii& r) { radii_ = r; }
+    bool hasBorderRadius() const {
+        return radii_.topLeft > 0 || radii_.topRight > 0 ||
+               radii_.bottomRight > 0 || radii_.bottomLeft > 0;
+    }
+
+    // Visual state
+    float zIndex() const { return zIndex_; }
+    void setZIndex(float z) { zIndex_ = z; }
+    bool isVisible() const { return visible_; }
+    void setVisible(bool v) { visible_ = v; }
+    bool pointerEventsNone() const { return pointerEventsNone_; }
+    void setPointerEventsNone(bool pe) { pointerEventsNone_ = pe; }
+
+    // Overflow clip
+    bool hasOverflowClip() const { return overflowClip_; }
+    void setOverflowClip(bool clip) { overflowClip_ = clip; }
+
+    // Transform
+    bool hasTransform() const { return hasTransform_; }
+    const float* transformMatrix() const { return transform_; }
+    void setTransform(const float m[6]) {
+        hasTransform_ = true;
+        for (int i = 0; i < 6; i++) transform_[i] = m[i];
+    }
+
+    // Child access
+    const BoxNode* childAt(size_t index) const {
+        return (index < children_.size()) ? children_[index].get() : nullptr;
+    }
+
     // Debug
     void dump(int indent = 0) const;
 
@@ -146,6 +213,14 @@ private:
     BoxNode* parent_ = nullptr;
     std::vector<std::unique_ptr<BoxNode>> children_;
     int siblingIndex_ = -1;
+
+    BorderRadii radii_;
+    float zIndex_ = 0;
+    bool visible_ = true;
+    bool pointerEventsNone_ = false;
+    bool overflowClip_ = false;
+    bool hasTransform_ = false;
+    float transform_[6] = {1,0,0,1,0,0};
 };
 
 // ==================================================================

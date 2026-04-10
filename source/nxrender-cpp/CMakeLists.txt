@@ -74,6 +74,7 @@ set(NXRENDER_SOURCES
     layout/table_layout.cpp
     layout/stacking_context.cpp
     layout/multi_column.cpp
+    layout/container_query.cpp
 
     # theme — design tokens and widget styles
     theme/theme.cpp
@@ -108,11 +109,25 @@ set(NXRENDER_SOURCES
     # web layer
     web/dom_renderer.cpp
     web/style_resolver.cpp
+    web/event_router.cpp
     web/css/property_ids.cpp
     web/css/value_parser.cpp
     web/css/cascade.cpp
+    web/css/selector.cpp
     web/box/box_tree.cpp
     web/paint/paint_ops.cpp
+    web/paint/painters.cpp
+    web/paint/hit_test.cpp
+
+    # canvas 2D & WebGL
+    nxgfx/canvas2d/canvas_context.cpp
+    nxgfx/webgl/webgl_context.cpp
+
+    # form control widgets
+    widgets/form_controls.cpp
+
+    # media pipeline
+    media/media_element.cpp
 
     # bridge to libnxrender.a (C library) - DISABLED: requires external nxgfx C lib
     # nxrender_c_bridge.cpp
