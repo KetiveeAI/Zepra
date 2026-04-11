@@ -31,6 +31,7 @@ set(NXRENDER_SOURCES
     nxgfx/render_target.cpp
     nxgfx/clip_stack.cpp
     nxgfx/text/text_layout.cpp
+    nxgfx/svg/svg_renderer.cpp
 
     # core — rendering pipeline
     core/compositor.cpp
@@ -79,6 +80,7 @@ set(NXRENDER_SOURCES
     # theme — design tokens and widget styles
     theme/theme.cpp
     theme/style_sheet.cpp
+    theme/design_tokens.cpp
 
     # input — event handling
     input/mouse.cpp
@@ -95,16 +97,19 @@ set(NXRENDER_SOURCES
     animation/transition.cpp
     animation/scroll_physics.cpp
     animation/spring.cpp
+    animation/css_animation.cpp
 
     # platform — OS abstraction
     platform/linux_x11.cpp
     platform/display_info.cpp
     platform/platform_timer.cpp
     platform/thread_pool.cpp
+    platform/linux_wayland.cpp
 
     # accessibility
     accessibility/accessible.cpp
     accessibility/accessibility_tree.cpp
+    accessibility/a11y_bridge.cpp
 
     # web layer
     web/dom_renderer.cpp
@@ -114,10 +119,14 @@ set(NXRENDER_SOURCES
     web/css/value_parser.cpp
     web/css/cascade.cpp
     web/css/selector.cpp
+    web/css/custom_properties.cpp
+    web/css/css_math.cpp
+    web/css/typed_om.cpp
     web/box/box_tree.cpp
     web/paint/paint_ops.cpp
     web/paint/painters.cpp
     web/paint/hit_test.cpp
+    web/paint/image_loader.cpp
 
     # canvas 2D & WebGL
     nxgfx/canvas2d/canvas_context.cpp
@@ -128,6 +137,10 @@ set(NXRENDER_SOURCES
 
     # media pipeline
     media/media_element.cpp
+    media/media_pipeline.cpp
+
+    # scroll snap
+    layout/scroll_snap.cpp
 
     # bridge to libnxrender.a (C library) - DISABLED: requires external nxgfx C lib
     # nxrender_c_bridge.cpp
